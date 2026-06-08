@@ -191,17 +191,113 @@
 
 ## Traceability
 
-Заполняется gsd-roadmapper'ом при создании ROADMAP.md.
+Заполнено gsd-roadmapper'ом при создании ROADMAP.md.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (заполняется roadmapper'ом) | | Pending |
+| DB-01 | Phase 1 | Pending |
+| DB-02 | Phase 1 | Pending |
+| DB-03 | Phase 1 | Pending |
+| DB-04 | Phase 1 | Pending |
+| DB-05 | Phase 1 | Pending |
+| DB-06 | Phase 1 | Pending |
+| DB-07 | Phase 1 | Pending |
+| DB-08 | Phase 1 | Pending |
+| DB-09 | Phase 1 | Pending |
+| DB-10 | Phase 1 | Pending |
+| API-01 | Phase 1 | Pending |
+| API-02 | Phase 1 | Pending |
+| API-03 | Phase 4 | Pending |
+| API-04 | Phase 4 | Pending |
+| API-05 | Phase 4 | Pending |
+| API-06 | Phase 4 | Pending |
+| API-07 | Phase 2 | Pending |
+| API-08 | Phase 4 | Pending |
+| API-09 | Phase 4 | Pending |
+| API-10 | Phase 4 | Pending |
+| API-11 | Phase 5 | Pending |
+| API-12 | Phase 5 | Pending |
+| API-13 | Phase 3 | Pending |
+| API-14 | Phase 5 | Pending |
+| API-15 | Phase 3 | Pending |
+| API-16 | Phase 1 | Pending |
+| LOGIC-01 | Phase 2 | Pending |
+| LOGIC-02 | Phase 2 | Pending |
+| LOGIC-03 | Phase 2 | Pending |
+| LOGIC-04 | Phase 2 | Pending |
+| LOGIC-05 | Phase 2 | Pending |
+| MATCH-01 | Phase 2 | Pending |
+| MATCH-02 | Phase 2 | Pending |
+| MATCH-03 | Phase 2 | Pending |
+| MATCH-04 | Phase 2 | Pending |
+| MATCH-05 | Phase 2 | Pending |
+| MATCH-06 | Phase 2 | Pending |
+| FSM-01 | Phase 2 | Pending |
+| FSM-02 | Phase 2 | Pending |
+| FSM-03 | Phase 2 | Pending |
+| FSM-04 | Phase 2 | Pending |
+| FSM-05 | Phase 2 | Pending |
+| FSM-06 | Phase 2 | Pending |
+| TG-01 | Phase 3 | Pending |
+| TG-02 | Phase 3 | Pending |
+| TG-03 | Phase 3 | Pending |
+| TG-04 | Phase 3 | Pending |
+| TG-05 | Phase 3 | Pending |
+| TG-06 | Phase 3 | Pending |
+| TG-07 | Phase 3 | Pending |
+| ADMIN-01 | Phase 4 | Pending |
+| ADMIN-02 | Phase 4 | Pending |
+| ADMIN-03 | Phase 4 | Pending |
+| ADMIN-04 | Phase 4 | Pending |
+| ADMIN-05 | Phase 4 | Pending |
+| ADMIN-06 | Phase 4 | Pending |
+| ADMIN-NEW-01 | Phase 4 | Pending |
+| ADMIN-NEW-02 | Phase 4 | Pending |
+| ADMIN-NEW-03 | Phase 4 | Pending |
+| ADMIN-NEW-04 | Phase 4 | Pending |
+| ADMIN-NEW-05 | Phase 4 | Pending |
+| ADMIN-NEW-06 | Phase 4 | Pending |
+| ADMIN-NEW-07 | Phase 4 | Pending |
+| TRACK-01 | Phase 5 | Pending |
+| TRACK-02 | Phase 5 | Pending |
+| TRACK-03 | Phase 5 | Pending |
+| TRACK-04 | Phase 5 | Pending |
+| TRACK-05 | Phase 5 | Pending |
+| TRACK-06 | Phase 5 | Pending |
+| TRACK-07 | Phase 5 | Pending |
+| PUBLIC-01 | Phase 5 | Pending |
+| PUBLIC-02 | Phase 5 | Pending |
+| I18N-01 | Phase 6 | Pending |
+| I18N-02 | Phase 4 | Pending |
+| I18N-03 | Phase 6 | Pending |
+| I18N-04 | Phase 6 | Pending |
+| I18N-05 | Phase 6 | Pending |
+| NOTIF-01 | Phase 6 | Pending |
+| NOTIF-02 | Phase 6 | Pending |
+| DEPLOY-01 | Phase 1 | Pending |
+| DEPLOY-02 | Phase 1 | Pending |
+| DEPLOY-03 | Phase 1 | Pending |
+| DEPLOY-04 | Phase 1 | Pending |
+| POLISH-01 | Phase 6 | Pending |
+| POLISH-02 | Phase 6 | Pending |
+| POLISH-03 | Phase 6 | Pending |
+| POLISH-04 | Phase 6 | Pending |
+| POLISH-05 | Phase 6 | Pending |
+| POLISH-06 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: **97 total** (10 DB + 16 API + 5 LOGIC + 6 MATCH + 6 FSM + 7 TG + 6 ADMIN + 7 ADMIN-NEW + 7 TRACK + 2 PUBLIC + 5 I18N + 2 NOTIF + 4 DEPLOY + 6 POLISH)
-- Mapped to phases: TBD
-- Unmapped: TBD
+- v1 requirements: **89 total** (10 DB + 16 API + 5 LOGIC + 6 MATCH + 6 FSM + 7 TG + 6 ADMIN + 7 ADMIN-NEW + 7 TRACK + 2 PUBLIC + 5 I18N + 2 NOTIF + 4 DEPLOY + 6 POLISH = 89; the earlier "97 total" was an arithmetic typo)
+- Mapped to phases: **89 / 89** (100%)
+- Unmapped: **0**
+
+**Per-phase distribution:**
+- Phase 1 (DB + Backend Skeleton): 17 — DB-01..10, API-01, API-02, API-16, DEPLOY-01..04
+- Phase 2 (LLM Pipeline + Core): 18 — API-07, LOGIC-01..05, MATCH-01..06, FSM-01..06
+- Phase 3 (Telegram Channel): 9 — API-13, API-15, TG-01..07
+- Phase 4 (Admin Web): 21 — API-03, API-04, API-05, API-06, API-08, API-09, API-10, ADMIN-01..06, ADMIN-NEW-01..07, I18N-02
+- Phase 5 (Tracking + Public): 12 — API-11, API-12, API-14, TRACK-01..07, PUBLIC-01, PUBLIC-02
+- Phase 6 (Polish + Notif + i18n): 12 — I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01..06
 
 ---
 *Requirements defined: 2026-06-08*
-*Last updated: 2026-06-08 after initial definition*
+*Last updated: 2026-06-08 after roadmap creation (traceability filled, coverage corrected from 97 to 89)*
