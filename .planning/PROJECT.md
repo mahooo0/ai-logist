@@ -109,7 +109,8 @@
 | LLM решает только семантику, цена/подбор — детерминированный код через tools | Прозрачность и тестируемость, цена не «придумывается» моделью | — Pending |
 | Демо без реального голосового канала | §5.2 явно помечен «опционально для демо», логика tools общая с текстом — добавляется поверх | — Pending |
 | Демо без реальных бирж и Wialon | §9 даёт явный порядок сборки демо — биржи и GPS-провайдер заменяются стабом/симуляцией | — Pending |
-| Telegram-бот: aiogram или grammY (выбрать на research) | Зависит от выбора языка бэкенда (Python → aiogram, Node → grammY) | — Pending |
+| **Бэкенд = Node.js 22 LTS + TypeScript + Fastify 5** (не Python, не NestJS) | (1) Фронт уже на TS — общие Zod-схемы между LLM tools / REST / WS. (2) Drizzle ORM имеет официальный PostGIS-гайд (geometry + GiST + `<->` KNN). (3) Anthropic TS SDK даёт `betaZodTool` + `toolRunner` — function-calling цикл out-of-the-box. (4) NestJS — overkill для модульного монолита: его DI-контейнер не нужен, Fastify даёт schema-validated routes под «строгий JSON» LLM-контракт + native WebSocket. Python (FastAPI + aiogram) рассмотрен и отвергнут — выигрыша нет, потеря в общем коде с фронтом | ✓ Good |
+| Telegram-библиотека: grammY 1.43 (TS-native, webhook-first) | Соответствует выбору Node + унифицированный стиль с фронтом | ✓ Good |
 | Двуязычие RU/UA через i18n-словарь в Customize-панели шаблона | Шаблон уже имеет переключатель Language preference, нужно только подключить словарь | — Pending |
 
 ## Evolution
