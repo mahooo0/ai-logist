@@ -27,7 +27,18 @@
   2. Schema migrations create every table from spec §2 plus the six demo-credibility extensions (extended cargo fields, `price_overrides jsonb[]`, `pod_artifacts`, `tax_id`/`tax_id_country`, `webhook_updates`, `bourse_cache`), with `geography(Point, 4326)` on all geo columns and a GiST index on `trucks.geom`.
   3. Seed script populates 10-15 trucks across realistic RU/UA cities, ~30 cities (Київ↔Киев, Львів↔Львов pairs) plus 5+ border crossings, 5-10 clients, pricing config (`rate_per_km`, `dir_coef`, `season_coef`); a canonical `SELECT … ORDER BY geom <-> :pickup LIMIT 3` returns plausible trucks from psql.
   4. Monorepo layout is `apps/api` + `apps/web` + `packages/shared-types` with pnpm workspaces, Zod-validated env via Node 22 `--env-file`, and README that lets a fresh developer run the demo in ≤10 minutes.
-**Plans**: TBD
+**Plans**: 11 plans
+  - [ ] 01-00-test-infra-PLAN.md — Wave 0: vitest + testcontainers + stub tests for every Phase 1 requirement
+  - [ ] 01-01-monorepo-skeleton-PLAN.md — pnpm workspaces, root package.json, tsconfig.base, biome, .env.example, packages/shared-types stub
+  - [ ] 01-02-infrastructure-PLAN.md — docker-compose.yml (postgis 17-3.5, redis 7, api, web, caddy), Caddyfile (handle /api/*), Dockerfiles, apps/web Next.js placeholder
+  - [ ] 01-03-drizzle-setup-PLAN.md — drizzle-orm 0.45.2 + drizzle-kit, customType geographyPoint, 7 pgEnums, drizzle.config.ts, 0000 postgis extension migration
+  - [ ] 01-04-schema-geo-PLAN.md — clients, cities, trucks, truck_positions tables (geography(Point,4326) + GiST + CHECK SRID)
+  - [ ] 01-05-schema-domain-PLAN.md — orders (public_token), leads (extended cargo + price_overrides jsonb[] + version), order_events (UNIQUE order_id+type), pod_artifacts (gps geography)
+  - [ ] 01-06-schema-channels-repos-PLAN.md — messages, calls, bourse_cache, webhook_updates (UNIQUE source+external_id), pricing_config + 6 thin per-aggregate repos
+  - [ ] 01-07-fastify-skeleton-PLAN.md — Fastify v5 buildApp, db+redis plugins, /api/health with PostGIS_Version, HealthResponseSchema in shared-types, drizzle-kit generate 0001_init.sql + apply
+  - [ ] 01-08-rest-stubs-PLAN.md — Zod DTO schemas for leads/orders/trucks/clients/analytics/webhooks in shared-types + 501-stub routes in Fastify + Swagger UI integration test
+  - [ ] 01-09-seed-PLAN.md — JSON fixtures (~30 cities incl. 5+ borders, 12 trucks, 8 clients, pricing rate_per_km=4200 kopecks), idempotent seed run.ts, canonical KNN smoke print from Kyiv
+  - [ ] 01-10-readme-smoke-PLAN.md — README 10-min setup + VPS deploy + Phase 1 status table + full-stack smoke test + checkpoint:human-verify
 
 ---
 
@@ -148,7 +159,7 @@ Phase 1 ──> Phase 2 ──> Phase 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database + Backend Skeleton | 0/0 | Not started | - |
+| 1. Database + Backend Skeleton | 0/11 | Planned | - |
 | 2. LLM Pipeline + Deterministic Core | 0/0 | Not started | - |
 | 3. Telegram Channel | 0/0 | Not started | - |
 | 4. Admin Web | 0/0 | Not started | - |
