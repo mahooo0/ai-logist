@@ -9,6 +9,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import { config } from './config.js';
+import { registerFollowUpScheduler } from './pipeline/follow-up-scheduler.js';
 import { dbPlugin } from './plugins/db.js';
 import { redisPlugin } from './plugins/redis.js';
 import analyticsRoutes from './routes/analytics.js';
@@ -79,6 +80,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(clientsRoutes, { prefix: '/api' });
   await app.register(analyticsRoutes, { prefix: '/api' });
   await app.register(webhooksRoutes, { prefix: '/webhook' });
+
+  // Phase 2 Plan 02-04b — auto-follow-up scheduler (FSM-06). Skips in test env;
+  // production wires setInterval + onClose-driven clearInterval lifecycle.
+  registerFollowUpScheduler(app);
 
   return app;
 }

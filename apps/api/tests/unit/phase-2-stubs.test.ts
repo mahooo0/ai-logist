@@ -26,7 +26,8 @@ import { ExtractRequestSchema } from '../../src/pipeline/llm-tools/extract-reque
  *   Plan 02-05  (Wave 4): API-07                                            — 1 flipped, 0 remain.
  *
  * Counting protocol: the verifier greps for `test` + `.` + `todo` literal call-sites;
- * this file MUST contain exactly 5 such call-sites after Plan 02-03b, 3 after Plan 02-04a.
+ * this file MUST contain exactly 5 such call-sites after Plan 02-03b, 3 after Plan 02-04a,
+ * and 1 after Plan 02-04b (only API-07 remains for Plan 02-05).
  * 02-VALIDATION.md "Per-Task Verification Map" depends on this exact count.
  */
 describe('Phase 2 acceptance criteria', () => {
@@ -268,16 +269,31 @@ describe('Phase 2 acceptance criteria', () => {
     expect(LEAD_TRANSITIONS.QUOTED).toEqual(['AGREED', 'LOST']);
     // Integration coverage: tests/integration/fsm-concurrency.test.ts asserts 100/100 deterministic outcomes.
   });
-  // FSM-04 — pg_advisory_xact_lock
-  test.todo('FSM-04: pg_advisory_xact_lock(hashtext(client_id)) serializes per-client');
+  // FSM-04 — pg_advisory_xact_lock (FLIPPED in Plan 02-04b)
+  it('FSM-04: pg_advisory_xact_lock(hashtext(client_id)) wired in intake.ts', async () => {
+    const src = await readFile('src/pipeline/intake.ts', 'utf8');
+    expect(src).toMatch(/pg_advisory_xact_lock[\s\S]*hashtext[\s\S]*clientId/);
+    // Full coverage: tests/integration/advisory-lock.test.ts proves 10 parallel
+    // calls converge to a single lead via the lock.
+  });
   // FSM-05 — audit log (FLIPPED in Plan 02-03b — sanity reference; real proof in tests/integration/fsm-events-audit.test.ts)
   it('FSM-05: leadEventsRepo exports appendEvent + listByLead (audit proof in integration test)', () => {
     expect(typeof leadEventsRepo.appendEvent).toBe('function');
     expect(typeof leadEventsRepo.listByLead).toBe('function');
     // Integration coverage: tests/integration/fsm-events-audit.test.ts asserts every transitionLead writes a row.
   });
-  // FSM-06 — auto-follow-up
-  test.todo('FSM-06: lead in QUOTED for >24h → scheduler transitions to LOST');
+  // FSM-06 — auto-follow-up scheduler (FLIPPED in Plan 02-04b)
+  it('FSM-06: follow-up scheduler exports tick + register with constants', async () => {
+    const mod = await import('../../src/pipeline/follow-up-scheduler.js');
+    expect(typeof mod.followUpTick).toBe('function');
+    expect(typeof mod.registerFollowUpScheduler).toBe('function');
+    expect(mod.POLL_INTERVAL_MS).toBe(60_000);
+    expect(mod.STALE_THRESHOLD_MS).toBe(24 * 60 * 60 * 1000);
+    expect(mod.QUIET_THRESHOLD_MS).toBe(4 * 60 * 60 * 1000);
+    // Full coverage: tests/integration/follow-up-scheduler.test.ts uses
+    // vi.useFakeTimers + setSystemTime + advanceTimersByTime to drive the
+    // setInterval lifecycle and verify clearInterval on app.close().
+  });
   // API-07 — leads routes
   test.todo('API-07: POST /api/leads/:id/match and /quote return 200 (not 501)');
 });
