@@ -14,15 +14,22 @@
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+**Phase 1 — Database + Backend Skeleton (2026-06-09):**
+- ✓ PostgreSQL 17 + PostGIS 3.5 схема (13 таблиц включая 7 расширений demo-credibility: extended cargo fields, price_overrides jsonb[], pod_artifacts, tax_id, webhook_updates, truck_positions, orders.public_token) — Phase 1
+- ✓ REST API контракт через 16 эндпоинтов с Zod-схемами в `packages/shared-types` (501 stubs для Phase 2/3/4) — Phase 1
+- ✓ Сидинг парка (30 RU/UA городов + 5 пограничных, 12 машин, 8 клиентов, pricing config) — Phase 1
+- ✓ `docker compose up` топология (Postgres+PostGIS, Redis, Fastify api, Next.js web, Caddy) — Phase 1
+- ✓ pnpm workspaces монорепо (apps/api, apps/web, packages/shared-types), Zod env, Vitest + testcontainers test infra — Phase 1
+- ✓ /api/health с PostGIS_Version() — Phase 1
+- ⏳ UAT-01: human verification 10-min walkthrough на чистой машине — отложено (Docker недоступен в runner-окружении агентов)
 
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
 
-**Бэкенд-каркас:**
-- [ ] PostgreSQL + PostGIS схема (clients, cities, trucks, leads, orders, order_events, calls, messages, bourse_cache) — §2 спеки
-- [ ] REST API эндпоинты (/api/leads, /api/orders, /api/trucks, /api/clients, /api/analytics/kpi) — §6 спеки
+**Бэкенд-каркас (продолжение):**
+- [ ] WebSocket эндпоинты (/ws/tracking, /ws/inbox) — Phase 5
+- [ ] Webhook handlers (/webhook/telegram реальный, voice стаб, gps симулятор) — Phase 3/5
 - [ ] WebSocket эндпоинты (/ws/tracking, /ws/inbox) — §6 спеки
 - [ ] Webhook эндпоинты (/webhook/telegram, /webhook/voice, /webhook/gps) — §6 спеки
 - [ ] Сидинг парка машин (исходные данные) — §9.1
@@ -131,4 +138,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-08 after initialization*
+*Last updated: 2026-06-09 after Phase 1 completion*
