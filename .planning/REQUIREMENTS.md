@@ -129,22 +129,31 @@
 - [x] **DEPLOY-03**: `pnpm` workspaces монорепо: `apps/api`, `apps/web`, `packages/shared-types`
 - [x] **DEPLOY-04**: README с инструкцией запуска демо локально и на VPS
 
+### Voice Channel (VOICE) — **promoted to v1 on 2026-06-09 per user pivot to voice focus**
+
+- [ ] **VOICE-01**: ElevenLabs Conversational AI Agent (Turbo tier, $0.10/мин) с RU+UA голосами, подключёный к Twilio SIP-trunk
+- [ ] **VOICE-02**: Twilio account + один номер (RU или UA, ~$3/мес), webhook → Fastify `/webhook/voice`
+- [ ] **VOICE-03**: ElevenLabs Agent tools = тот же registry что и Phase 2 (extractRequest, nearestTruck, calcPrice, createOrder, discount) — общая бизнес-логика
+- [ ] **VOICE-04**: Conversation FSM: `GREETING → COLLECT_REQUEST → MATCH → QUOTE → NEGOTIATE → CONFIRM → CREATE_ORDER → GOODBYE` (§5.2 спеки)
+- [ ] **VOICE-05**: Только входящие звонки в v1 (клиент звонит → AI отвечает). Исходящие (driver confirmation by call) → v2
+- [ ] **VOICE-06**: Автоопределение языка в первой фразе клиента (RU/UA), переключение голоса агента
+- [ ] **VOICE-07**: Запись звонка (audio URL) + расшифровка (transcript JSON) → `calls` таблица (уже есть из Phase 1)
+- [ ] **VOICE-08**: `calls.outcome` enum (`completed | abandoned | escalated | error`) + linking to `leads.id` если заказ создан
+- [ ] **VOICE-09**: Same price-lock протокол что и в Phase 2 — quoted_price пишется в БД ДО озвучивания, regex-guard на TTS-input
+- [ ] **VOICE-10**: Same anti-injection защита что и в Phase 2 — system prompt с ANTI_INJECTION_PREFIX, tools-as-security-boundary
+- [ ] **VOICE-11**: Same FSM-race защита что и в Phase 2 — SELECT FOR UPDATE + version + advisory lock per client_phone
+- [ ] **VOICE-12**: `/dashboard/chat` админки (Phase 4) показывает звонки как отдельный канал с audio-player и transcript
+
 ### Demo Polish (POLISH)
 
 - [ ] **POLISH-01**: Snapshot-тесты `extractRequest` и `calcPrice` (20 канонических входов) в CI
-- [ ] **POLISH-02**: «Simulate inbound call» кнопка в админке — проигрывает заранее заготовленный транскрипт через LLM-пайплайн (замена реального голосового канала)
-- [ ] **POLISH-03**: Pre-recorded видео реального звонка ElevenLabs для показа возможностей голоса
+- [ ] **POLISH-02**: «Simulate inbound call» кнопка в админке — проигрывает заранее заготовленный транскрипт через LLM-пайплайн (резерв на случай если real-call упадёт)
+- [ ] **POLISH-03**: Pre-recorded видео реального звонка ElevenLabs для показа возможностей голоса (резерв если venue WiFi или Twilio лёг)
 - [ ] **POLISH-04**: Локально кэшированные тайлы карты на случай плохого WiFi на демо-площадке
-- [ ] **POLISH-05**: Pre-flight чек-лист (бот жив, БД сидится, симулятор стартует, обе ссылки `/track/*` работают)
+- [ ] **POLISH-05**: Pre-flight чек-лист (бот жив, БД сидится, симулятор стартует, обе ссылки `/track/*` работают, **тестовый звонок проходит**)
 - [ ] **POLISH-06**: Опционально — failover на OpenAI SDK если Anthropic API лежит
 
 ## v2 Requirements
-
-### Voice Channel (Real)
-
-- **VOICE-01**: Подключение ElevenLabs Agents через SIP-trunk (Twilio/Telnyx)
-- **VOICE-02**: Реальный FSM разговора (GREETING → COLLECT_REQUEST → MATCH → QUOTE → NEGOTIATE → CONFIRM → CREATE_ORDER → GOODBYE)
-- **VOICE-03**: Запись и расшифровка звонков в `calls`
 
 ### Real External Integrations
 
