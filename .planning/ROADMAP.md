@@ -9,12 +9,15 @@
 
 ## Phases
 
-- [ ] **Phase 1: Database + Backend Skeleton** — Postgres 17 + PostGIS 3.5, Drizzle schema, Fastify caркas, docker-compose, fleet seed
-- [ ] **Phase 2: LLM Pipeline + Deterministic Core** ⚠️ HIGH RISK — extractRequest, nearestTruck (KNN re-rank), calcPrice (corridor + price-lock), FSMs, sticky language detect
+> **Pivot 2026-06-09:** focus shifted to multi-channel (Telegram + voice) demo. Phase 5 (Tracking + Live Map + Public Tracking) deferred to v2. Phase 4 (Admin) reduced to chat + calls + orders + KPI only.
+
+- [x] **Phase 1: Database + Backend Skeleton** ✓ — Postgres 17 + PostGIS 3.5, Drizzle schema, Fastify skeleton, docker-compose, fleet seed
+- [x] **Phase 2: LLM Pipeline + Deterministic Core** ✓ ⚠️ HIGH RISK — extractRequest, nearestTruck (KNN re-rank), calcPrice (corridor + price-lock), FSMs, sticky language detect
 - [ ] **Phase 3: Telegram Channel** — grammY webhook with `secret_token`, two-stage idempotency, inline buttons, driver-confirmation loop, manager intervention
-- [ ] **Phase 4: Admin Web (Zenith Template + 3 New Pages)** 🎨 UI — wire existing 4 pages, add fleet/orders/tracking, price-override audit, global search, RU/UA toggle
-- [ ] **Phase 5: Tracking Loop + Live Map + Public Tracking** ⚠️ HIGH RISK — GPS simulator, geofence FSM auto-transitions, WS resilience (reconnect + heartbeat), `/track/[token]`
-- [ ] **Phase 6: Demo Polish + Notifications + Final i18n** — ICU pluralization, locale-aware dates, FSM-driven client notifications, snapshot tests, voice fallback video, pre-flight checklist
+- [ ] **Phase 3.1: Voice Channel (ElevenLabs + Twilio)** ⚠️ HIGH RISK — real inbound calls, ElevenLabs Agent reuses Phase 2 tool registry, conversation FSM, transcript+audio in `calls`
+- [ ] **Phase 4: Admin Web (REDUCED scope)** 🎨 UI — multi-channel chat (Telegram+Voice), calls page, orders page, KPI dashboards, auth. NO Kanban/fleet/calendar/tracking/search/PDF/price-override (all → v2)
+- ~~**Phase 5: Tracking Loop + Live Map + Public Tracking**~~ — **DEFERRED to v2** (TRACK_V2-*, PUBLIC_V2-*)
+- [ ] **Phase 5: Demo Polish + Notifications + Final i18n** (was Phase 6) — ICU pluralization, locale-aware dates, FSM-driven client notifications, snapshot tests, pre-flight checklist, voice fallback video
 
 ## Phase Details
 
@@ -96,100 +99,83 @@
 Plans:
 - [ ] TBD (run /gsd:plan-phase 03.1 to break down)
 
-### Phase 4: Admin Web (Zenith Template + 3 New Pages)
-**Goal**: Manager-facing surface is complete — existing 4 template pages are wired to live API, 3 new pages (fleet, orders, tracking-scaffold) ship under template conventions, price-override audit and global search work, RU/UA toggle is hooked to the dictionary.
-**Depends on**: Phase 2 (stable REST surface). Can run in PARALLEL with Phase 3 once Phase 2 API contracts are stable.
-**Requirements** (21): API-03, API-04, API-05, API-06, API-08, API-09, API-10, ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-04, ADMIN-05, ADMIN-06, ADMIN-NEW-01, ADMIN-NEW-02, ADMIN-NEW-03, ADMIN-NEW-04, ADMIN-NEW-05, ADMIN-NEW-06, ADMIN-NEW-07, I18N-02
-**Risk Notes** (per PITFALLS.md #13): Next.js 16 + Tailwind v4 + shadcn integration traps. Convention: `page.tsx` is server (SSR fetch), `_components/<feature>-app.tsx` is the SOLE client boundary; Leaflet via `next/dynamic ssr: false`; NEVER `'use cache'` on `/tracking`, `/chat`, `/kanban`, `/orders` (grep guard in CI); use `border-border` explicitly (Tailwind v4 changed default).
+### Phase 4: Admin Web (REDUCED scope — chat + calls + orders + KPI)
+**Goal**: Demo-supporting admin showing what voice + Telegram channels produced — a multi-channel chat (Telegram threads alongside voice call transcripts with audio playback), a calls table with filters and audio/transcript drill-down, an orders table + detail page, and KPI dashboards (calls vs telegram conversion, revenue, avg call duration). NO Kanban, fleet CRUD, calendar, tracking page, search, PDF, or price-override — all deferred to v2.
+**Depends on**: Phase 2 (stable REST surface), Phase 3 (Telegram messages persisted), Phase 3.1 (calls persisted). Can run in PARALLEL with Phase 3 + 3.1 once their data contracts are stable.
+**Requirements** (12): API-03, API-04, API-05, API-06, API-09, ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-05, ADMIN-NEW-02, ADMIN-NEW-03, ADMIN-NEW-08, I18N-02
+**Risk Notes** (per PITFALLS.md #13): Next.js 16 + Tailwind v4 + shadcn integration traps. Convention: `page.tsx` is server (SSR fetch), `_components/<feature>-app.tsx` is the SOLE client boundary; NEVER `'use cache'` on `/chat`, `/calls`, `/orders` (grep guard in CI); use `border-border` explicitly (Tailwind v4 changed default).
 **Success Criteria** (what must be TRUE):
-  1. Forked `next-shadcn-admin-dashboard` boots with `pnpm dev` on :3000, auth via `/auth/v1/login` (env-set login/password); existing pages `/dashboard/chat`, `/dashboard/kanban`, `/dashboard/default`, `/dashboard/analytics`, `/dashboard/calendar` all show real data from `/api/*` endpoints — no mocks.
-  2. Dragging a lead card across Kanban columns issues `PATCH /api/leads/:id` with FSM validation — illegal moves (e.g., `QUOTED → NEW`) are rejected at the API and revert the card visually.
-  3. New `/dashboard/fleet` lets the manager CRUD a truck with `phone-input` for driver phone (RU `+7` and UA `+380` formats) and plate validation; `/dashboard/orders/[id]` shows order timeline from `order_events`, POD section placeholder, "TTN/CMR PDF" preview button, route map, and price-override modal (with mandatory "Reason" field writing to `price_overrides` audit log).
-  4. Global search (shadcn command palette `⌘K`) returns matching orders/leads/clients; Customize-panel Language toggle flips the entire admin between RU and UA via `I18N-02` dictionary.
-  5. `pnpm exec tsc --noEmit` passes; Biome check passes; visual smoke test of every page in both light/dark themes shows no broken borders or layout shifts.
+  1. Forked `next-shadcn-admin-dashboard` boots with `pnpm dev` on :3000, auth via `/auth/v1/login` (env-set login/password); pages that exist: `/dashboard/chat`, `/dashboard/default`, `/dashboard/analytics`, `/dashboard/calls`, `/dashboard/orders`, `/dashboard/orders/[id]`. All show real data from `/api/*` endpoints — no mocks. Pages NOT in scope: `/dashboard/kanban`, `/dashboard/fleet`, `/dashboard/calendar`, `/dashboard/tracking`.
+  2. `/dashboard/chat` unifies BOTH channels: Telegram threads show text bubbles + inline-button presses; voice channel threads show ElevenLabs transcript turn-by-turn with an inline audio player ↦ press play, audio streams from `calls.audio_url`. Manager can «перехватить» Telegram conversations only — voice ends naturally.
+  3. `/dashboard/calls` lists every call with columns: timestamp, phone, lang (ru/ua), duration, outcome (`completed`/`abandoned`/`escalated`/`error`), linked order. Filters by outcome + lang + date range. Click → modal with audio player + full transcript + linked lead/order.
+  4. `/dashboard/default` + `/dashboard/analytics` show KPI: total calls, total telegram messages, conversion rate per channel, avg call duration, avg lead-to-order time, total revenue. Charts via shadcn + recharts (already in template).
+  5. `pnpm exec tsc --noEmit` passes; Biome check passes; Customize-panel RU/UA toggle flips strings via `I18N-02` dictionary; visual smoke in both themes shows no broken borders.
 **Plans**: TBD
 **UI hint**: yes
 
 ---
 
-### Phase 5: Tracking Loop + Live Map + Public Tracking ⚠️ HIGH RISK
-**Goal**: The visually-decisive moment of the demo works — trucks move smoothly along realistic OSRM polylines, geofence entries auto-transition the order FSM, WS survives idle/tab-switch/reload, and a public `/track/[token]` link lets the client see live status without admin login.
-**Depends on**: Phase 2 (order FSM) AND Phase 4 (admin scaffolding for `/dashboard/tracking` to land).
-**Requirements** (12): API-11, API-12, API-14, TRACK-01, TRACK-02, TRACK-03, TRACK-04, TRACK-05, TRACK-06, TRACK-07, PUBLIC-01, PUBLIC-02
-**Risk Notes** (per PITFALLS.md #9, #10): The WS reconnect/teleport cluster + fake-looking GPS are the next-highest demo-killers after Phase 2. Defense: SSR-fetch initial state, WS for deltas only; exponential-backoff reconnect (1/2/4/8/30s) + 25s heartbeat + `visibilitychange` refetch; GPS sim snaps to OSRM polyline, variable speed (50-80 km/h highway / 20-30 km/h city) + ±5m noise + 10-30s push cadence + 5-15 min stops at loading/border geofences; smooth-marker interpolation on Leaflet.
+### Phase 5: Demo Polish + Notifications + Final i18n (was Phase 6 — renumbered after Tracking deferral)
+**Goal**: Final dress rehearsal — every order transition fires a Telegram notification, Slavic pluralization works, dates render in locale, snapshot tests are green, voice channel has a fallback video + "simulate call" button, pre-flight checklist closes every demo-day risk.
+**Depends on**: Phase 4 (admin runs end-to-end with Telegram + Voice data)
+**Requirements** (10): I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-05, POLISH-06
 **Success Criteria** (what must be TRUE):
-  1. Running `pnpm sim:demo` (the GPS simulator CLI) moves a truck along an OSRM-derived polyline at realistic speeds with random ±5m noise; positions push every 10-30s; the truck stops at loading geofence for 5-15 min, then at border, then at unload.
-  2. `/dashboard/tracking` loads in <1s with SSR-rendered truck positions (no spinner-driven blank state on refresh), then receives live deltas via WS `/ws/tracking` with smooth marker interpolation — no teleporting, no jumps.
-  3. As the simulated truck enters loading/border/unload geofences (`ST_DWithin` with GiST index), order FSM auto-transitions `AT_LOADING → IN_TRANSIT → AT_BORDER → DELIVERED`, idempotently (UNIQUE `(order_id, type)` on `order_events`); the admin chat WS publishes the event.
-  4. The WS client survives a 5-minute tab-switch (heartbeat keeps connection alive) and a network drop (exponential backoff reconnects + refetches snapshot via `visibilitychange`) without losing state.
-  5. The public page `/track/[order_token]` (no auth) shows live truck position + status + ETA; the encrypted link is sent to the client via Telegram automatically on order creation.
-**Plans**: TBD
-
----
-
-### Phase 6: Demo Polish + Notifications + Final i18n
-**Goal**: Final dress rehearsal pass — every client-visible transition fires a Telegram notification, Slavic pluralization works, dates render in locale, snapshot tests are green, voice-channel question is pre-empted by a fallback video + "simulate call" button, and the pre-flight checklist closes every demo-day risk.
-**Depends on**: Phase 5 (full pipeline runs end-to-end)
-**Requirements** (12): I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-04, POLISH-05, POLISH-06
-**Success Criteria** (what must be TRUE):
-  1. Every order FSM transition (`DRIVER_ASSIGNED`, `AT_LOADING`, `IN_TRANSIT`, `AT_BORDER`, `DELIVERED`) sends the client a Telegram notification using the `I18N-01` RU/UA dictionary with a fresh `/track/[token]` link; the message contains exactly one number that equals the stored field — no LLM paraphrase.
+  1. Every order FSM transition (`DRIVER_ASSIGNED`, `IN_TRANSIT`, `DELIVERED`) sends the client a Telegram notification using the `I18N-01` RU/UA dictionary; the message contains exactly one number that equals the stored field — no LLM paraphrase. (No `/track/[token]` link — public tracking deferred.)
   2. Pluralization tests pass for `0`, `1`, `2`, `5`, `21`, `25` ("Найдено 1 машина / 2 машины / 5 машин"); declension-free templates ("Маршрут: {from} → {to}") render correctly; dates show `8 июн, ср` (RU) and `8 чер, ср` (UA) via `date-fns/locale`.
-  3. CI snapshot tests on 20 canonical `extractRequest` + `calcPrice` inputs are green; "simulate inbound call" button in admin plays a canned transcript through the live LLM pipeline, producing a complete lead-to-order flow visually identical to the real Telegram path.
-  4. Voice fallback video (pre-recorded ElevenLabs demo) is bundled and accessible from the admin; local-cached map tiles work without internet for the demo route; `LLM_PROVIDER` env can swap Anthropic ↔ OpenAI failover in <30 seconds.
-  5. Pre-flight checklist script (`pnpm preflight`) confirms: bot is alive, DB is seeded, simulator starts, both `/track/[token]` URLs respond, `/api/health` returns PostGIS version, RU and UA paths both complete end-to-end in a smoke run.
+  3. CI snapshot tests on 20 canonical `extractRequest` + `calcPrice` inputs are green; "simulate inbound call" button in admin plays a canned transcript through the live LLM pipeline, producing a complete lead-to-order flow visually identical to the real voice path — used as fallback if Twilio or ElevenLabs falters during demo.
+  4. Voice fallback video (pre-recorded real ElevenLabs call) is bundled and accessible from the admin's `/dashboard/calls` page; `LLM_PROVIDER` env can swap Anthropic ↔ OpenAI failover in <30 seconds.
+  5. Pre-flight checklist script (`pnpm preflight`) confirms: Telegram bot is alive, Twilio number answers a test call, DB is seeded, `/api/health` returns PostGIS version + LLM key check, RU and UA paths both complete end-to-end via voice and Telegram in a smoke run.
 **Plans**: TBD
 
 ---
 
-## Phase Dependencies
+## Phase Dependencies (after 2026-06-09 pivot)
 
 ```
-Phase 1 ──> Phase 2 ──> Phase 3
-                │
-                ├──> Phase 4 (parallelizable with Phase 3 once API contracts stable)
-                │       │
-                │       ▼
-                └──> Phase 5 (depends on FSM from P2 + admin scaffold from P4)
-                        │
-                        ▼
-                     Phase 6
+Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
+                  │                                │
+                  └──> Phase 3.1 (Voice) ──────────┤
+                                                   │
+                                                   ▼
+                                           Phase 4 (Admin reduced)
+                                                   │
+                                                   ▼
+                                           Phase 5 (Polish)
 ```
 
-- **Critical path:** 1 → 2 → 5 → 6 (visual + dress rehearsal)
-- **Parallel branch:** Phase 4 can start as soon as Phase 2 has stable REST contracts (~mid-P2); admin work runs concurrently with Phase 3 webhook work.
-- **Phase 6 is sequential** after Phase 5 — polish/dress rehearsal cannot begin until the full pipeline runs end-to-end.
+- **Critical path:** 1 ✓ → 2 ✓ → 3 → 3.1 → 4 → 5
+- **Phase 3 + 3.1** can run sequentially (recommended for clarity) or in parallel (faster but coordination overhead)
+- **Phase 4** depends on BOTH 3 (Telegram messages persisted) and 3.1 (calls persisted) to show multi-channel chat
+- **Phase 5** sequential after Phase 4
 
-## Coverage
+## Coverage (after pivot)
 
-✓ All 89 enumerated v1 requirements mapped to exactly one phase
-✓ No orphans
-
-### Coverage Note
-
-`REQUIREMENTS.md` Coverage section reads "**97 total**" with breakdown `10 + 16 + 5 + 6 + 6 + 7 + 6 + 7 + 7 + 2 + 5 + 2 + 4 + 6`. The arithmetic of that breakdown sums to **89**, not 97. The enumerated requirements (DB-01..10, API-01..16, LOGIC-01..05, MATCH-01..06, FSM-01..06, TG-01..07, ADMIN-01..06, ADMIN-NEW-01..07, TRACK-01..07, PUBLIC-01..02, I18N-01..05, NOTIF-01..02, DEPLOY-01..04, POLISH-01..06) also sum to 89. The "97" appears to be an arithmetic typo; this roadmap is built on the 89 enumerated requirements and updates REQUIREMENTS.md accordingly.
+✓ ~89 v1 requirements remapped after pivot — voice promoted from v2, tracking deferred to v2, admin scope reduced
 
 ### Coverage by Phase
 
 | Phase | Count | Requirements |
 |-------|-------|--------------|
-| 1 — DB + Backend Skeleton | 17 | DB-01..10, API-01, API-02, API-16, DEPLOY-01..04 |
-| 2 — LLM Pipeline + Core | 18 | API-07, LOGIC-01..05, MATCH-01..06, FSM-01..06 |
+| 1 ✓ — DB + Backend Skeleton | 17 | DB-01..10, API-01, API-02, API-16, DEPLOY-01..04 |
+| 2 ✓ — LLM Pipeline + Core | 18 | API-07, LOGIC-01..05, MATCH-01..06, FSM-01..06 |
 | 3 — Telegram Channel | 9 | API-13, API-15, TG-01..07 |
-| 4 — Admin Web | 21 | API-03, API-04, API-05, API-06, API-08, API-09, API-10, ADMIN-01..06, ADMIN-NEW-01..07, I18N-02 |
-| 5 — Tracking + Public | 12 | API-11, API-12, API-14, TRACK-01..07, PUBLIC-01, PUBLIC-02 |
-| 6 — Polish + Notif + i18n | 12 | I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01..06 |
-| **Total** | **89** | |
+| 3.1 — Voice Channel (ElevenLabs + Twilio) | 12 | VOICE-01..12 |
+| 4 — Admin Web (REDUCED) | 12 | API-03, API-04, API-05, API-06, API-09, ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-05, ADMIN-NEW-02, ADMIN-NEW-03, ADMIN-NEW-08, I18N-02 |
+| 5 — Polish + Notif + i18n | 10 | I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-05, POLISH-06 |
+| **Total v1 after pivot** | **78** | |
+| Moved to v2: TRACK-01..07, PUBLIC-01,02, ADMIN-04, ADMIN-06, ADMIN-NEW-01, ADMIN-NEW-04, ADMIN-NEW-05, ADMIN-NEW-06, ADMIN-NEW-07, API-08, API-10, API-11, API-12, API-14, POLISH-04 | 22 | deferred per 2026-06-09 pivot |
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database + Backend Skeleton | 1/11 | Executing | - |
-| 2. LLM Pipeline + Deterministic Core | 0/6 | Planned | - |
+| 1. Database + Backend Skeleton | 11/11 | ✓ Complete | 2026-06-09 |
+| 2. LLM Pipeline + Deterministic Core | 8/8 | ✓ Complete | 2026-06-09 |
 | 3. Telegram Channel | 0/0 | Not started | - |
-| 4. Admin Web | 0/0 | Not started | - |
-| 5. Tracking Loop + Live Map + Public | 0/0 | Not started | - |
-| 6. Demo Polish + Notifications + Final i18n | 0/0 | Not started | - |
+| 3.1. Voice Channel (ElevenLabs + Twilio) | 0/0 | Not started | - |
+| 4. Admin Web (REDUCED) | 0/0 | Not started | - |
+| 5. Demo Polish + Notifications + i18n | 0/0 | Not started | - |
 
 ---
 *Roadmap created: 2026-06-08 by gsd-roadmapper*
+*Pivoted 2026-06-09 — voice focus, tracking → v2, admin reduced.*

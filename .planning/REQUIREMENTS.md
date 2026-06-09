@@ -75,39 +75,25 @@
 - [ ] **TG-06**: Менеджер может «перехватить» диалог из админки → бот замолкает, сообщения от менеджера летят клиенту
 - [ ] **TG-07**: Auto-уведомления клиенту о смене статуса заказа (через notification-сервис)
 
-### Admin Web — Existing Pages (Wired) (ADMIN)
+### Admin Web — СОКРАЩЁННАЯ (ADMIN) — pivot 2026-06-09: focus on voice+telegram channels, deferred ops UI
 
+**Оставлено в v1:**
 - [ ] **ADMIN-01**: Форк шаблона `next-shadcn-admin-dashboard`, `pnpm install`, `pnpm dev` стартует на :3000
 - [ ] **ADMIN-02**: Auth: подключена `/auth/v1/login` (для демо — login/password из конфига)
-- [ ] **ADMIN-03**: `/dashboard/chat` подключён к `GET /api/clients/:id/messages` + `WS /ws/inbox`, кнопка «перехватить диалог»
-- [ ] **ADMIN-04**: `/dashboard/kanban` подключён к `/api/leads` — колонки = стадии §4.4, DnD → `PATCH /api/leads/:id` с проверкой FSM
-- [ ] **ADMIN-05**: `/dashboard/default` и `/dashboard/analytics` тянут `/api/analytics/kpi` (звонки, конверсия, выручка)
-- [ ] **ADMIN-06**: `/dashboard/calendar` показывает события загрузок/выгрузок из `order_events`
+- [ ] **ADMIN-03**: `/dashboard/chat` мульти-канальный — Telegram + Voice звонки в одном UI (`GET /api/clients/:id/messages` + `WS /ws/inbox`), audio-player для голосовых сегментов, transcript inline, кнопка «перехватить диалог» (только для Telegram — голос завершается естественно)
+- [ ] **ADMIN-05**: `/dashboard/default` + `/dashboard/analytics` — KPI (звонки vs telegram, конверсия, выручка, средняя длительность звонка)
+- [ ] **ADMIN-NEW-02**: Новая страница `/dashboard/orders` — таблица заказов с фильтрами по статусу и каналу (voice/telegram)
+- [ ] **ADMIN-NEW-03**: Новая страница `/dashboard/orders/[id]` — детальная карточка: таймлайн `order_events`, ссылка на звонок (если есть), price-display (без override modal в v1)
+- [ ] **ADMIN-NEW-08**: Новая страница `/dashboard/calls` — таблица всех звонков с фильтрами (outcome, lang, duration), клик → audio + transcript
 
-### Admin Web — New Pages (ADMIN-NEW)
-
-- [ ] **ADMIN-NEW-01**: Новая страница `/dashboard/fleet` — таблица парка машин из `/api/trucks`, форма создания/редактирования (RHF+zod), валидация телефона водителя через `phone-input` (libphonenumber-js), валидация госномера
-- [ ] **ADMIN-NEW-02**: Новая страница `/dashboard/orders` — таблица заказов из `/api/orders` с фильтрами по статусу
-- [ ] **ADMIN-NEW-03**: Новая страница `/dashboard/orders/[id]` — детальная карточка заказа: таймлайн `order_events`, секция POD, кнопка «TTN/CMR PDF», карта маршрута, кнопка price-override
-- [ ] **ADMIN-NEW-04**: Новая страница `/dashboard/tracking` — Leaflet + OSM-тайлы + WS `/ws/tracking`, точки машин на карте с маршрутами и ETA
-- [ ] **ADMIN-NEW-05**: Глобальный поиск (shadcn command palette ⌘K) — индексирует orders, leads, clients
-- [ ] **ADMIN-NEW-06**: Модал price-override на странице заказа с обязательным полем «Причина» → пишет в `price_overrides`, отображается аудит
-- [ ] **ADMIN-NEW-07**: Стабовый PDF-генератор ТТН (RU) / CMR (UA) — кнопка на странице заказа открывает превью с данными заказа
-
-### Tracking & Live Map (TRACK)
-
-- [ ] **TRACK-01**: Цикл трекинга — фон-задача каждые N минут опрашивает позиции (для демо — симулятор), пишет в `truck_positions`
-- [ ] **TRACK-02**: GPS-симулятор CLI: машина движется по polyline OSRM-маршрута, переменная скорость (50-80 км/ч трасса, 20-30 город) + ±5м шум, пуш каждые 10-30с
-- [ ] **TRACK-03**: Симулятор останавливается на гео-фенсах (загрузка / граница / выгрузка) на 5-15 мин
-- [ ] **TRACK-04**: Geofence-проверка через `ST_DWithin` (радиус, GiST-индекс), при пересечении → `order_events.insert(type)`, идемпотентность через `UNIQUE (order_id, type)`
-- [ ] **TRACK-05**: Smooth-marker-интерполяция точек на карте Leaflet (не «прыгают»)
-- [ ] **TRACK-06**: WS-клиент с exponential-backoff reconnect (1/2/4/8/30с) + heartbeat ping 25с + `visibilitychange` refetch
-- [ ] **TRACK-07**: SSR-fetch начального состояния трекинга, WS только для дельт
-
-### Public Tracking (PUBLIC)
-
-- [ ] **PUBLIC-01**: Публичная страница `/track/[order_token]` (без авторизации) с картой Leaflet + текущий статус + ETA, токен генерируется при создании заказа
-- [ ] **PUBLIC-02**: Шифрованная ссылка на трекинг отправляется клиенту в Telegram при создании заказа
+**Перенесено в v2 (Out of Scope для демо):**
+- ~~ADMIN-04~~ → v2 ADMIN-KANBAN: Kanban воронка лидов с DnD
+- ~~ADMIN-06~~ → v2 ADMIN-CALENDAR: календарь загрузок/выгрузок
+- ~~ADMIN-NEW-01~~ → v2 ADMIN-FLEET: страница fleet CRUD (для демо trucks сидятся, новые через psql)
+- ~~ADMIN-NEW-04~~ → v2 (вместе с tracking)
+- ~~ADMIN-NEW-05~~ → v2 ADMIN-SEARCH: глобальный поиск (⌘K)
+- ~~ADMIN-NEW-06~~ → v2 ADMIN-PRICE-OVERRIDE
+- ~~ADMIN-NEW-07~~ → v2 ADMIN-TTN-PDF
 
 ### Bilingual RU/UA (I18N)
 
@@ -117,10 +103,15 @@
 - [ ] **I18N-04**: Локаль-aware форматирование дат через `date-fns/locale` (ru, uk)
 - [ ] **I18N-05**: Шаблоны сообщений без склонений («Маршрут: {from} → {to}» вместо «Из {from} в {to}»)
 
+### Tracking & Live Map (TRACK) — **DEFERRED to v2 on 2026-06-09 per user pivot**
+
+Все TRACK-01..07 и PUBLIC-01/02 перенесены в v2. Для голос+Telegram демо tracking не критичен.
+См. секцию v2 ниже (TRACK_V2-*, PUBLIC_V2-*).
+
 ### Notifications & Communication (NOTIF)
 
-- [ ] **NOTIF-01**: Сервис уведомлений шлёт Telegram-апдейты клиенту на каждый переход FSM заказа (DRIVER_ASSIGNED, AT_LOADING, IN_TRANSIT, AT_BORDER, DELIVERED)
-- [ ] **NOTIF-02**: Шаблоны уведомлений на RU/UA с подстановкой деталей заказа и ссылки на `/track/[token]`
+- [ ] **NOTIF-01**: Сервис уведомлений шлёт Telegram-апдейты клиенту на каждый переход FSM заказа (DRIVER_ASSIGNED, IN_TRANSIT, DELIVERED — упрощённый набор без geofence-stages)
+- [ ] **NOTIF-02**: Шаблоны уведомлений на RU/UA (без ссылки на /track/[token] — tracking page deferred to v2)
 
 ### Deployment & Demo (DEPLOY)
 
@@ -172,6 +163,21 @@
 - **PROD-05**: Rate limiting на webhook'и
 - **PROD-06**: Observability (OpenTelemetry, structured logs, метрики)
 - **PROD-07**: Multi-tenancy — несколько логистических компаний в одной системе
+
+### Tracking & Maps (deferred from v1 demo on 2026-06-09)
+
+- **TRACK_V2-01..07**: GPS tracking loop, симулятор, geofence FSM, smooth marker, WS resilience
+- **PUBLIC_V2-01,02**: Публичная страница `/track/[token]` + ссылки в уведомлениях
+- **ADMIN_V2-TRACKING**: `/dashboard/tracking` страница Leaflet + WS
+
+### Admin operational pages (deferred from v1 demo)
+
+- **ADMIN_V2-KANBAN**: Kanban воронка лидов с DnD по стадиям FSM
+- **ADMIN_V2-CALENDAR**: Календарь загрузок/выгрузок
+- **ADMIN_V2-FLEET**: Страница fleet CRUD (для демо trucks сидятся, новые через psql)
+- **ADMIN_V2-SEARCH**: Глобальный поиск (⌘K)
+- **ADMIN_V2-PRICE-OVERRIDE**: Модал price-override с reason → audit log
+- **ADMIN_V2-TTN-PDF**: Стабовый PDF-генератор ТТН/CMR
 
 ### Future Features
 
