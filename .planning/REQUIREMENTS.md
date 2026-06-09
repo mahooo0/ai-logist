@@ -41,20 +41,20 @@
 
 ### Business Logic — LLM Pipeline (LOGIC)
 
-- [ ] **LOGIC-01**: `extractRequest(text, lang)` — Anthropic SDK `betaZodTool` извлекает `{from_city, to_city, tons, body_type?, budget?, deadline?}` со строгим JSON-Schema
+- [x] **LOGIC-01**: `extractRequest(text, lang)` — Anthropic SDK `betaZodTool` извлекает `{from_city, to_city, tons, body_type?, budget?, deadline?}` со строгим JSON-Schema
 - [ ] **LOGIC-02**: Sticky-определение языка клиента (RU/UA) — fastText + Cyrillic-script-эвристика, сохраняется в `clients.lang` на первом сообщении ≥20 символов
 - [ ] **LOGIC-03**: Нормализация городов через `cities` (ILIKE на оба `name_ru`/`name_ua`) + геокодинг Nominatim для новых, кэш в БД
-- [ ] **LOGIC-04**: LLM задаёт уточняющий вопрос при отсутствии ключевых полей (clarification budget — максимум 2 круга)
-- [ ] **LOGIC-05**: Промпт принуждает строгий JSON, нераспознанные поля = null
+- [x] **LOGIC-04**: LLM задаёт уточняющий вопрос при отсутствии ключевых полей (clarification budget — максимум 2 круга)
+- [x] **LOGIC-05**: Промпт принуждает строгий JSON, нераспознанные поля = null
 
 ### Business Logic — Matching & Pricing (MATCH)
 
-- [ ] **MATCH-01**: `nearestTruck(pickup_geom, tons, body_type?)` — PostGIS KNN-запрос с CTE re-rank (overfetch 20 по `<->`, затем re-rank по `ST_Distance(geog, true)`)
+- [x] **MATCH-01**: `nearestTruck(pickup_geom, tons, body_type?)` — PostGIS KNN-запрос с CTE re-rank (overfetch 20 по `<->`, затем re-rank по `ST_Distance(geog, true)`)
 - [ ] **MATCH-02**: Fallback на стаб биржи (mock-ответ `bourse_cache`) если своих машин нет
-- [ ] **MATCH-03**: `calcPrice(from, to, tons, body, date)` — детерминированный расчёт `route_km × rate_per_km × dir_coef × season_coef`, округление до 50, integer kopecks
+- [x] **MATCH-03**: `calcPrice(from, to, tons, body, date)` — детерминированный расчёт `route_km × rate_per_km × dir_coef × season_coef`, округление до 50, integer kopecks
 - [ ] **MATCH-04**: Корректное расстояние через OSRM (`route_km`), кэш в БД
-- [ ] **MATCH-05**: `calcPrice` возвращает корридор `{min, max, default}` для переговоров — LLM может дать скидку только до min
-- [ ] **MATCH-06**: Цена сохраняется в `leads.quoted_price` ДО ответа LLM; ответ собирается шаблоном с подстановкой числа из БД (LLM не «выдумывает» цифру); regex-guard режет любое число ≠ `quoted_price` в ответе
+- [x] **MATCH-05**: `calcPrice` возвращает корридор `{min, max, default}` для переговоров — LLM может дать скидку только до min
+- [x] **MATCH-06**: Цена сохраняется в `leads.quoted_price` ДО ответа LLM; ответ собирается шаблоном с подстановкой числа из БД (LLM не «выдумывает» цифру); regex-guard режет любое число ≠ `quoted_price` в ответе
 
 ### Business Logic — FSM (FSM)
 
@@ -221,17 +221,17 @@
 | API-14 | Phase 5 | Pending |
 | API-15 | Phase 3 | Pending |
 | API-16 | Phase 1 | Complete |
-| LOGIC-01 | Phase 2 | Pending |
+| LOGIC-01 | Phase 2 | Complete |
 | LOGIC-02 | Phase 2 | Pending |
 | LOGIC-03 | Phase 2 | Pending |
-| LOGIC-04 | Phase 2 | Pending |
-| LOGIC-05 | Phase 2 | Pending |
-| MATCH-01 | Phase 2 | Pending |
+| LOGIC-04 | Phase 2 | Complete |
+| LOGIC-05 | Phase 2 | Complete |
+| MATCH-01 | Phase 2 | Complete |
 | MATCH-02 | Phase 2 | Pending |
-| MATCH-03 | Phase 2 | Pending |
+| MATCH-03 | Phase 2 | Complete |
 | MATCH-04 | Phase 2 | Pending |
-| MATCH-05 | Phase 2 | Pending |
-| MATCH-06 | Phase 2 | Pending |
+| MATCH-05 | Phase 2 | Complete |
+| MATCH-06 | Phase 2 | Complete |
 | FSM-01 | Phase 2 | Complete |
 | FSM-02 | Phase 2 | Complete |
 | FSM-03 | Phase 2 | Complete |

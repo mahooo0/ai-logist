@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 3
+current_plan: 5
 status: executing
-last_updated: "2026-06-09T11:29:59.534Z"
+last_updated: "2026-06-09T11:43:27.771Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 19
-  completed_plans: 14
-  percent: 74
+  completed_plans: 15
+  percent: 79
 ---
 
 # State: AI-Логист
@@ -28,8 +28,8 @@ progress:
 ## Current Position
 
 Phase: 02 (llm-pipeline-deterministic-core) — EXECUTING
-Plan: 4 of 8
-Current Plan: 4
+Plan: 5 of 8
+Current Plan: 5
 Total Plans in Phase: 8
 **Phase:** 2 of 6 (llm pipeline + deterministic core ⚠️ high risk)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plans 02-00 (Wave 0 test infra), 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper), and 02-03 (Wave 2b: lead-fsm + order-fsm + errors + concurrency/audit integration tests) complete. Plan 02-02 (Wave 2a LLM tools) is running in parallel; Plan 02-03b (FSM-01/02/03/05 todo flips in phase-2-stubs.test.ts) is the next serial step.
@@ -37,7 +37,7 @@ Total Plans in Phase: 8
 
 **Progress:**
 
-[███████░░░] 74%
+[████████░░] 79%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -66,6 +66,7 @@ Total Plans in Phase: 8
 | Phase 01-database-backend-skeleton P10 | 3m 33s | 2 tasks | 5 files |
 | Phase 02-llm-pipeline-deterministic-core-high-risk P00 | 6min | 2 tasks | 12 files |
 | Phase 02-llm-pipeline-deterministic-core-high-risk P03 | 10min | 3 tasks | 7 files |
+| Phase 02-llm-pipeline-deterministic-core-high-risk P02 | ~12min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,8 @@ Total Plans in Phase: 8
 - **Plan 02-00:** Biome `apps/api/tests/...` paths only resolve when run from monorepo root (not from `apps/api/` cwd). Documented in the SUMMARY's "Issues Encountered" — Wave 1-4 plans must run biome from project root, not the package cwd.
 - **Plan 02-03:** transitionLead/transitionOrder ship as hand-rolled, table-driven FSMs (D-28 lock) with three-layer concurrency defense: pessimistic SELECT FOR UPDATE row lock + optimistic version+1 compare-and-set + Wave 3 per-client pg_advisory_xact_lock. order_events audit uses ON CONFLICT (order_id, type) DO NOTHING to preserve Phase 5 geofence idempotency. transitionOrder returns audit_row_inserted boolean so the geofence handler can detect ON CONFLICT suppression.
 - **Plan 02-03:** STATUS_TO_EVENT bridges uppercase order_status → lowercase order_event_type with CLOSED→null instead of omitted (keeps `Record<OrderStatus,…>` shape complete — guards against forgetting to add new statuses). Integration tests apply migrations 0000+0001+0002 inline via raw `pg.Client` (PLAN's `seed(db)` call was unworkable — actual `seed()` is parameterless and runs `printNearestTrucksSmoke` side-effect).
+- **Plan 02-02:** 6 betaZodTool registrations + ToolContext interface landed under `apps/api/src/pipeline/llm-tools/`. ExtractRequestSchema = D-09 VERBATIM with strict mode (LOGIC-05). nearestTruck implements RESEARCH §4 CTE re-rank (overfetch 20 by `<->` sphere → spheroid `ST_Distance(.., true)` LIMIT 3, filters INSIDE CTE — closes Pitfall #2). createOrder input schema has NO `price` field — D-06 closes Pitfall #1 at type level; handler re-reads `quoted_price` under SELECT FOR UPDATE. calcPrice pure (no I/O), 10x snapshot byte-stable. discount enforces `quoted × 0.85` floor; below → `escalation_needed`.
+- **Plan 02-02 deviations:** (1) Actual GiST index name is `trucks_geom_gist`, not `trucks_geom_gist_idx` as RESEARCH §12 referenced — test asserts the real name. (2) Pre-existing `package.json` `test:snapshot` script was broken (vitest 4 dropped `--repeat=10`) — replaced with `for i in 1..10; do vitest run -t snapshot \|\| exit 1; done` bash loop. Rule 1 auto-fixes; no plan change required. (3) `phase-2-stubs.test.ts` UNCHANGED per design — Plan 02-03b atomic-flips all Wave-2 todos after both 02-02 and 02-03 merge.
 
 ### TODOs
 
@@ -161,7 +164,7 @@ Total Plans in Phase: 8
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 02-03-fsm-PLAN.md (Wave 2b — FSM modules). transitionLead + transitionOrder shipped with three-layer concurrency defense + audit log. Plan 02-02 (LLM tools) is running in parallel; Plan 02-03b (FSM-01/02/03/05 stub flips) is the next serial step.
+**Last session stopped at:** Completed 02-02-llm-tools-PLAN.md (Wave 2a — 6 LLM tools). All 6 betaZodTool registrations + ToolContext interface landed. Wave 2b (Plan 02-03 — FSMs) also complete (committed earlier today by parallel run). Next serial step is Plan 02-03b (atomic-flip all Wave-2 phase-2-stubs todos in one commit). Then Wave 3 (Plans 02-04a + 02-04b: intake pipeline + price-lock plumbing) instantiates ToolContext and wires buildToolRegistry(ctx) into the production tool loop.
 
 Plan 02-00 shipped: 4 helper files in `apps/api/tests/_helpers/` (dialog-harness with `runScript(db, llm, clientId, messages)` driving scripted dialogs via dynamic import of pipeline/intake.js; mock-anthropic with LlmProvider interface that Wave 1 production llm-client.ts MUST implement; fake-timers preset at FIXED_NOW=2026-06-09T12:00:00Z registered as setupFile on unit project only; db-seed with 20 RFC 4122 v4 deterministic UUIDs + installDeterministicCrypto teardown helper), 4 JSON fixtures (canonical-inputs.json with 20 dialog scripts; llm-responses.json as `{}` placeholder; cities-extra.json with 5 cities forcing Nominatim path; injection-attempts.json with 5 Pitfall #11 corpus entries), apps/api/tests/unit/phase-2-stubs.test.ts (EXACTLY 18 `test.todo()` markers — one per Phase 2 req), apps/api/tests/PHASE-2.md harness usage doc, vitest.config.ts (added unit setupFiles + bumped integration timeout 60s → 90s), apps/api/package.json (added test:llm, test:snapshot, typecheck scripts). Unit suite: 20 passed (Phase 1) + 18 todo (Phase 2) / 0 failures. Biome + tsc --noEmit clean.
 
