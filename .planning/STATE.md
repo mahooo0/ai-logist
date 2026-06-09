@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 7
+current_plan: 8
 status: executing
-last_updated: "2026-06-09T05:54:18.031Z"
+last_updated: "2026-06-09T06:03:22.070Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 6
-  percent: 55
+  completed_plans: 7
+  percent: 64
 ---
 
 # State: AI-Логист
@@ -28,17 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04, 01-05 complete; next is 01-06 (schema-channels-repos: calls, messages, bourse_cache, webhook_updates, pricing_config + thin repos)
+**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04, 01-05, 01-06 complete; next is 01-07 (fastify-skeleton + init migration generation + /api/health)
 **Status:** Executing Phase 01
 
 **Progress:**
 
 ```
-[██████░░░░] 55%
-[███████████░░░░░░░░░] 6/11 plans complete in Phase 01
+[██████░░░░] 64%
+[████████████░░░░░░░░] 7/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -57,6 +57,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P03 | 5m47s | 2 tasks | 15 files |
 | Phase 01-database-backend-skeleton P04 | 2m 12s | 2 tasks | 6 files |
 | Phase 01-database-backend-skeleton P05 | 2m 30s | 2 tasks | 6 files |
+| Phase 01-database-backend-skeleton P06 | 4m 10s | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,11 @@ Total Plans in Phase: 11
 - **Plan 01-05:** orders.currency and order_events.actor are plain text not ENUM — the domains will grow (UAH/KZT, geofence/scheduler) and migrations-on-every-new-value isn't worth the ENUM type safety here. Validation lives in createOrder / appendEvent helpers.
 - **Plan 01-05:** pod_artifacts.gps has no GiST index — POD points are written once at delivery and never queried by KNN/radius. GiST would add write cost for zero read benefit until a hypothetical delivered-density heatmap feature (deferred to Phase 6).
 - **Plan 01-05:** Nullable-safe SRID CHECK pattern established for optional geo columns (order_events.geom, pod_artifacts.gps): `IS NULL OR ST_SRID(col) = 4326`. Reusable invariant for any future optional geo column.
+- **Plan 01-06:** Thin per-aggregate repos use namespace re-export (`export * as fooRepo from './foo.js'`) — call sites stay grep-friendly (`trucksRepo.findById`) without exploding the barrel's named-export surface; 6 repos × ~5 funcs each, all taking Db as first arg per D-07.
+- **Plan 01-06:** PostGIS-heavy methods (nearestTruck KNN, ST_DWithin, CTE re-rank) deliberately OMITTED from thin repos — D-08 says they ship as raw `db.execute(sql\`…\`)` in Phase 2. Keeping repos to plain CRUD avoids leaking half-baked spatial helpers that Phase 2 would have to refactor.
+- **Plan 01-06:** `messages.role` / `calls.outcome` / `orders.currency` / `order_events.actor` all chosen as plain `text` not ENUM — each domain is guaranteed to grow (system/broadcast actors; voicemail/dropped outcomes; KZT/BYN currencies; geofence/webhook actors) and PostgreSQL ENUM migrations require ALTER TYPE per new value. Validation lives in TS at the producing code path.
+- **Plan 01-06:** `webhook_updates.id` is `bigserial` (RESEARCH.md verbatim) — Telegram update_id is bigint; voice/gps external ids may also exceed int32. bigserial gives a numeric PK independent of the external_id semantics. UNIQUE(source, external_id) makes the duplicate-delivery case a no-op write via `onConflictDoNothing({target: [...]})`.
+- **Plan 01-06:** `bourse_cache.query_hash` UNIQUE via explicit `uniqueIndex` name (`'bourse_cache_query_hash_unq'`) not `.unique()` shortcut — Phase 2's cache writer can reference the constraint name in raw SQL ON CONFLICT clauses.
 
 ### TODOs
 
@@ -115,11 +121,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-05-PLAN.md (orders/leads/order_events/pod_artifacts schemas; forward FK leads.order_id → orders.id compiles via lazy callback; orders.public_token UNIQUE for Phase 5 tracking; leads has 5 extended cargo cols + price_overrides jsonb[] + version; order_events has UNIQUE(order_id, type) for FSM idempotency; pod_artifacts has gps with nullable-safe SRID CHECK; DB-05/06/08 stub tests flipped to passing; unit suite 7 passed / 10 todo).
+**Last session stopped at:** Completed 01-06-PLAN.md (5 channel/config schema tables: messages with FK cascade+set-null and role/text + 3 indexes; calls with FK set-null and direction/transcript jsonb default `'[]'`/outcome; bourse_cache with query_hash UNIQUE + source + payload + fetched_at TTL anchor; webhook_updates with bigserial PK + webhookSourceEnum + UNIQUE(source, external_id) for Telegram idempotency per DB-09; pricing_config key/value jsonb store for rate_per_km/dir_coef/season_coef; plus 6 thin per-aggregate repos per D-07 — trucks/cities/clients/leads/orders/messages — using namespace barrel `export * as fooRepo`; DB-07/DB-09/API-02 stub tests flipped to passing; unit suite 10 passed / 7 todo; tsc + biome clean across all 23 persistence files; all 13 spec §2 tables now declared).
 
-**Next action:** Run `/gsd:execute-plan 01-06` to execute the schema-channels-repos plan (calls, messages, bourse_cache, webhook_updates with UNIQUE(source, external_id) idempotency, pricing_config tables + thin per-aggregate repos under apps/api/src/persistence/repos/).
+**Next action:** Run `/gsd:execute-plan 01-07` to execute the fastify-skeleton plan (Fastify v5 app + plugins: db / redis / swagger / sensible / type-provider-zod; generate single `0001_init.sql` covering all 13 tables via `pnpm db:generate`; land `/api/health` with PostGIS_Version() check flipping API-01).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-05 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3,4,5}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), 0000_postgis_extension.sql migration, and EIGHT schema tables now live: clients (lang/tax_id/tax_id_country), cities (name_ru/name_ua/slug-UNIQUE/GiST/CHECK), trucks (capacity_t/body_type/status/GiST/CHECK), truck_positions (FK cascade + UNIQUE(truck_id, recorded_at) GPS idempotency), orders (number/public_token UNIQUE / bigint price kopecks / status enum / version), leads (5 extended cargo cols + price_overrides jsonb[] + version + bigint budget/declared_value/quoted_price), order_events (UNIQUE(order_id, type) FSM idempotency + nullable geom + nullable-safe CHECK SRID), pod_artifacts (signature_url/photo_url/gps nullable-safe CHECK SRID/captured_at). Forward FK leads.order_id → orders.id compiles via lazy callback. Next plan is 01-06.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-06 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3,4,5,6}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), 0000_postgis_extension.sql migration, ALL 13 schema tables live: clients (lang/tax_id/tax_id_country), cities (name_ru/name_ua/slug-UNIQUE/GiST/CHECK), trucks (capacity_t/body_type/status/GiST/CHECK), truck_positions (FK cascade + UNIQUE(truck_id, recorded_at) GPS idempotency), orders (number/public_token UNIQUE / bigint price kopecks / status enum / version), leads (5 extended cargo cols + price_overrides jsonb[] + version + bigint budget/declared_value/quoted_price), order_events (UNIQUE(order_id, type) FSM idempotency + nullable geom + nullable-safe CHECK SRID), pod_artifacts (signature_url/photo_url/gps nullable-safe CHECK SRID/captured_at), messages (client_id FK cascade + lead_id FK set-null + role/text + 3 indexes), calls (lead_id FK set-null + direction + transcript jsonb default `'[]'` + outcome), bourse_cache (query_hash UNIQUE + source + payload + fetched_at), webhook_updates (bigserial + UNIQUE(source, external_id) Telegram idempotency), pricing_config (key/value jsonb). Forward FK leads.order_id → orders.id compiles via lazy callback. 6 thin per-aggregate repos under apps/api/src/persistence/repos/ exposed via namespace barrel (trucksRepo/citiesRepo/clientsRepo/leadsRepo/ordersRepo/messagesRepo). Vitest unit suite: 10 passed / 7 todo. Next plan is 01-07.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*

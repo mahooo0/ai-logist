@@ -15,15 +15,15 @@
 - [x] **DB-04**: Схема `trucks` с `geom geography(Point,4326)`, `capacity_t`, `body_type`, `status`, GiST-индекс на `geom`
 - [x] **DB-05**: Схема `leads` с расширенными полями груза (`volume_m3`, `dimensions_lxwxh`, `packaging`, `adr_class`, `declared_value`) и `price_overrides jsonb[]` для audit log
 - [x] **DB-06**: Схема `orders` + `order_events` с `UNIQUE (order_id, type)` для идемпотентности и таймлайна
-- [ ] **DB-07**: Схема `calls`, `messages`, `bourse_cache` для каналов и кэша
+- [x] **DB-07**: Схема `calls`, `messages`, `bourse_cache` для каналов и кэша
 - [x] **DB-08**: Схема `pod_artifacts` для Proof of Delivery (signature_url, photo_url, gps, captured_at)
-- [ ] **DB-09**: Схема `webhook_updates` для идемпотентности Telegram по `update_id` (`ON CONFLICT DO NOTHING`)
+- [x] **DB-09**: Схема `webhook_updates` для идемпотентности Telegram по `update_id` (`ON CONFLICT DO NOTHING`)
 - [ ] **DB-10**: Сидинг данных: 10-15 машин, ~30 RU/UA городов + пограничные переходы, 5-10 клиентов, конфиг цен (`rate_per_km`, `dir_coef`, `season_coef`)
 
 ### Backend API & Infrastructure (API)
 
 - [ ] **API-01**: Fastify v5 + TypeScript 5.7 strict app с health-эндпоинтом `/api/health` (возвращает `PostGIS_Version()`)
-- [ ] **API-02**: Drizzle ORM миграции и репозитории для всех таблиц §2
+- [x] **API-02**: Drizzle ORM миграции и репозитории для всех таблиц §2
 - [ ] **API-03**: REST `/api/leads` (GET с фильтром по stage, PATCH для смены стадии вручную)
 - [ ] **API-04**: REST `/api/orders` (GET с фильтром по status), `/api/orders/:id` (заказ + order_events)
 - [ ] **API-05**: REST `/api/trucks` (GET/POST/PATCH — CRUD парка)
@@ -201,12 +201,12 @@
 | DB-04 | Phase 1 | Complete |
 | DB-05 | Phase 1 | Complete |
 | DB-06 | Phase 1 | Complete |
-| DB-07 | Phase 1 | Pending |
+| DB-07 | Phase 1 | Complete |
 | DB-08 | Phase 1 | Complete |
-| DB-09 | Phase 1 | Pending |
+| DB-09 | Phase 1 | Complete |
 | DB-10 | Phase 1 | Pending |
 | API-01 | Phase 1 | Pending |
-| API-02 | Phase 1 | Pending |
+| API-02 | Phase 1 | Complete |
 | API-03 | Phase 4 | Pending |
 | API-04 | Phase 4 | Pending |
 | API-05 | Phase 4 | Pending |
