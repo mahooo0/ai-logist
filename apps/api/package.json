@@ -8,17 +8,27 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:smoke": "vitest run --project smoke",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --env-file=../../.env.local --import tsx ./node_modules/.bin/drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate:check": "drizzle-kit check"
   },
   "dependencies": {
-    "@ai-logist/shared-types": "workspace:*"
+    "@ai-logist/shared-types": "workspace:*",
+    "drizzle-orm": "0.45.2",
+    "pg": "^8.21.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "vitest": "^4.1.0",
-    "@vitest/coverage-v8": "^4.1.0",
     "@testcontainers/postgresql": "^12.0.1",
-    "testcontainers": "^12.0.1",
     "@types/node": "^22.0.0",
-    "typescript": "^5.7.0"
+    "@types/pg": "^8.11.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "drizzle-kit": "^0.31.10",
+    "testcontainers": "^12.0.1",
+    "tsx": "^4.22.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.0"
   }
 }
