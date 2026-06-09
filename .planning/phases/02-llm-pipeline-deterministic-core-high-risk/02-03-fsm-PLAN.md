@@ -13,7 +13,6 @@ files_modified:
   - apps/api/tests/unit/order-fsm.test.ts
   - apps/api/tests/integration/fsm-concurrency.test.ts
   - apps/api/tests/integration/fsm-events-audit.test.ts
-  - apps/api/tests/unit/phase-2-stubs.test.ts
 autonomous: true
 requirements:
   - FSM-01
@@ -29,7 +28,7 @@ must_haves:
     - "transitionLead throws IllegalTransition when target not in allowed list."
     - "transitionLead throws VersionMismatch when UPDATE returns 0 rows (CAS lost)."
     - "transitionOrder follows the same pattern using order_events table (UNIQUE(order_id, type) makes geofence events idempotent in Phase 5)."
-    - "Concurrency test: Promise.all([transitionLead(A), transitionLead(B)]) on same lead — repeated 10× — ALWAYS exactly 1 fulfilled + 1 rejected. The rejected reason is VersionMismatch OR IllegalTransition (both acceptable)."
+    - "Concurrency test: Promise.all([transitionLead(A), transitionLead(B)]) on same lead — repeated 100× — ALWAYS exactly 1 fulfilled + 1 rejected. The rejected reason is VersionMismatch OR IllegalTransition (both acceptable)."
     - "Every successful transitionLead inserts a lead_events row with actor (ai|manager|system) and payload jsonb."
   artifacts:
     - path: "apps/api/src/pipeline/lifecycle/lead-fsm.ts"
@@ -63,11 +62,11 @@ Purpose:
 - Hand-rolled FSM with explicit transition table (CONTEXT D-28 — XState rejected).
 - transitionLead / transitionOrder defend against concurrency via 3 layers: row-level SELECT FOR UPDATE + version compare-and-set + UNIQUE(order_id, type) for order events (already in Phase 1 schema).
 - Audit-log every transition into lead_events / order_events (FSM-05).
-- Flip 4 todos: FSM-01, FSM-02, FSM-03, FSM-05. (FSM-04 belongs to Wave 3 intake.ts; FSM-06 belongs to Wave 3 follow-up-scheduler.ts.)
+- The TODOS for FSM-01, FSM-02, FSM-03, FSM-05 are flipped in the dedicated Plan 02-03b stub-flips (post-Wave-2 atomic merge) — NOT in this plan. This plan ships the source code + integration tests; the stub flips happen serially after 02-02 + 02-03 merge to avoid file overlap on phase-2-stubs.test.ts.
 
-Closes Pitfall #6 (FSM races). Concurrency test runs 10× to prove determinism (VALIDATION.md sign-off bullet).
+Closes Pitfall #6 (FSM races). Concurrency test runs 100× to prove determinism (VALIDATION.md sign-off bullet #4).
 
-Output: 3 source files in lifecycle/, 2 unit + 2 integration tests; phase-2-stubs.test.ts shows 5 todos remaining after this plan (LOGIC-04, MATCH-06, FSM-04, FSM-06, API-07).
+Output: 3 source files in lifecycle/, 2 unit + 2 integration tests. Does NOT modify phase-2-stubs.test.ts (Plan 02-03b owns that file).
 </objective>
 
 <execution_context>
@@ -157,7 +156,7 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
 
 <task type="auto" tdd="true">
   <name>Task 1: errors.ts + lead-fsm.ts (transitionLead with FOR UPDATE + version CAS + audit) + unit tests for transition table</name>
-  <files>apps/api/src/pipeline/lifecycle/errors.ts, apps/api/src/pipeline/lifecycle/lead-fsm.ts, apps/api/tests/unit/lead-fsm.test.ts, apps/api/tests/unit/phase-2-stubs.test.ts</files>
+  <files>apps/api/src/pipeline/lifecycle/errors.ts, apps/api/src/pipeline/lifecycle/lead-fsm.ts, apps/api/tests/unit/lead-fsm.test.ts</files>
   <behavior>
     - errors.ts exports IllegalTransition (code 'illegal_transition') + VersionMismatch (code 'version_mismatch') classes extending Error.
     - LEAD_TRANSITIONS is a `Record<LeadStage, LeadStage[]>` matching D-28 exactly (table in must_haves).
@@ -176,7 +175,6 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
     - apps/api/src/persistence/schema/_enums.ts (lead_stage enum values)
     - apps/api/src/persistence/schema/leads.ts (version column)
     - apps/api/src/persistence/schema/lead_events.ts (Wave 1 — column shape)
-    - apps/api/tests/unit/phase-2-stubs.test.ts (Wave 0 + Wave 1/2a — todos to flip)
   </read_first>
   <action>
     **(a) apps/api/src/pipeline/lifecycle/errors.ts** — paste VERBATIM from RESEARCH.md §6 errors block:
@@ -277,31 +275,30 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
       });
       ```
 
-    **(d) Flip FSM-01 todo in phase-2-stubs.test.ts**: replace `test.todo('FSM-01: ...')` with real `it()` referencing the new exports.
+    **(d) DO NOT modify phase-2-stubs.test.ts in this task** — todo flips for FSM-01/02/03/05 happen in dedicated Plan 02-03b stub-flips.
 
     Constraints:
     - Use `sql` template from `drizzle-orm` exactly as RESEARCH.md §6.
     - The transition table values are uppercase (lead_stage enum); order_event_type values are lowercase (Phase 1) — order-fsm.ts must handle mapping.
     - DO NOT use console.* — log via injected logger or omit entirely (errors thrown carry the info).
-  </behavior>
-  <action>
+
+    Sequence:
     1. Write `errors.ts` (paste from §6).
     2. Write `lead-fsm.ts` (paste from §6).
     3. Write `lead-fsm.test.ts` (table assertions above).
-    4. Flip FSM-01 todo.
-    5. Run typecheck + biome.
+    4. Run typecheck + biome.
   </action>
   <verify>
     <automated>cd apps/api && test -f src/pipeline/lifecycle/errors.ts && test -f src/pipeline/lifecycle/lead-fsm.ts && grep -q "class IllegalTransition" src/pipeline/lifecycle/errors.ts && grep -q "class VersionMismatch" src/pipeline/lifecycle/errors.ts && grep -q "LEAD_TRANSITIONS" src/pipeline/lifecycle/lead-fsm.ts && grep -q "FOR UPDATE" src/pipeline/lifecycle/lead-fsm.ts && grep -q "version = version + 1" src/pipeline/lifecycle/lead-fsm.ts && grep -q "INSERT INTO lead_events" src/pipeline/lifecycle/lead-fsm.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api test:unit -- lead-fsm 2>&1 | tail -10</automated>
   </verify>
   <done>
-    errors.ts + lead-fsm.ts exist; LEAD_TRANSITIONS table-driven (9 stages); FOR UPDATE + version+1 CAS in transitionLead; lead-fsm.test.ts asserts table shape; FSM-01 todo flipped.
+    errors.ts + lead-fsm.ts exist; LEAD_TRANSITIONS table-driven (9 stages); FOR UPDATE + version+1 CAS in transitionLead; lead-fsm.test.ts asserts table shape. phase-2-stubs.test.ts UNCHANGED (Plan 02-03b will flip).
   </done>
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 2: order-fsm.ts (transitionOrder) + unit table-driven test + FSM-02 todo flipped</name>
-  <files>apps/api/src/pipeline/lifecycle/order-fsm.ts, apps/api/tests/unit/order-fsm.test.ts, apps/api/tests/unit/phase-2-stubs.test.ts</files>
+  <name>Task 2: order-fsm.ts (transitionOrder) + unit table-driven test</name>
+  <files>apps/api/src/pipeline/lifecycle/order-fsm.ts, apps/api/tests/unit/order-fsm.test.ts</files>
   <behavior>
     - ORDER_TRANSITIONS table-driven (D-32):
       ```
@@ -460,35 +457,36 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
     });
     ```
 
-    Flip FSM-02 todo.
+    **DO NOT modify phase-2-stubs.test.ts** — Plan 02-03b owns the todo flips.
   </action>
   <verify>
-    <automated>cd apps/api && test -f src/pipeline/lifecycle/order-fsm.ts && grep -q "ORDER_TRANSITIONS" src/pipeline/lifecycle/order-fsm.ts && grep -q "FOR UPDATE" src/pipeline/lifecycle/order-fsm.ts && grep -q "INSERT INTO order_events" src/pipeline/lifecycle/order-fsm.ts && grep -q "ON CONFLICT (order_id, type) DO NOTHING" src/pipeline/lifecycle/order-fsm.ts && grep -q "STATUS_TO_EVENT" src/pipeline/lifecycle/order-fsm.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api test:unit -- order-fsm 2>&1 | tail -10  </verify>
+    <automated>cd apps/api && test -f src/pipeline/lifecycle/order-fsm.ts && grep -q "ORDER_TRANSITIONS" src/pipeline/lifecycle/order-fsm.ts && grep -q "FOR UPDATE" src/pipeline/lifecycle/order-fsm.ts && grep -q "INSERT INTO order_events" src/pipeline/lifecycle/order-fsm.ts && grep -q "ON CONFLICT (order_id, type) DO NOTHING" src/pipeline/lifecycle/order-fsm.ts && grep -q "STATUS_TO_EVENT" src/pipeline/lifecycle/order-fsm.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api test:unit -- order-fsm 2>&1 | tail -10</automated>
+  </verify>
   <done>
-    order-fsm.ts exists; ORDER_TRANSITIONS has 7 statuses; transitionOrder uses FOR UPDATE + version+1 CAS + ON CONFLICT DO NOTHING on order_events; STATUS_TO_EVENT maps uppercase→lowercase; FSM-02 todo flipped.
+    order-fsm.ts exists; ORDER_TRANSITIONS has 7 statuses; transitionOrder uses FOR UPDATE + version+1 CAS + ON CONFLICT DO NOTHING on order_events; STATUS_TO_EVENT maps uppercase→lowercase. phase-2-stubs.test.ts UNCHANGED.
   </done>
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 3: Integration tests — FSM concurrency (10× determinism) + audit log (FSM-05) + flip FSM-03/05 todos</name>
-  <files>apps/api/tests/integration/fsm-concurrency.test.ts, apps/api/tests/integration/fsm-events-audit.test.ts, apps/api/tests/unit/phase-2-stubs.test.ts</files>
+  <name>Task 3: Integration tests — FSM concurrency (100× determinism) + audit log (FSM-05)</name>
+  <files>apps/api/tests/integration/fsm-concurrency.test.ts, apps/api/tests/integration/fsm-events-audit.test.ts</files>
   <behavior>
     - fsm-concurrency.test.ts boots testcontainers (Phase 1 helper), applies migrations 0000+0001+0002, runs seed, inserts a lead in QUOTED stage with version=0.
-    - Calls Promise.allSettled([transitionLead(db, {lead, to:'AGREED', actor:'ai'}), transitionLead(db, {lead, to:'AGREED', actor:'manager'})]) inside a loop of 10 iterations (each loop resets the lead row).
+    - Calls Promise.allSettled([transitionLead(db, {lead, to:'AGREED', actor:'ai'}), transitionLead(db, {lead, to:'AGREED', actor:'manager'})]) inside a loop of 100 iterations (each loop resets the lead row).
     - For EVERY iteration: exactly 1 fulfilled + 1 rejected; rejected reason is `VersionMismatch` OR `IllegalTransition` (winner moved out of QUOTED before loser could lock).
-    - After 10 iterations: total = 10 fulfilled + 10 rejected. Determinism rate = 100%.
+    - After 100 iterations: total = 100 fulfilled + 100 rejected. Determinism rate = 100%.
     - fsm-events-audit.test.ts: after every successful transitionLead, listByLead(db, leadId) returns the new lead_events row with correct actor + payload jsonb.
   </behavior>
   <read_first>
     - .planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-RESEARCH.md §13 (concurrency test VERBATIM)
-    - .planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-VALIDATION.md "Validation Sign-Off" #4 (100× requirement is reduced to 10× per planner discretion — 10 iterations is sufficient signal for 100% determinism in a 60s budget)
+    - .planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-VALIDATION.md "Validation Sign-Off" #4 (100 runs required — original spec)
     - apps/api/tests/_helpers/test-db.ts (startPostgisContainer / getTestDb)
     - apps/api/src/pipeline/lifecycle/lead-fsm.ts (Task 1)
     - apps/api/src/persistence/repos/lead_events.ts (Wave 1 — listByLead)
     - apps/api/src/seed/run.ts (seed() for the fleet + cities)
   </read_first>
   <action>
-    **(a) apps/api/tests/integration/fsm-concurrency.test.ts** — base on RESEARCH.md §13 VERBATIM but loop 10× per VALIDATION.md:
+    **(a) apps/api/tests/integration/fsm-concurrency.test.ts** — base on RESEARCH.md §13 VERBATIM with 100× loop per VALIDATION.md:
     ```ts
     import { describe, it, expect, beforeAll, afterAll } from 'vitest';
     import { sql } from 'drizzle-orm';
@@ -496,7 +494,7 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
     import { VersionMismatch, IllegalTransition } from '../../src/pipeline/lifecycle/errors.js';
     import { startPostgisContainer, stopPostgisContainer, getTestDb } from '../_helpers/test-db.js';
 
-    describe('FSM concurrency — exactly 1 success, 1 failure across 10 iterations', () => {
+    describe('FSM concurrency — exactly 1 success, 1 failure across 100 iterations', () => {
       let db: any;
       let clientId: string;
 
@@ -510,8 +508,8 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
 
       afterAll(async () => { await stopPostgisContainer(); });
 
-      it('Promise.all on same lead — 10 iterations all deterministic', async () => {
-        const iterations = 10;
+      it('Promise.all on same lead — 100 iterations all deterministic', async () => {
+        const iterations = 100;
         const stats = { fulfilled: 0, rejected: 0, illegal: 0, versionMismatch: 0 };
 
         for (let i = 0; i < iterations; i++) {
@@ -548,6 +546,8 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
       }, 60_000);
     });
     ```
+
+    NOTE: 100 iterations × 2 promises = 200 calls. Within 60s budget on testcontainers Postgres (each iteration: 1 INSERT + 2 SELECT FOR UPDATE + 2 UPDATE + 1 lead_events INSERT ≈ 30-50ms, so 100 × 50ms = ~5s actual runtime).
 
     **(b) apps/api/tests/integration/fsm-events-audit.test.ts** — FSM-05:
     ```ts
@@ -591,29 +591,17 @@ export async function listByLead(db: Db, leadId: string): Promise<LeadEvent[]>;
     });
     ```
 
-    **(c) Flip FSM-03 + FSM-05 todos in phase-2-stubs.test.ts**. Replace with real `it()` calls that re-export the assertions from the integration files (so unit suite doesn't run testcontainers but the todos are flipped to passing). Pattern:
-    ```ts
-    it('FSM-03: two parallel transitions → exactly 1 success + 1 VersionMismatch (see tests/integration/fsm-concurrency.test.ts)', () => {
-      // Sanity-check: FSM module exports the error class used by the integration test.
-      expect(VersionMismatch).toBeDefined();
-      expect(LEAD_TRANSITIONS.QUOTED).toEqual(['AGREED', 'LOST']);
-    });
-    it('FSM-05: every transition writes lead_events with actor + payload (see tests/integration/fsm-events-audit.test.ts)', async () => {
-      // Sanity-check: leadEventsRepo exports appendEvent + listByLead.
-      expect(typeof leadEventsRepo.appendEvent).toBe('function');
-      expect(typeof leadEventsRepo.listByLead).toBe('function');
-    });
-    ```
+    **DO NOT modify phase-2-stubs.test.ts** — Plan 02-03b owns todo flips for FSM-01/02/03/05.
 
     Constraints:
     - Integration tests need Docker. On Docker-less Claude runner they'll skip (Phase 1 convention).
-    - VALIDATION.md mentions 100× determinism; planner reduced to 10× (still meets 100% determinism signal in 60s budget). Document this in the SUMMARY.
+    - 100 iterations matches VALIDATION.md "Validation Sign-Off" #4 explicitly.
   </action>
   <verify>
-    <automated>cd apps/api && test -f tests/integration/fsm-concurrency.test.ts && test -f tests/integration/fsm-events-audit.test.ts && grep -q "iterations = 10" tests/integration/fsm-concurrency.test.ts && grep -q "VersionMismatch" tests/integration/fsm-concurrency.test.ts && grep -q "leadEventsRepo.listByLead" tests/integration/fsm-events-audit.test.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && test "$(grep -c "test.todo" tests/unit/phase-2-stubs.test.ts)" = "5"</automated>
+    <automated>cd apps/api && test -f tests/integration/fsm-concurrency.test.ts && test -f tests/integration/fsm-events-audit.test.ts && grep -q "iterations = 100" tests/integration/fsm-concurrency.test.ts && grep -q "VersionMismatch" tests/integration/fsm-concurrency.test.ts && grep -q "leadEventsRepo.listByLead" tests/integration/fsm-events-audit.test.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10</automated>
   </verify>
   <done>
-    Concurrency test loops 10× and asserts exactly 1 success + 1 failure each iteration; audit test asserts lead_events rows match actor + payload; phase-2-stubs.test.ts has 5 todos remaining (LOGIC-04, MATCH-06, FSM-04, FSM-06, API-07).
+    Concurrency test loops 100× and asserts exactly 1 success + 1 failure each iteration; audit test asserts lead_events rows match actor + payload. phase-2-stubs.test.ts UNCHANGED in this plan.
   </done>
 </task>
 
@@ -624,8 +612,8 @@ Wave 2b overall gates:
 1. `pnpm --filter @ai-logist/api typecheck` — passes
 2. `pnpm exec biome check apps/api/src/pipeline/lifecycle apps/api/tests` — passes
 3. `pnpm --filter @ai-logist/api test:unit -- lead-fsm order-fsm` — table-driven unit tests green
-4. `pnpm --filter @ai-logist/api test:integration -- fsm-concurrency fsm-events-audit` — Docker-equipped only; 10/10 iterations show 1 success + 1 failure
-5. phase-2-stubs.test.ts shows 5 todos remaining: LOGIC-04, MATCH-06, FSM-04, FSM-06, API-07
+4. `pnpm --filter @ai-logist/api test:integration -- fsm-concurrency fsm-events-audit` — Docker-equipped only; 100/100 iterations show 1 success + 1 failure
+5. phase-2-stubs.test.ts is NOT modified by this plan (Plan 02-03b owns the FSM-01/02/03/05 flips)
 </verification>
 
 <success_criteria>
@@ -635,9 +623,9 @@ Wave 2b overall gates:
 - transitionLead + transitionOrder both use FOR UPDATE + version+1 CAS + audit-log INSERT.
 - transitionOrder uses ON CONFLICT (order_id, type) DO NOTHING for Phase 5 idempotency preservation.
 - STATUS_TO_EVENT maps uppercase order_status → lowercase order_event_type values correctly.
-- Concurrency test (10 iterations) shows 100% determinism: exactly 1 fulfilled + 1 rejected per iteration.
+- Concurrency test (100 iterations) shows 100% determinism: exactly 1 fulfilled + 1 rejected per iteration.
 - Audit test shows lead_events row written with correct actor + payload per transition.
-- 4 todos flipped: FSM-01, FSM-02, FSM-03, FSM-05.
+- phase-2-stubs.test.ts is NOT in files_modified (file overlap with 02-02 eliminated; Plan 02-03b owns all stub flips).
 - Closes Pitfall #6 (FSM races) at the code level.
 </success_criteria>
 
@@ -646,8 +634,7 @@ After completion, create `.planning/phases/02-llm-pipeline-deterministic-core-hi
 - LEAD_TRANSITIONS + ORDER_TRANSITIONS tables (verbatim)
 - transitionLead / transitionOrder signatures (Wave 3 intake.ts and Wave 4 routes/leads.ts both consume)
 - STATUS_TO_EVENT map (uppercase status → lowercase event type)
-- Concurrency test result: 10 iterations × 2 promises = 20 calls = 10 success + 10 failure (100% determinism)
-- 4 todos flipped: FSM-01, FSM-02, FSM-03, FSM-05
-- Remaining 5 todos for Wave 3+4: LOGIC-04, MATCH-06, FSM-04, FSM-06, API-07
-- VALIDATION.md mentions 100×; planner reduced to 10× (sufficient signal in 60s budget). If verifier requires 100× → trivial to bump.
+- Concurrency test result: 100 iterations × 2 promises = 200 calls = 100 success + 100 failure (100% determinism)
+- Plan 02-03b (post-Wave-2 atomic) is responsible for flipping FSM-01, FSM-02, FSM-03, FSM-05 todos in phase-2-stubs.test.ts
+- Closes Pitfall #6 (FSM races) at the code level
 </output>

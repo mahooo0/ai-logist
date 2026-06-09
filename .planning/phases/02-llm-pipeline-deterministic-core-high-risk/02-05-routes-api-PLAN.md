@@ -2,9 +2,9 @@
 phase: 02-llm-pipeline-deterministic-core-high-risk
 plan: 05
 type: execute
-wave: 4
+wave: 6
 depends_on:
-  - "02-04"
+  - "02-04b"
 files_modified:
   - apps/api/src/routes/leads.ts
   - apps/api/src/routes/health.ts
@@ -43,7 +43,7 @@ must_haves:
 ---
 
 <objective>
-Wave 4 — replace Phase 1 501-stubs in `apps/api/src/routes/leads.ts` with real handlers for POST /:id/match + POST /:id/quote (API-07).
+Wave 5 — replace Phase 1 501-stubs in `apps/api/src/routes/leads.ts` with real handlers for POST /:id/match + POST /:id/quote (API-07).
 
 Purpose:
 - These endpoints are the admin/integration-test surface for re-running the matching and pricing logic on an existing lead (Phase 4 admin UI calls them from Kanban "re-match" / "re-quote" buttons).
@@ -65,7 +65,8 @@ Output: 2 real route handlers; final integration API E2E test that calls these e
 @.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-VALIDATION.md
 @.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-02-SUMMARY.md
 @.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-03-SUMMARY.md
-@.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-04-SUMMARY.md
+@.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-04a-SUMMARY.md
+@.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-04b-SUMMARY.md
 @apps/api/src/routes/leads.ts
 @apps/api/src/routes/health.ts
 @apps/api/src/app.ts
@@ -461,7 +462,7 @@ Phase 1 sensible reply helpers (already installed):
 </tasks>
 
 <verification>
-Wave 4 + Phase 2 final gates:
+Wave 5 + Phase 2 final gates:
 1. `pnpm --filter @ai-logist/api typecheck` — passes
 2. `pnpm exec biome check apps/api/src apps/api/tests packages/shared-types/src` — passes
 3. `pnpm --filter @ai-logist/api test:unit` — all unit tests green, 0 todos

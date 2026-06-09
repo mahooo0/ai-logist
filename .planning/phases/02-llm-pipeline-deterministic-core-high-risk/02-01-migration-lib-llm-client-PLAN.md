@@ -27,6 +27,7 @@ files_modified:
   - apps/api/tests/unit/price-guard.test.ts
   - apps/api/tests/unit/lang-detect.test.ts
   - apps/api/tests/unit/routing.test.ts
+  - apps/api/tests/unit/lead-events-schema-introspect.test.ts
   - apps/api/tests/unit/phase-2-stubs.test.ts
 autonomous: true
 requirements:
@@ -47,6 +48,7 @@ must_haves:
     - "routeKm calls OSRM with 2s timeout; on failure falls back to haversine × 1.3."
     - "llm-client.ts exports a class implementing the same LlmProvider interface as MockAnthropicClient (Wave 0)."
     - "config.ts validates ANTHROPIC_API_KEY + LLM_MODEL + LLM_TOKEN_BUDGET_PER_LEAD + OSRM_URL + NOMINATIM_URL."
+    - "A Docker-less unit test using getTableConfig(schema.leadEvents) verifies the Drizzle descriptor matches the expected column shape (lead_events table existence verifiable even on runners without Docker)."
   artifacts:
     - path: "apps/api/drizzle/0002_phase2_lead_events_tokens.sql"
       provides: "Migration adding tokens columns + lead_events + lead_event_actor enum"
@@ -81,6 +83,9 @@ must_haves:
     - path: "apps/api/src/pipeline/llm-client.ts"
       provides: "Anthropic SDK wrapper implementing LlmProvider (matches Wave 0 mock interface)"
       contains: "export class AnthropicLlmClient"
+    - path: "apps/api/tests/unit/lead-events-schema-introspect.test.ts"
+      provides: "Drizzle introspection smoke for lead_events descriptor (Docker-less)"
+      contains: "getTableConfig"
   key_links:
     - from: "apps/api/src/lib/routing.ts"
       to: "router.project-osrm.org"
@@ -109,9 +114,10 @@ Purpose:
 - Create llm-client.ts that wraps `@anthropic-ai/sdk` 0.102's `betaZodTool` + `toolRunner` AND implements the same `LlmProvider` interface as Wave 0's MockAnthropicClient (so tests inject either).
 - Wire ANTHROPIC_API_KEY/LLM_MODEL/etc into config.ts Zod schema.
 - Add `@anthropic-ai/sdk` to apps/api/package.json (the ONLY new top-level dep for Phase 2 per RESEARCH.md "Standard Stack").
-- Flip 4 of 18 `test.todo()` markers in phase-2-stubs.test.ts (LOGIC-02, MATCH-02, MATCH-04, MATCH-06) — implementation-only requirements that don't need a DB.
+- Add a Docker-less Drizzle-introspection smoke test for the new lead_events table descriptor.
+- Flip 4 of 18 `test.todo()` markers in phase-2-stubs.test.ts (LOGIC-02, MATCH-02, MATCH-04, MATCH-06) — implementation-only requirements that don't need a DB. (Plan 02-03b owns the Wave-2 todo flips; Plan 02-01 still owns these Wave-1 implementation-only flips since no parallel Wave-1 plans modify phase-2-stubs.test.ts.)
 
-Output: All primitives unit-tested; migration applies idempotently; LLM client implements LlmProvider; 4 todos flipped to real `it()` assertions.
+Output: All primitives unit-tested; migration applies idempotently; LLM client implements LlmProvider; lead_events schema introspectable on Docker-less runners; 4 todos flipped to real `it()` assertions.
 </objective>
 
 <execution_context>
@@ -186,8 +192,8 @@ export * as leadsRepo from './leads.js';
 <tasks>
 
 <task type="auto" tdd="true">
-  <name>Task 1: Migration 0002 + lead_events schema/repo + token-ledger columns</name>
-  <files>apps/api/drizzle/0002_phase2_lead_events_tokens.sql, apps/api/drizzle/meta/_journal.json, apps/api/src/persistence/schema/_enums.ts, apps/api/src/persistence/schema/lead_events.ts, apps/api/src/persistence/schema/index.ts, apps/api/src/persistence/repos/lead_events.ts, apps/api/src/persistence/repos/index.ts, apps/api/tests/integration/migration-0002.test.ts, apps/api/tests/unit/lead-events-repo.test.ts</files>
+  <name>Task 1: Migration 0002 + lead_events schema/repo + token-ledger columns + Drizzle introspection smoke test</name>
+  <files>apps/api/drizzle/0002_phase2_lead_events_tokens.sql, apps/api/drizzle/meta/_journal.json, apps/api/src/persistence/schema/_enums.ts, apps/api/src/persistence/schema/lead_events.ts, apps/api/src/persistence/schema/index.ts, apps/api/src/persistence/repos/lead_events.ts, apps/api/src/persistence/repos/index.ts, apps/api/tests/integration/migration-0002.test.ts, apps/api/tests/unit/lead-events-repo.test.ts, apps/api/tests/unit/lead-events-schema-introspect.test.ts</files>
   <behavior>
     - After migrate(): `\d leads` shows tokens_in BIGINT NOT NULL DEFAULT 0, tokens_out BIGINT NOT NULL DEFAULT 0, llm_calls INTEGER NOT NULL DEFAULT 0.
     - After migrate(): `\d lead_events` shows all columns (id uuid PK, lead_id uuid FK CASCADE, from_stage lead_stage NOT NULL, to_stage lead_stage NOT NULL, actor lead_event_actor NOT NULL, payload jsonb NOT NULL DEFAULT '{}'::jsonb, created_at timestamptz NOT NULL DEFAULT NOW()).
@@ -196,6 +202,7 @@ export * as leadsRepo from './leads.js';
     - listByLead(db, leadId) returns events ordered by created_at ASC.
     - Re-running drizzle-kit check after migrate shows zero diff (idempotency).
     - Test: migration applied twice → second apply no-op (uses meta journal).
+    - **Docker-less smoke test:** `getTableConfig(leadEvents).columns` returns column descriptors for id, leadId, fromStage, toStage, actor, payload, createdAt — verifiable without Postgres. Catches schema drift before runtime.
   </behavior>
   <read_first>
     - .planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-RESEARCH.md §7 (lead_events schema + 0002 migration SQL VERBATIM)
@@ -209,6 +216,18 @@ export * as leadsRepo from './leads.js';
     - apps/api/tests/_helpers/test-db.ts (testcontainers helper for integration test)
   </read_first>
   <action>
+    Follow the behavior block above. Sequence:
+    1. Edit `_enums.ts` (append leadEventActorEnum)
+    2. Create `schema/lead_events.ts` from RESEARCH.md §7
+    3. Edit `schema/leads.ts` (append tokensIn, tokensOut, llmCalls)
+    4. Edit `schema/index.ts` (append re-export)
+    5. Create `repos/lead_events.ts`
+    6. Edit `repos/index.ts` (append re-export)
+    7. Run `pnpm --filter @ai-logist/api db:generate` from `apps/api/`
+    8. INSPECT generated SQL. If it doesn't match the RESEARCH.md §7 block, replace its body with the VERBATIM SQL below. The post-process script handles `geography()` quoting (not relevant here).
+    9. Write the three test files (integration migration test + unit repo test + unit Drizzle introspection smoke test).
+    10. Run `pnpm --filter @ai-logist/api typecheck` + `pnpm exec biome check apps/api/src apps/api/tests`.
+
     **(a) apps/api/src/persistence/schema/_enums.ts** — APPEND (do NOT replace) this single line at the end of the file:
     ```ts
     export const leadEventActorEnum = pgEnum('lead_event_actor', ['ai', 'manager', 'system']);
@@ -310,28 +329,54 @@ export * as leadsRepo from './leads.js';
 
     **(i) apps/api/tests/unit/lead-events-repo.test.ts** — testcontainers-backed unit test for appendEvent + listByLead. Insert a client + lead first; then appendEvent twice; assert listByLead returns 2 rows ordered ascending by createdAt.
 
+    **(j) apps/api/tests/unit/lead-events-schema-introspect.test.ts** — Docker-LESS Drizzle introspection smoke (INFO #8 from checker):
+    ```ts
+    import { describe, expect, it } from 'vitest';
+    import { getTableConfig } from 'drizzle-orm/pg-core';
+    import { leadEvents } from '../../src/persistence/schema/lead_events.js';
+
+    describe('Drizzle lead_events descriptor', () => {
+      it('table name is lead_events', () => {
+        const cfg = getTableConfig(leadEvents);
+        expect(cfg.name).toBe('lead_events');
+      });
+
+      it('has expected columns in expected order', () => {
+        const cfg = getTableConfig(leadEvents);
+        const names = cfg.columns.map((c) => c.name);
+        expect(names).toEqual(['id', 'lead_id', 'from_stage', 'to_stage', 'actor', 'payload', 'created_at']);
+      });
+
+      it('actor column is non-null lead_event_actor enum', () => {
+        const cfg = getTableConfig(leadEvents);
+        const actor = cfg.columns.find((c) => c.name === 'actor');
+        expect(actor).toBeDefined();
+        expect(actor!.notNull).toBe(true);
+        // Drizzle exposes enum name on the column type; smoke-check by string.
+        const colSql = actor!.getSQLType();
+        expect(colSql).toMatch(/lead_event_actor/);
+      });
+
+      it('payload column defaults to {} jsonb', () => {
+        const cfg = getTableConfig(leadEvents);
+        const payload = cfg.columns.find((c) => c.name === 'payload');
+        expect(payload).toBeDefined();
+        expect(payload!.notNull).toBe(true);
+      });
+    });
+    ```
+    This test runs on Docker-LESS runners (no testcontainers needed) and catches "lead_events schema diverges from migration" bugs before integration tests run.
+
     Constraints:
     - DO NOT touch `leads.version` or `orders.version` in 0002 (Pitfall #4).
     - drizzle-kit generate may emit `"lead_event_actor"` quoted; if so, the existing `db:generate` post-process script handles it.
     - Run `pnpm --filter @ai-logist/api db:generate` to refresh journal/meta — verify the SQL matches block (f); otherwise overwrite.
-  </behavior>
-  <action>Follow the behavior block above. Sequence:
-    1. Edit `_enums.ts` (append leadEventActorEnum)
-    2. Create `schema/lead_events.ts` from RESEARCH.md §7
-    3. Edit `schema/leads.ts` (append tokensIn, tokensOut, llmCalls)
-    4. Edit `schema/index.ts` (append re-export)
-    5. Create `repos/lead_events.ts`
-    6. Edit `repos/index.ts` (append re-export)
-    7. Run `pnpm --filter @ai-logist/api db:generate` from `apps/api/`
-    8. INSPECT generated SQL. If it doesn't match the RESEARCH.md §7 block, replace its body with the VERBATIM SQL above. The post-process script handles `geography()` quoting (not relevant here).
-    9. Write the two test files (integration migration test + unit repo test).
-    10. Run `pnpm --filter @ai-logist/api typecheck` + `pnpm exec biome check apps/api/src apps/api/tests`.
   </action>
   <verify>
-    <automated>cd apps/api && test -f drizzle/0002_phase2_lead_events_tokens.sql && grep -q "lead_event_actor" drizzle/0002_phase2_lead_events_tokens.sql && grep -q "CREATE TABLE \"lead_events\"" drizzle/0002_phase2_lead_events_tokens.sql && ! grep -q "ADD COLUMN \"version\"" drizzle/0002_phase2_lead_events_tokens.sql && grep -q "leadEventActorEnum" src/persistence/schema/_enums.ts && grep -q "export const leadEvents" src/persistence/schema/lead_events.ts && grep -q "appendEvent" src/persistence/repos/lead_events.ts && grep -q "leadEventsRepo" src/persistence/repos/index.ts && grep -q "tokensIn" src/persistence/schema/leads.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10</automated>
+    <automated>cd apps/api && test -f drizzle/0002_phase2_lead_events_tokens.sql && grep -q "lead_event_actor" drizzle/0002_phase2_lead_events_tokens.sql && grep -q "CREATE TABLE \"lead_events\"" drizzle/0002_phase2_lead_events_tokens.sql && ! grep -q "ADD COLUMN \"version\"" drizzle/0002_phase2_lead_events_tokens.sql && grep -q "leadEventActorEnum" src/persistence/schema/_enums.ts && grep -q "export const leadEvents" src/persistence/schema/lead_events.ts && grep -q "appendEvent" src/persistence/repos/lead_events.ts && grep -q "leadEventsRepo" src/persistence/repos/index.ts && grep -q "tokensIn" src/persistence/schema/leads.ts && test -f tests/unit/lead-events-schema-introspect.test.ts && grep -q "getTableConfig" tests/unit/lead-events-schema-introspect.test.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api test:unit -- lead-events-schema-introspect 2>&1 | tail -10</automated>
   </verify>
   <done>
-    Migration file exists and does NOT re-add version; lead_events schema + repo present; index barrel updated; leads schema has new tokens columns; tsc passes. Integration test asserts schema shape (requires Docker — gate behavior matches Phase 1: passes locally on Docker-equipped machines, skipped without Docker).
+    Migration file exists and does NOT re-add version; lead_events schema + repo present; index barrel updated; leads schema has new tokens columns; Docker-less Drizzle introspection smoke test passes; tsc passes. Integration test asserts schema shape (requires Docker — gate behavior matches Phase 1: passes locally on Docker-equipped machines, skipped without Docker).
   </done>
 </task>
 
@@ -450,7 +495,7 @@ export * as leadsRepo from './leads.js';
 
     `apps/api/tests/unit/money.test.ts`: table-driven `it.each([[0n,0n],[2499n,0n],[2500n,5000n],[4999n,5000n],[5001n,5000n],[7500n,10000n]])` for roundTo50Rubles. Plus formatPriceKop assertions for ru/ua.
 
-    `apps/api/tests/unit/price-guard.test.ts`: 6+ cases covering the behavior block above. Use NBSP literal in test strings: `'Цена 23 800 руб'`.
+    `apps/api/tests/unit/price-guard.test.ts`: 6+ cases covering the behavior block above. Use NBSP literal in test strings: `'Цена 23 800 руб'`.
 
     `apps/api/tests/unit/lang-detect.test.ts`: 8+ cases. For detectLang, pass a stub llmDetect callback returning fixed values.
 
@@ -467,12 +512,13 @@ export * as leadsRepo from './leads.js';
     - `MATCH-04` → import routeKm with mocked fetch returning OSRM Ok; assert km = 540.
     - `MATCH-06` → import priceGuard; assert mismatch rejection.
 
-    Remaining 14 todos stay as `test.todo()` markers — Waves 2-4 flip them.
+    Remaining 14 todos stay as `test.todo()` markers — Plans 02-03b, 02-04a, 02-04b, 02-05 flip them.
 
     Constraints:
     - All new files use `.js` extensions on relative imports.
     - tsc + Biome must pass.
     - Tests do NOT require Docker (use mocks).
+    - This task DOES modify phase-2-stubs.test.ts because no other Wave-1 plan touches the file (no parallel write race).
   </action>
   <verify>
     <automated>cd apps/api && test -f src/lib/money.ts && test -f src/lib/price-guard.ts && test -f src/lib/lang-detect.ts && test -f src/lib/geocoding.ts && test -f src/lib/routing.ts && test -f src/lib/bourse-stub.ts && test -f src/lib/bourse-stub.json && node -e "const a=JSON.parse(require('fs').readFileSync('src/lib/bourse-stub.json','utf8'));if(a.length!==5)throw new Error('expected 5 stub entries');" && grep -q "roundTo50Rubles" src/lib/money.ts && grep -q "5000n" src/lib/money.ts && grep -q "User-Agent.*ai-logist" src/lib/geocoding.ts && grep -q "AbortSignal.timeout(2000)" src/lib/routing.ts && grep -q "UA_MARKERS" src/lib/lang-detect.ts && grep -q "queryBourseStub" src/lib/bourse-stub.ts && pnpm --filter @ai-logist/api test:unit -- money price-guard lang-detect routing 2>&1 | tail -15 && test "$(grep -c "test.todo" tests/unit/phase-2-stubs.test.ts)" = "14" && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10</automated>
@@ -558,9 +604,6 @@ export * as leadsRepo from './leads.js';
         // schemas must be defined at the call site. This LlmProvider abstraction only
         // exposes tool NAMES so the mock can key fixtures by name. The actual tool
         // execution loop is wired in pipeline/intake.ts via client.beta.messages.toolRunner.
-        //
-        // For Wave 1's verification we expose a minimal path: send the message, return
-        // usage and any final text. Wave 3 swaps in toolRunner with the real tools.
         const response = await this.client.beta.messages.create({
           model: this.model,
           max_tokens: 1024,
@@ -593,7 +636,6 @@ export * as leadsRepo from './leads.js';
         maxIterations?: number;
       }
     ): Promise<{ finalMessage: Anthropic.Beta.BetaMessage; usage: { input_tokens: number; output_tokens: number } }> {
-      // Access the underlying client by re-creating one — internal API
       const client = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY });
       const runner = client.beta.messages.toolRunner({
         model: config.LLM_MODEL,
@@ -653,7 +695,7 @@ Wave 1 overall gates (sequential):
 1. `pnpm install` — lockfile updated with anthropic-sdk
 2. `pnpm --filter @ai-logist/api typecheck` — strict TS passes
 3. `pnpm exec biome check apps/api` — Biome passes
-4. `pnpm --filter @ai-logist/api test:unit` — money + price-guard + lang-detect + routing + llm-client + lead-events-repo all green
+4. `pnpm --filter @ai-logist/api test:unit` — money + price-guard + lang-detect + routing + llm-client + lead-events-repo + lead-events-schema-introspect all green
 5. `pnpm --filter @ai-logist/api db:migrate:check` — migration 0002 produces zero diff after apply (Docker-equipped only; gracefully skips otherwise)
 6. phase-2-stubs.test.ts shows 14 todos + 4 real assertions (LOGIC-02, MATCH-02, MATCH-04, MATCH-06)
 </verification>
@@ -666,13 +708,14 @@ Wave 1 overall gates (sequential):
 - llm-client.ts exports AnthropicLlmClient implementing the LlmProvider interface (same signature as Wave 0 mock).
 - config.ts adds 5 new env vars with defaults; .env.example documents them.
 - @anthropic-ai/sdk@0.102+ installed in apps/api.
+- Drizzle introspection smoke (lead-events-schema-introspect.test.ts) verifies table descriptor on Docker-less runners.
 - phase-2-stubs.test.ts has 14 todos (LOGIC-02, MATCH-02, MATCH-04, MATCH-06 flipped to real assertions).
 - Closes Pitfall #2 (regex price guard), Pitfall #4 (no version re-add), Pitfall #6 (token-ledger columns), Pitfall #7 (sticky lang stub), Pitfall #10 (Nominatim User-Agent).
 </success_criteria>
 
 <output>
 After completion, create `.planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-01-SUMMARY.md` documenting:
-- Files created (migration, schema additions, repos, lib/*, llm-client)
+- Files created (migration, schema additions, repos, lib/*, llm-client, lead-events-schema-introspect smoke)
 - LlmProvider interface (the production contract Wave 2 tools and Wave 3 intake consume)
 - bourse-stub.json shape (Wave 2 nearestTruck consumes on empty CTE)
 - Migration order: 0000 → 0001 → 0002 (verified idempotent)

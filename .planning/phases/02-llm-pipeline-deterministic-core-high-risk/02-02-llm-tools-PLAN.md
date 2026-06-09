@@ -21,7 +21,6 @@ files_modified:
   - apps/api/tests/integration/bourse-fallback.test.ts
   - apps/api/tests/integration/create-order-price-lock.test.ts
   - apps/api/tests/unit/discount.test.ts
-  - apps/api/tests/unit/phase-2-stubs.test.ts
 autonomous: true
 requirements:
   - LOGIC-01
@@ -43,6 +42,8 @@ must_haves:
     - "calcPrice corridor: min = roundTo50(default * 0.85), max = roundTo50(default * 1.15)."
     - "createOrder handler MUST re-read leads.quoted_price from DB inside the transaction; ignores any LLM-supplied price."
     - "discount tool: amount_kopecks >= min → ok; amount_kopecks < min → returns {ok:false, error:{code:'escalation_needed'}}."
+    - "Task 1 creates STUB files for nearest-truck.ts, calc-price.ts, create-order.ts, discount.ts so the barrel index.ts type-checks; Tasks 2 + 3 replace the stub bodies with real implementations."
+    - "phase-2-stubs.test.ts is NOT modified by this plan (Plan 02-03b owns all Wave-2 todo flips in one atomic commit)."
   artifacts:
     - path: "apps/api/src/pipeline/llm-tools/system-prompt.ts"
       provides: "Anti-injection prefix shared by all tool prompts"
@@ -96,7 +97,7 @@ Purpose:
 - nearestTruck implements the CTE re-rank that defeats Pitfall #2; integration test asserts GiST Index Scan via EXPLAIN ANALYZE.
 - createOrder re-reads quoted_price from DB inside transaction (D-06) — closes Pitfall #1 at code level.
 - System prompt has anti-injection prefix (D-42) shared across tools.
-- Flip 5 more todos in phase-2-stubs.test.ts (LOGIC-01, LOGIC-05, MATCH-01, MATCH-03, MATCH-05). LOGIC-04 + MATCH-06 are pipeline-level (Wave 3).
+- phase-2-stubs.test.ts is NOT touched by this plan (Plan 02-03b atomic-flips all 9 Wave-2 todos in one commit to avoid file-write race with 02-03 during Wave 2 parallel execution).
 
 Output: 9 files in llm-tools/, 4 unit + 3 integration tests, ToolContext interface that Wave 3 intake.ts will instantiate.
 </objective>
@@ -204,8 +205,8 @@ Phase 1 pricing_config (used by calcPrice):
 <tasks>
 
 <task type="auto" tdd="true">
-  <name>Task 1: extractRequest + detectLanguage + system prompt + tool registry barrel + unit snapshot tests (10× repeat)</name>
-  <files>apps/api/src/pipeline/llm-tools/index.ts, apps/api/src/pipeline/llm-tools/system-prompt.ts, apps/api/src/pipeline/llm-tools/extract-request.ts, apps/api/src/pipeline/llm-tools/extract-request.prompt.ts, apps/api/src/pipeline/llm-tools/detect-language.ts, apps/api/tests/unit/extract-request.test.ts, apps/api/tests/unit/phase-2-stubs.test.ts</files>
+  <name>Task 1: extractRequest + detectLanguage + system prompt + tool registry barrel + STUB FILES for tasks 2/3 + unit snapshot tests (10× repeat)</name>
+  <files>apps/api/src/pipeline/llm-tools/index.ts, apps/api/src/pipeline/llm-tools/system-prompt.ts, apps/api/src/pipeline/llm-tools/extract-request.ts, apps/api/src/pipeline/llm-tools/extract-request.prompt.ts, apps/api/src/pipeline/llm-tools/detect-language.ts, apps/api/src/pipeline/llm-tools/nearest-truck.ts, apps/api/src/pipeline/llm-tools/calc-price.ts, apps/api/src/pipeline/llm-tools/create-order.ts, apps/api/src/pipeline/llm-tools/discount.ts, apps/api/tests/unit/extract-request.test.ts</files>
   <behavior>
     - ExtractRequestSchema matches D-09 byte-exact (verifiable via Zod schema introspection: schema.shape has from_city/to_city/tons/body_type/budget_kopecks/deadline_iso/confidence/clarifying_question_ru/clarifying_question_ua).
     - ExtractRequestSchema.parse({from_city:'Киев', to_city:'Львов', tons:18, body_type:'tent', budget_kopecks:null, deadline_iso:null, confidence:{from_city:1,to_city:1,tons:1}, clarifying_question_ru:null, clarifying_question_ua:null}) — succeeds.
@@ -218,6 +219,7 @@ Phase 1 pricing_config (used by calcPrice):
     - When mock returns clarifying_question_ru populated → handler returns it intact.
     - Snapshot test runs 10× via `vitest run --repeat=10` and produces byte-identical output (deterministic fake-timers + crypto.randomUUID monkey-patch from Wave 0 helpers).
     - detectLanguage handler: returns `{lang:'ua'|'ru', confidence:number}` keyed by Cyrillic heuristic first (free), LLM only when heuristic null.
+    - **STUB FILES**: nearest-truck.ts, calc-price.ts, create-order.ts, discount.ts are created with placeholder `betaZodTool` returning `{ ok: false, error: { code: 'NOT_IMPLEMENTED', message: 'Wave 2 Task 2/3' } }` so the barrel index.ts type-checks at the end of Task 1. Tasks 2 + 3 REPLACE the bodies of these stub files with real implementations — but the file paths exist on disk from end of Task 1 onward.
   </behavior>
   <read_first>
     - .planning/phases/02-llm-pipeline-deterministic-core-high-risk/02-RESEARCH.md §2 (ExtractRequestSchema VERBATIM), §3 (EXTRACT_REQUEST_SYSTEM_PROMPT VERBATIM with anti-injection prefix and 5 few-shots), "Pattern 1" (registry barrel), "Pattern 2" (tool file shape), "Pattern 3" (envelope)
@@ -230,6 +232,17 @@ Phase 1 pricing_config (used by calcPrice):
     - apps/api/tests/_helpers/db-seed.ts (installDeterministicCrypto)
   </read_first>
   <action>
+    Sequence:
+    1. Write `system-prompt.ts` (anti-injection prefix only)
+    2. Write `extract-request.prompt.ts` (anti-injection + 5 few-shots from RESEARCH.md §3)
+    3. Write `extract-request.ts` (schema + tool registration + handler from RESEARCH.md "Pattern 2" + §2)
+    4. Write `detect-language.ts`
+    5. **Write STUB files**: nearest-truck.ts, calc-price.ts, create-order.ts, discount.ts (each exports a `XxxTool(ctx)` function returning a placeholder `betaZodTool` — body returns `{ok:false, error:{code:'NOT_IMPLEMENTED', message:'Wave 2 Task 2/3'}}`. These stubs allow Task 1's `index.ts` barrel to type-check; Tasks 2 + 3 replace the bodies with real implementations.)
+    6. Write `index.ts` barrel (referenced by Task 2 and Task 3 below — they create the other tool files; the barrel imports MUST resolve, so the stubs above make this work)
+    7. Append fixtures to `llm-responses.json` for the 6 canonical extracts
+    8. Write `extract-request.test.ts` with snapshot test
+    9. Run `pnpm --filter @ai-logist/api typecheck` + biome + the snapshot 10× check.
+
     **(a) apps/api/src/pipeline/llm-tools/system-prompt.ts** — shared anti-injection prefix (D-42):
     ```ts
     export const ANTI_INJECTION_PREFIX = `
@@ -322,16 +335,86 @@ Phase 1 pricing_config (used by calcPrice):
           if (cheap) {
             return JSON.stringify({ ok: true, data: { lang: cheap.lang, confidence: cheap.confidence } });
           }
-          // The LLM SHOULDN'T call this unless heuristic was already null — but if it does,
-          // we conservatively default to ru. The Wave 3 pipeline calls cyrillicHeuristic
-          // directly first, so this code path is rare in production.
           return JSON.stringify({ ok: true, data: { lang: 'ru' as Lang, confidence: 0.5 } });
         },
       });
     }
     ```
 
-    **(e) apps/api/src/pipeline/llm-tools/index.ts** — barrel + ToolContext type (RESEARCH.md Pattern 1):
+    **(e) STUB FILES** — create these 4 files with placeholder bodies. Tasks 2 + 3 REPLACE the bodies. Each stub file MUST export the function `XxxTool(ctx)` returning a `betaZodTool` registration; the run() body is a placeholder.
+
+    `apps/api/src/pipeline/llm-tools/nearest-truck.ts` (STUB — Task 2 replaces body):
+    ```ts
+    import { z } from 'zod/v4';
+    import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
+    import type { ToolContext } from './index.js';
+    export const NearestTruckInputSchema = z.object({
+      pickup_lon: z.number(), pickup_lat: z.number(), tons: z.number().positive(),
+      body_type: z.enum(['tent','ref','iso','container']).nullable(),
+    });
+    export function nearestTruckTool(_ctx: ToolContext) {
+      return betaZodTool({
+        name: 'nearestTruck',
+        description: 'STUB — replaced by Wave 2 Task 2.',
+        inputSchema: NearestTruckInputSchema,
+        run: async () => JSON.stringify({ ok: false, error: { code: 'NOT_IMPLEMENTED', message: 'Wave 2 Task 2/3' } }),
+      });
+    }
+    ```
+
+    `apps/api/src/pipeline/llm-tools/calc-price.ts` (STUB — Task 2 replaces body):
+    ```ts
+    import { z } from 'zod/v4';
+    import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
+    import type { ToolContext } from './index.js';
+    export const CalcPriceInputSchema = z.object({
+      route_km: z.number().positive(), tons: z.number().positive(),
+      body_type: z.enum(['tent','ref','iso','container']),
+      direction: z.enum(['default','back_haul']).default('default'),
+    });
+    export function calcPriceTool(_ctx: ToolContext) {
+      return betaZodTool({
+        name: 'calcPrice',
+        description: 'STUB — replaced by Wave 2 Task 2.',
+        inputSchema: CalcPriceInputSchema,
+        run: async () => JSON.stringify({ ok: false, error: { code: 'NOT_IMPLEMENTED', message: 'Wave 2 Task 2/3' } }),
+      });
+    }
+    ```
+
+    `apps/api/src/pipeline/llm-tools/create-order.ts` (STUB — Task 3 replaces body):
+    ```ts
+    import { z } from 'zod/v4';
+    import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
+    import type { ToolContext } from './index.js';
+    export const CreateOrderInputSchema = z.object({ lead_id: z.string().uuid(), confirmed: z.literal(true) }).strict();
+    export function createOrderTool(_ctx: ToolContext) {
+      return betaZodTool({
+        name: 'createOrder',
+        description: 'STUB — replaced by Wave 2 Task 3.',
+        inputSchema: CreateOrderInputSchema,
+        run: async () => JSON.stringify({ ok: false, error: { code: 'NOT_IMPLEMENTED', message: 'Wave 2 Task 2/3' } }),
+      });
+    }
+    ```
+
+    `apps/api/src/pipeline/llm-tools/discount.ts` (STUB — Task 3 replaces body):
+    ```ts
+    import { z } from 'zod/v4';
+    import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
+    import type { ToolContext } from './index.js';
+    export const DiscountInputSchema = z.object({ lead_id: z.string().uuid(), amount_kopecks: z.number().positive(), reason: z.string().min(3) }).strict();
+    export function discountTool(_ctx: ToolContext) {
+      return betaZodTool({
+        name: 'discount',
+        description: 'STUB — replaced by Wave 2 Task 3.',
+        inputSchema: DiscountInputSchema,
+        run: async () => JSON.stringify({ ok: false, error: { code: 'NOT_IMPLEMENTED', message: 'Wave 2 Task 2/3' } }),
+      });
+    }
+    ```
+
+    **(f) apps/api/src/pipeline/llm-tools/index.ts** — barrel + ToolContext type (RESEARCH.md Pattern 1):
     ```ts
     import type { FastifyBaseLogger } from 'fastify';
     import type { Db } from '../../db.js';
@@ -364,7 +447,7 @@ Phase 1 pricing_config (used by calcPrice):
     }
     ```
 
-    **(f) apps/api/tests/unit/extract-request.test.ts** — snapshot test (10× repeat-safe):
+    **(g) apps/api/tests/unit/extract-request.test.ts** — snapshot test (10× repeat-safe):
     - Import FIXED_NOW + installDeterministicCrypto from Wave 0 helpers.
     - Import MockAnthropicClient. Before each test: installDeterministicCrypto + load llm-responses.json fixture.
     - Append fixtures to apps/api/tests/fixtures/llm-responses.json for `extractRequest::<hash>` keys covering 6 canonical inputs (canon-01, canon-02, canon-03, canon-04, canon-05, canon-11). For canon-11 (injection), the mock returns the parsed extraction with confidence 0 everywhere and clarifying_question_ru set — verifying the model "ignored" the injection.
@@ -373,39 +456,25 @@ Phase 1 pricing_config (used by calcPrice):
       - `it('snapshot: 6 canonical extracts byte-stable', async () => {... expect(results).toMatchSnapshot();})` — repeat 10× via VALIDATION.md command `pnpm exec vitest run --project unit --repeat=10 -t snapshot`.
       - `it('strict mode rejects unknown fields', () => { expect(() => ExtractRequestSchema.strict().parse({...known, extra:1})).toThrow();})`.
 
-    **(g) Flip 2 todos in tests/unit/phase-2-stubs.test.ts**: LOGIC-01 and LOGIC-05. Real `it()` calls importing from extract-request.ts and asserting on a sample input + strict-mode rejection.
+    **(h) DO NOT modify phase-2-stubs.test.ts** — todo flips for LOGIC-01/05 belong to Plan 02-03b (atomic-flip post-Wave-2).
 
     Constraints:
     - SDK 0.102 `betaZodTool` requires the `inputSchema` field (Pitfall #8 in RESEARCH.md — NOT `schema`).
     - LlmProvider import is from `../llm-client.js` (Wave 1).
     - All fixtures keyed by sha256_prefix(systemPrompt + lastUser).slice(0,16).
     - Run `pnpm --filter @ai-logist/api exec vitest run --project unit --repeat=10 -t snapshot extract-request` after writing; output MUST be identical across all 10 runs.
-  </behavior>
-  <action>
-    Sequence:
-    1. Write `system-prompt.ts` (anti-injection prefix only)
-    2. Write `extract-request.prompt.ts` (anti-injection + 5 few-shots from RESEARCH.md §3)
-    3. Write `extract-request.ts` (schema + tool registration + handler from RESEARCH.md "Pattern 2" + §2)
-    4. Write `detect-language.ts`
-    5. Write `index.ts` barrel (referenced by Task 2 and Task 3 below — they create the other tool files; the barrel imports MUST resolve, so Tasks 2/3 either follow this task or this task creates stub `*Tool` exports first)
-    6. Append fixtures to `llm-responses.json` for the 6 canonical extracts
-    7. Write `extract-request.test.ts` with snapshot test
-    8. Flip LOGIC-01 + LOGIC-05 todos
-    9. Run `pnpm --filter @ai-logist/api typecheck` + biome + the snapshot 10× check.
-
-    NOTE on barrel ordering: this task creates `index.ts` referencing `nearestTruckTool`, `calcPriceTool`, `createOrderTool`, `discountTool` which Tasks 2 and 3 add. Create those files as stubs first (exporting a placeholder `betaZodTool` returning `{ ok: false, error: { code: 'NOT_IMPLEMENTED', message: 'Wave 2 Task 2/3' } }`) so the barrel type-checks. Tasks 2 and 3 fill in the real bodies.
   </action>
   <verify>
-    <automated>cd apps/api && test -f src/pipeline/llm-tools/extract-request.ts && test -f src/pipeline/llm-tools/extract-request.prompt.ts && test -f src/pipeline/llm-tools/system-prompt.ts && test -f src/pipeline/llm-tools/detect-language.ts && test -f src/pipeline/llm-tools/index.ts && grep -q "ANTI_INJECTION_PREFIX" src/pipeline/llm-tools/system-prompt.ts && grep -q "ExtractRequestSchema" src/pipeline/llm-tools/extract-request.ts && grep -q "buildToolRegistry" src/pipeline/llm-tools/index.ts && grep -q "ToolContext" src/pipeline/llm-tools/index.ts && grep -q "EXAMPLES:" src/pipeline/llm-tools/extract-request.prompt.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api exec vitest run --project unit -t extract-request --repeat=10 2>&1 | tail -15 && test "$(grep -c "test.todo" tests/unit/phase-2-stubs.test.ts)" = "12"</automated>
+    <automated>cd apps/api && test -f src/pipeline/llm-tools/extract-request.ts && test -f src/pipeline/llm-tools/extract-request.prompt.ts && test -f src/pipeline/llm-tools/system-prompt.ts && test -f src/pipeline/llm-tools/detect-language.ts && test -f src/pipeline/llm-tools/index.ts && test -f src/pipeline/llm-tools/nearest-truck.ts && test -f src/pipeline/llm-tools/calc-price.ts && test -f src/pipeline/llm-tools/create-order.ts && test -f src/pipeline/llm-tools/discount.ts && grep -q "ANTI_INJECTION_PREFIX" src/pipeline/llm-tools/system-prompt.ts && grep -q "ExtractRequestSchema" src/pipeline/llm-tools/extract-request.ts && grep -q "buildToolRegistry" src/pipeline/llm-tools/index.ts && grep -q "ToolContext" src/pipeline/llm-tools/index.ts && grep -q "EXAMPLES:" src/pipeline/llm-tools/extract-request.prompt.ts && grep -q "NOT_IMPLEMENTED" src/pipeline/llm-tools/nearest-truck.ts && grep -q "NOT_IMPLEMENTED" src/pipeline/llm-tools/calc-price.ts && grep -q "NOT_IMPLEMENTED" src/pipeline/llm-tools/create-order.ts && grep -q "NOT_IMPLEMENTED" src/pipeline/llm-tools/discount.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api exec vitest run --project unit -t extract-request --repeat=10 2>&1 | tail -15</automated>
   </verify>
   <done>
-    All 5 files in llm-tools/ exist (extract-request, extract-request.prompt, system-prompt, detect-language, index); stubs for nearest-truck/calc-price/create-order/discount allow the barrel to compile; ExtractRequestSchema strict mode rejects unknown fields; snapshot 10× repeat byte-stable; phase-2-stubs.test.ts has 12 todos (LOGIC-01 + LOGIC-05 flipped).
+    All 9 files in llm-tools/ exist (extract-request, extract-request.prompt, system-prompt, detect-language, index, AND stubs for nearest-truck/calc-price/create-order/discount); barrel compiles; ExtractRequestSchema strict mode rejects unknown fields; snapshot 10× repeat byte-stable. phase-2-stubs.test.ts UNCHANGED (Plan 02-03b owns).
   </done>
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 2: nearestTruck + calcPrice tools + bourse fallback + integration tests (KNN EXPLAIN, bourse, calcPrice 10× repeat)</name>
-  <files>apps/api/src/pipeline/llm-tools/nearest-truck.ts, apps/api/src/pipeline/llm-tools/calc-price.ts, apps/api/tests/unit/calc-price.test.ts, apps/api/tests/integration/nearest-truck-knn.test.ts, apps/api/tests/integration/bourse-fallback.test.ts, apps/api/tests/unit/phase-2-stubs.test.ts</files>
+  <name>Task 2: nearestTruck + calcPrice tools (REPLACE stubs from Task 1) + bourse fallback + integration tests (KNN EXPLAIN, bourse, calcPrice 10× repeat)</name>
+  <files>apps/api/src/pipeline/llm-tools/nearest-truck.ts, apps/api/src/pipeline/llm-tools/calc-price.ts, apps/api/tests/unit/calc-price.test.ts, apps/api/tests/integration/nearest-truck-knn.test.ts, apps/api/tests/integration/bourse-fallback.test.ts</files>
   <behavior>
     - nearestTruck SQL exactly matches RESEARCH.md §4: WITH candidates AS (SELECT ... FROM trucks WHERE status='available' AND capacity_t >= $tons AND ($body IS NULL OR body_type = $body) ORDER BY geom <-> ST_GeogFromText('SRID=4326;POINT(lon lat)') LIMIT 20), SELECT ..., ST_Distance(geom, ST_GeogFromText(...), true) AS meters FROM candidates ORDER BY meters LIMIT 3.
     - On empty CTE result → handler calls queryBourseStub(db, {tons, bodyType}) and returns its rows tagged with source: 'bourse-stub'.
@@ -427,7 +496,15 @@ Phase 1 pricing_config (used by calcPrice):
     - apps/api/tests/_helpers/fake-timers.ts (FIXED_NOW for deterministic season_coef date input)
   </read_first>
   <action>
-    **(a) apps/api/src/pipeline/llm-tools/nearest-truck.ts** — replace stub from Task 1 with real implementation. Paste SQL from RESEARCH.md §4 VERBATIM. Tool registration shape:
+    Sequence:
+    1. REPLACE the stub body of `nearest-truck.ts` (from Task 1) with real implementation per RESEARCH.md §4 SQL VERBATIM.
+    2. REPLACE the stub body of `calc-price.ts` (from Task 1) with real implementation per RESEARCH.md §5 VERBATIM.
+    3. Write `calc-price.test.ts` snapshot test (10× repeat-safe).
+    4. Write `nearest-truck-knn.test.ts` (RESEARCH.md §12 VERBATIM).
+    5. Write `bourse-fallback.test.ts`.
+    6. Run typecheck + biome + `vitest run --project unit -t calc-price --repeat=10` + `vitest run --project integration nearest-truck-knn` (Docker-equipped only).
+
+    **(a) apps/api/src/pipeline/llm-tools/nearest-truck.ts** — REPLACE stub with real implementation. Paste SQL from RESEARCH.md §4 VERBATIM. Tool registration shape:
     ```ts
     import { sql } from 'drizzle-orm';
     import { z } from 'zod/v4';
@@ -499,7 +576,7 @@ Phase 1 pricing_config (used by calcPrice):
     }
     ```
 
-    **(b) apps/api/src/pipeline/llm-tools/calc-price.ts** — replace stub. Paste from RESEARCH.md §5. Add tool registration:
+    **(b) apps/api/src/pipeline/llm-tools/calc-price.ts** — REPLACE stub with real implementation. Paste from RESEARCH.md §5. Add tool registration:
     ```ts
     import { sql } from 'drizzle-orm';
     import { z } from 'zod/v4';
@@ -546,7 +623,6 @@ Phase 1 pricing_config (used by calcPrice):
       const dirCoefVal = map.get('dir_coef');
       const seasonCoefVal = map.get('season_coef');
       if (typeof ratePerKm !== 'number') throw new Error('pricing_config.rate_per_km not a number');
-      // Phase 1 seed stores dir_coef as {default, back_haul} jsonb; season_coef as plain number.
       const dirCoef = (typeof dirCoefVal === 'object' && dirCoefVal !== null) ? dirCoefVal as PricingConfig['dir_coef'] : { default: 1.0, back_haul: 0.85 };
       const seasonNum = typeof seasonCoefVal === 'number' ? seasonCoefVal : 1.0;
       return {
@@ -569,14 +645,13 @@ Phase 1 pricing_config (used by calcPrice):
         description: 'Calculate price corridor {min, default, max} for a route. Deterministic. NEVER quote this to the client directly — pipeline writes default to leads.quoted_price and renders via template.',
         inputSchema: CalcPriceInputSchema,
         run: async (input) => {
-          CalcPriceInputSchema.parse(input);  // belt-and-suspenders
+          CalcPriceInputSchema.parse(input);
           const cfg = await readPricingConfig(ctx.db);
           const out = calcPrice({
             route_km: input.route_km, tons: input.tons,
             bodyType: input.body_type, date: new Date(),
             direction: input.direction,
           }, cfg);
-          // Serialize bigint as string for JSON.
           return JSON.stringify({ ok: true, data: {
             default: out.default.toString(),
             min: out.min.toString(),
@@ -606,34 +681,24 @@ Phase 1 pricing_config (used by calcPrice):
     - Test 1: `UPDATE trucks SET status = 'busy'` (force CTE empty) → `nearestTruck(db, {...})` returns 3 rows with source='bourse-stub'.
     - Test 2: assert a row exists in bourse_cache with query_hash matching sha256 of the query input.
 
-    **(f) Flip 3 todos in phase-2-stubs.test.ts**: MATCH-01, MATCH-03, MATCH-05. Real `it()` calls.
+    **(f) DO NOT modify phase-2-stubs.test.ts** — Plan 02-03b owns todo flips.
 
     Constraints:
     - SQL placeholders: Drizzle's `sql\`...${value}...\`` parameterizes. The `pickup_lon`/`pickup_lat` numbers are inlined safely.
     - Body-type cast `${params.bodyType}::body_type_t` — when `bodyType` is `null`, Drizzle binds null, the `IS NULL OR ...` short-circuits.
     - calcPrice unit test does NOT need testcontainers (pure function); only integration tests do.
-  </behavior>
-  <action>
-    Sequence:
-    1. Replace `nearest-truck.ts` stub with real implementation (RESEARCH.md §4 SQL VERBATIM).
-    2. Replace `calc-price.ts` stub with real implementation (RESEARCH.md §5 VERBATIM).
-    3. Write `calc-price.test.ts` snapshot test (10× repeat-safe).
-    4. Write `nearest-truck-knn.test.ts` (RESEARCH.md §12 VERBATIM).
-    5. Write `bourse-fallback.test.ts`.
-    6. Flip MATCH-01, MATCH-03, MATCH-05 todos.
-    7. Run typecheck + biome + `vitest run --project unit -t calc-price --repeat=10` + `vitest run --project integration nearest-truck-knn` (Docker-equipped only).
   </action>
   <verify>
-    <automated>cd apps/api && grep -q "ORDER BY t.geom <->" src/pipeline/llm-tools/nearest-truck.ts && grep -q "ST_Distance.*true" src/pipeline/llm-tools/nearest-truck.ts && grep -q "WHERE t.status = 'available'" src/pipeline/llm-tools/nearest-truck.ts && grep -q "AND t.capacity_t >=" src/pipeline/llm-tools/nearest-truck.ts && grep -q "queryBourseStub" src/pipeline/llm-tools/nearest-truck.ts && grep -q "export function calcPrice" src/pipeline/llm-tools/calc-price.ts && grep -q "roundTo50Rubles" src/pipeline/llm-tools/calc-price.ts && grep -q "Index Scan using trucks_geom_gist_idx" tests/integration/nearest-truck-knn.test.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api exec vitest run --project unit -t calc-price --repeat=10 2>&1 | tail -10 && test "$(grep -c "test.todo" tests/unit/phase-2-stubs.test.ts)" = "9"</automated>
+    <automated>cd apps/api && grep -q "ORDER BY t.geom <->" src/pipeline/llm-tools/nearest-truck.ts && grep -q "ST_Distance.*true" src/pipeline/llm-tools/nearest-truck.ts && grep -q "WHERE t.status = 'available'" src/pipeline/llm-tools/nearest-truck.ts && grep -q "AND t.capacity_t >=" src/pipeline/llm-tools/nearest-truck.ts && grep -q "queryBourseStub" src/pipeline/llm-tools/nearest-truck.ts && grep -q "export function calcPrice" src/pipeline/llm-tools/calc-price.ts && grep -q "roundTo50Rubles" src/pipeline/llm-tools/calc-price.ts && grep -q "Index Scan using trucks_geom_gist_idx" tests/integration/nearest-truck-knn.test.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api exec vitest run --project unit -t calc-price --repeat=10 2>&1 | tail -10</automated>
   </verify>
   <done>
-    nearest-truck.ts uses the CTE re-rank pattern; calcPrice is pure; integration EXPLAIN test asserts GiST Index Scan; calc-price snapshot 10× repeat byte-stable; bourse-fallback test passes; phase-2-stubs.test.ts has 9 todos (MATCH-01, MATCH-03, MATCH-05 flipped).
+    nearest-truck.ts uses the CTE re-rank pattern (stub REPLACED); calcPrice is pure (stub REPLACED); integration EXPLAIN test asserts GiST Index Scan; calc-price snapshot 10× repeat byte-stable; bourse-fallback test passes. phase-2-stubs.test.ts UNCHANGED.
   </done>
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 3: createOrder (price-lock protocol) + discount (min floor) tools + integration tests</name>
-  <files>apps/api/src/pipeline/llm-tools/create-order.ts, apps/api/src/pipeline/llm-tools/discount.ts, apps/api/tests/integration/create-order-price-lock.test.ts, apps/api/tests/unit/discount.test.ts, apps/api/tests/unit/phase-2-stubs.test.ts</files>
+  <name>Task 3: createOrder (price-lock protocol) + discount (min floor) tools (REPLACE stubs from Task 1) + integration tests</name>
+  <files>apps/api/src/pipeline/llm-tools/create-order.ts, apps/api/src/pipeline/llm-tools/discount.ts, apps/api/tests/integration/create-order-price-lock.test.ts, apps/api/tests/unit/discount.test.ts</files>
   <behavior>
     - createOrderTool input schema ABSOLUTELY DOES NOT include a `price` field (D-06 — LLM cannot supply price). Schema: `{lead_id: uuid, confirmed: literal(true)}`.
     - createOrderHandler runs in a single db.transaction:
@@ -657,7 +722,15 @@ Phase 1 pricing_config (used by calcPrice):
     - apps/api/tests/_helpers/db-seed.ts (DETERMINISTIC_UUIDS — assign to UUIDs[10..19] for createOrder tests to avoid collision)
   </read_first>
   <action>
-    **(a) apps/api/src/pipeline/llm-tools/create-order.ts** — replace stub:
+    Sequence:
+    1. REPLACE the stub body of `create-order.ts` (from Task 1) with real implementation.
+    2. REPLACE the stub body of `discount.ts` (from Task 1) with real implementation.
+    3. Verify `index.ts` barrel still type-checks (no edits needed; same export shape).
+    4. Write `create-order-price-lock.test.ts` (integration).
+    5. Write `discount.test.ts` (unit/integration depending on DB requirement).
+    6. Run typecheck + biome.
+
+    **(a) apps/api/src/pipeline/llm-tools/create-order.ts** — REPLACE stub:
     ```ts
     import { sql } from 'drizzle-orm';
     import { customAlphabet, nanoid } from 'nanoid';
@@ -749,7 +822,7 @@ Phase 1 pricing_config (used by calcPrice):
     }
     ```
 
-    **(b) apps/api/src/pipeline/llm-tools/discount.ts** — replace stub:
+    **(b) apps/api/src/pipeline/llm-tools/discount.ts** — REPLACE stub:
     ```ts
     import { sql } from 'drizzle-orm';
     import { z } from 'zod/v4';
@@ -758,7 +831,7 @@ Phase 1 pricing_config (used by calcPrice):
 
     export const DiscountInputSchema = z.object({
       lead_id: z.string().uuid(),
-      amount_kopecks: z.number().positive(),  // Anthropic SDK doesn't bind bigint natively; convert to bigint in handler
+      amount_kopecks: z.number().positive(),
       reason: z.string().min(3),
     }).strict();
 
@@ -780,12 +853,11 @@ Phase 1 pricing_config (used by calcPrice):
           ctx.log.warn({ leadId: lead.id, requested: requested.toString(), minFloor: minFloor.toString() }, 'discount.below_floor');
           return { ok: false as const, error: { code: 'escalation_needed' as const, message: `discount ${requested} below min ${minFloor}` } };
         }
-        // Append to price_overrides audit + update quoted_price.
         const override = { from: quoted.toString(), to: requested.toString(), reason: input.reason, at: new Date().toISOString(), actor: 'ai' };
         await tx.execute(sql`
           UPDATE leads
           SET quoted_price = ${requested.toString()}::bigint,
-              price_overrides = price_overrides || ${JSON.stringify([override])}::jsonb[],
+              price_overrides = price_overrides || ARRAY[${JSON.stringify(override)}::jsonb],
               updated_at = NOW()
           WHERE id = ${lead.id}
         `);
@@ -807,11 +879,7 @@ Phase 1 pricing_config (used by calcPrice):
     }
     ```
 
-    NOTE on jsonb[] append: PostgreSQL syntax for appending a jsonb element to a jsonb[] column is `price_overrides || ARRAY[{}::jsonb]` not the syntax above. Read `apps/api/src/persistence/schema/leads.ts` to confirm column type (`jsonb('price_overrides').array()` ⇒ DDL is `jsonb[]`). Adjust to:
-    ```ts
-    SET price_overrides = price_overrides || ARRAY[${JSON.stringify(override)}::jsonb]
-    ```
-    or equivalently use `array_append`. Verify with `psql` semantics before commit.
+    NOTE on jsonb[] append: PostgreSQL syntax `price_overrides || ARRAY[${jsonb}::jsonb]` works on jsonb[] columns. Read `apps/api/src/persistence/schema/leads.ts` to confirm `price_overrides` is declared as `jsonb('price_overrides').array()` (DDL = `jsonb[]`). If the schema uses single-element jsonb instead, switch to `jsonb_build_array(...)`.
 
     **(c) apps/api/tests/integration/create-order-price-lock.test.ts** — Pitfall #1 closure test:
     - beforeAll: testcontainers + apply migrations + seed.
@@ -824,26 +892,19 @@ Phase 1 pricing_config (used by calcPrice):
     - Mock `ctx.db` minimally (or use testcontainers for the real db.transaction path).
     - Cases: amount >= 0.85 × quoted → ok; amount < 0.85 × quoted → escalation_needed; quoted_price null → lead_not_quoted.
 
-    **(e) Update `apps/api/src/pipeline/llm-tools/index.ts`** — barrel imports are already correct; ensure stub replacements wire through.
+    **(e) `apps/api/src/pipeline/llm-tools/index.ts` barrel** — no edits needed; the export names from Task 1 stubs match the real implementations.
 
     Constraints:
     - `nanoid 5` is already in dependencies (Phase 1).
     - `pricing_config` table in Phase 1 stores values as jsonb (rate_per_km may be raw number serialized to jsonb). Verify with `psql -c "SELECT value FROM pricing_config WHERE key='rate_per_km'"`; Wave 1 Task 2 calcPrice readPricingConfig handles the parsing.
     - discount tool stores override in `price_overrides` jsonb[] — array append syntax is PostgreSQL-version-sensitive; use array_append() if `||` doesn't work on jsonb[].
-  </behavior>
-  <action>
-    1. Replace `create-order.ts` stub with real implementation.
-    2. Replace `discount.ts` stub with real implementation.
-    3. Verify `index.ts` barrel still type-checks.
-    4. Write `create-order-price-lock.test.ts` (integration).
-    5. Write `discount.test.ts` (unit/integration depending on DB requirement).
-    6. Run typecheck + biome.
+    - DO NOT modify phase-2-stubs.test.ts (Plan 02-03b owns).
   </action>
   <verify>
     <automated>cd apps/api && grep -q "CreateOrderInputSchema" src/pipeline/llm-tools/create-order.ts && ! grep -q "price.*z\.number" src/pipeline/llm-tools/create-order.ts && grep -q "FOR UPDATE" src/pipeline/llm-tools/create-order.ts && grep -q "quoted_price" src/pipeline/llm-tools/create-order.ts && grep -q "escalation_needed" src/pipeline/llm-tools/discount.ts && grep -q "minFloor" src/pipeline/llm-tools/discount.ts && pnpm --filter @ai-logist/api typecheck 2>&1 | tail -10 && pnpm --filter @ai-logist/api test:unit -- discount 2>&1 | tail -10 && pnpm exec biome check apps/api/src/pipeline/llm-tools 2>&1 | tail -5</automated>
   </verify>
   <done>
-    create-order.ts inputSchema has NO price field; handler uses `SELECT ... FOR UPDATE` then INSERT with `${lead.quoted_price}`; discount.ts checks min floor; concurrency test verifies 1 success / 1 failure; tsc + biome pass.
+    create-order.ts inputSchema has NO price field (stub REPLACED); handler uses `SELECT ... FOR UPDATE` then INSERT with `${lead.quoted_price}`; discount.ts checks min floor (stub REPLACED); concurrency test verifies 1 success / 1 failure; tsc + biome pass. phase-2-stubs.test.ts UNCHANGED.
   </done>
 </task>
 
@@ -855,18 +916,19 @@ Wave 2a overall gates (run after all 3 tasks):
 2. `pnpm exec biome check apps/api/src/pipeline/llm-tools` — passes
 3. `pnpm --filter @ai-logist/api test:unit -- extract-request calc-price discount --repeat=10` — snapshot 10× byte-stable
 4. `pnpm --filter @ai-logist/api test:integration -- nearest-truck-knn bourse-fallback create-order-price-lock` — Docker-equipped run; otherwise gracefully skipped per Phase 1 convention
-5. phase-2-stubs.test.ts shows 9 todos remaining (LOGIC-04, MATCH-06, FSM-01..06, FSM-04 specifically — 02-03 plan flips FSM ones; Wave 3 flips LOGIC-04 + MATCH-06)
+5. phase-2-stubs.test.ts is UNCHANGED in this plan (Plan 02-03b flips all Wave-2 todos atomically after 02-02 + 02-03 merge)
 </verification>
 
 <success_criteria>
 - 9 files in `apps/api/src/pipeline/llm-tools/` (index, system-prompt, extract-request, extract-request.prompt, detect-language, nearest-truck, calc-price, create-order, discount).
+- Task 1 creates 4 stub tool files; Tasks 2 + 3 replace their bodies with real implementations.
 - ExtractRequestSchema exactly matches D-09; strict mode rejects unknowns (LOGIC-05).
 - nearestTruck SQL uses CTE re-rank with filters INSIDE CTE; EXPLAIN ANALYZE asserts GiST Index Scan (closes Pitfall #2).
 - calcPrice is pure; 10× snapshot repeat byte-stable; corridor min/max correct.
 - createOrder schema HAS NO price field; handler re-reads quoted_price inside transaction (closes Pitfall #1).
 - discount enforces min floor; returns escalation_needed on violation.
 - Anti-injection system prompt prefix in place (Pitfall #11 structural defense).
-- 5 todos flipped: LOGIC-01, LOGIC-05, MATCH-01, MATCH-03, MATCH-05.
+- phase-2-stubs.test.ts is NOT in files_modified (Plan 02-03b atomic-flips LOGIC-01, LOGIC-05, MATCH-01, MATCH-03, MATCH-05).
 - Snapshot tests for extractRequest + calcPrice satisfy ROADMAP success criterion #2 (byte-stable across 10× repeats).
 </success_criteria>
 
@@ -877,5 +939,6 @@ After completion, create `.planning/phases/02-llm-pipeline-deterministic-core-hi
 - create-order schema enforces D-06 at type level (no `price` field)
 - nearest-truck.ts implements RESEARCH.md §4 verbatim; integration test asserts GiST Index Scan
 - calcPrice snapshot stability proven (10× repeat byte-identical)
-- 5 more todos flipped: LOGIC-01, LOGIC-05, MATCH-01, MATCH-03, MATCH-05 (remaining 9: LOGIC-04, MATCH-06, FSM-01..06, API-07)
+- Stub-then-replace pattern: Task 1 created NOT_IMPLEMENTED stubs for nearest-truck/calc-price/create-order/discount; Tasks 2/3 replaced their bodies with real implementations.
+- Plan 02-03b (post-Wave-2 atomic) is responsible for flipping LOGIC-01, LOGIC-05, MATCH-01, MATCH-03, MATCH-05 todos.
 </output>
