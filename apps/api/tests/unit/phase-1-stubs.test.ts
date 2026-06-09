@@ -12,9 +12,45 @@ describe('Phase 1: Database & Schema (DB-*)', () => {
     const sql = await fs.readFile('drizzle/0000_postgis_extension.sql', 'utf-8');
     expect(sql).toMatch(/CREATE EXTENSION IF NOT EXISTS postgis/i);
   });
-  test.todo('DB-02: clients table has lang/tax_id/tax_id_country columns');
-  test.todo('DB-03: cities table has name_ru/name_ua + geography(Point, 4326)');
-  test.todo('DB-04: trucks table has geography(Point, 4326) + GiST index + CHECK SRID=4326');
+
+  test('DB-02: clients table has lang/tax_id/tax_id_country columns', async () => {
+    const { clients } = await import('../../src/persistence/schema/clients.js');
+    const cols = Object.keys(clients);
+    expect(cols).toContain('lang');
+    expect(cols).toContain('taxId');
+    expect(cols).toContain('taxIdCountry');
+    expect(cols).toContain('telegramId');
+    expect(cols).toContain('phone');
+  });
+
+  test('DB-03: cities table has name_ru/name_ua + geography(Point, 4326)', async () => {
+    const { cities } = await import('../../src/persistence/schema/cities.js');
+    const cols = Object.keys(cities);
+    expect(cols).toContain('nameRu');
+    expect(cols).toContain('nameUa');
+    expect(cols).toContain('slug');
+    expect(cols).toContain('geom');
+    // Verify the customType emits the geography DDL — single source of geo column type
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/persistence/schema/_columns.ts', 'utf-8');
+    expect(src).toMatch(/geography\(Point, 4326\)/);
+  });
+
+  test('DB-04: trucks table has geom + GiST + CHECK SRID + bigint capacity_t + body_type/status', async () => {
+    const { trucks } = await import('../../src/persistence/schema/trucks.js');
+    const cols = Object.keys(trucks);
+    expect(cols).toContain('geom');
+    expect(cols).toContain('capacityT');
+    expect(cols).toContain('bodyType');
+    expect(cols).toContain('status');
+    expect(cols).toContain('plateNumber');
+    // Verify schema source declares the GiST index AND the CHECK constraint
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/persistence/schema/trucks.ts', 'utf-8');
+    expect(src).toMatch(/using\(['"]gist['"]/);
+    expect(src).toMatch(/ST_SRID/);
+  });
+
   test.todo('DB-05: leads table has extended cargo fields + price_overrides jsonb[]');
   test.todo('DB-06: orders + order_events tables with UNIQUE (order_id, type)');
   test.todo('DB-07: calls, messages, bourse_cache tables exist');
