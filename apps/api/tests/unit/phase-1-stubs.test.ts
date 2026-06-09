@@ -119,7 +119,39 @@ describe('Phase 1: Database & Schema (DB-*)', () => {
     expect(src).toMatch(/unique\([^)]*\)\.on\(t\.source,\s*t\.externalId\)/);
   });
 
-  test.todo('DB-10: seed populates 12 trucks, ~30 cities, 8 clients idempotently');
+  test('DB-10: seed fixtures shape — 12 trucks, ~30 cities, 8 clients, rate_per_km=4200', async () => {
+    const cities = (await import('../../src/seed/data/cities.json', { with: { type: 'json' } }))
+      .default as Array<{ slug: string; country_code: string }>;
+    const trucks = (await import('../../src/seed/data/trucks.json', { with: { type: 'json' } }))
+      .default as Array<{ body_type: string }>;
+    const clients = (await import('../../src/seed/data/clients.json', { with: { type: 'json' } }))
+      .default as Array<{ lang: string }>;
+    const pricing = (await import('../../src/seed/data/pricing.json', { with: { type: 'json' } }))
+      .default as { rate_per_km: number };
+
+    expect(cities.length).toBeGreaterThanOrEqual(25);
+    expect(cities.filter((c) => c.country_code === 'border').length).toBeGreaterThanOrEqual(5);
+    expect(cities.some((c) => c.slug === 'kyiv')).toBe(true);
+    expect(trucks).toHaveLength(12);
+    expect(trucks.filter((t) => t.body_type === 'tent')).toHaveLength(5);
+    expect(trucks.filter((t) => t.body_type === 'ref')).toHaveLength(3);
+    expect(trucks.filter((t) => t.body_type === 'iso')).toHaveLength(2);
+    expect(trucks.filter((t) => t.body_type === 'container')).toHaveLength(2);
+    expect(clients).toHaveLength(8);
+    expect(clients.filter((c) => c.lang === 'ru')).toHaveLength(4);
+    expect(clients.filter((c) => c.lang === 'ua')).toHaveLength(4);
+    expect(pricing.rate_per_km).toBe(4200);
+
+    // Verify seed/run.ts uses onConflictDoNothing for idempotency (D-20)
+    const fs = await import('node:fs/promises');
+    const runSrc = await fs.readFile('src/seed/run.ts', 'utf-8');
+    expect(runSrc.match(/onConflictDoNothing/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+
+    // Verify smoke.ts uses canonical KNN pattern (D-21 + PITFALLS #2)
+    const smokeSrc = await fs.readFile('src/seed/smoke.ts', 'utf-8');
+    expect(smokeSrc).toMatch(/ORDER BY t\.geom <->/);
+    expect(smokeSrc).toMatch(/ST_Distance.*true/);
+  });
 });
 
 describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
