@@ -28,7 +28,7 @@
 - [ ] **API-04**: REST `/api/orders` (GET с фильтром по status), `/api/orders/:id` (заказ + order_events)
 - [ ] **API-05**: REST `/api/trucks` (GET/POST/PATCH — CRUD парка)
 - [ ] **API-06**: REST `/api/clients/:id/messages` для чата админки
-- [ ] **API-07**: REST `/api/leads/:id/match` (пересчёт подбора) и `/api/leads/:id/quote` (пересчёт цены)
+- [x] **API-07**: REST `/api/leads/:id/match` (пересчёт подбора) и `/api/leads/:id/quote` (пересчёт цены)
 - [ ] **API-08**: REST `/api/orders` POST (ручное создание заказа менеджером)
 - [ ] **API-09**: REST `/api/analytics/kpi` — звонки, конверсия, выручка для дашбордов
 - [ ] **API-10**: REST `/api/orders/:id/price-override` — изменение цены менеджером, пишет в `price_overrides`
@@ -211,7 +211,7 @@
 | API-04 | Phase 4 | Pending |
 | API-05 | Phase 4 | Pending |
 | API-06 | Phase 4 | Pending |
-| API-07 | Phase 2 | Pending |
+| API-07 | Phase 2 | Complete |
 | API-08 | Phase 4 | Pending |
 | API-09 | Phase 4 | Pending |
 | API-10 | Phase 4 | Pending |
