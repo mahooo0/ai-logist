@@ -22,6 +22,10 @@ importers:
         version: 4.1.8(@types/node@22.19.20)(@vitest/coverage-v8@4.1.8)(vite@8.0.16(@types/node@22.19.20)(esbuild@0.28.0)(tsx@4.22.4)(yaml@2.9.0))
 
   apps/api:
+    dependencies:
+      '@ai-logist/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
     devDependencies:
       '@testcontainers/postgresql':
         specifier: ^12.0.1
@@ -41,6 +45,16 @@ importers:
       vitest:
         specifier: ^4.1.0
         version: 4.1.8(@types/node@22.19.20)(@vitest/coverage-v8@4.1.8)(vite@8.0.16(@types/node@22.19.20)(esbuild@0.28.0)(tsx@4.22.4)(yaml@2.9.0))
+
+  packages/shared-types:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
 packages:
 
@@ -1343,6 +1357,9 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@babel/helper-string-parser@7.29.7': {}
@@ -2551,3 +2568,5 @@ snapshots:
       archiver-utils: 5.0.2
       compress-commons: 6.0.2
       readable-stream: 4.7.0
+
+  zod@4.4.3: {}

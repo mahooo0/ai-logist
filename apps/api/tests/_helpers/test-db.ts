@@ -41,7 +41,9 @@ export async function getTestDb(): Promise<unknown> {
   const url = getTestDbUrl();
   try {
     // Dynamic import — drizzle-orm/pg are added in Plan 01-04
+    // @ts-expect-error — `pg` is installed in Plan 01-04
     const { Pool } = await import('pg');
+    // @ts-expect-error — `drizzle-orm` is installed in Plan 01-04
     const { drizzle } = await import('drizzle-orm/node-postgres');
     const pool = new Pool({ connectionString: url });
     return drizzle(pool);

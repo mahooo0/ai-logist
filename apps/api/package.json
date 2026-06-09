@@ -10,6 +10,9 @@
     "test:smoke": "vitest run --project smoke",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@ai-logist/shared-types": "workspace:*"
+  },
   "devDependencies": {
     "vitest": "^4.1.0",
     "@vitest/coverage-v8": "^4.1.0",
