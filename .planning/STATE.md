@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 8
+current_plan: 9
 status: executing
-last_updated: "2026-06-09T06:03:22.070Z"
+last_updated: "2026-06-09T06:18:16.842Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 7
-  percent: 64
+  completed_plans: 8
+  percent: 73
 ---
 
 # State: AI-Логист
@@ -28,17 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 8
+Current Plan: 9
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04, 01-05, 01-06 complete; next is 01-07 (fastify-skeleton + init migration generation + /api/health)
-**Status:** Executing Phase 01
+**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04, 01-05, 01-06, 01-07 complete; next is 01-08 (rest-stubs: 501 stubs for /api/leads /orders /trucks /clients /analytics + /webhook/* with Zod schemas)
+**Status:** Ready to execute
 
 **Progress:**
 
 ```
-[██████░░░░] 64%
-[████████████░░░░░░░░] 7/11 plans complete in Phase 01
+[███████░░░] 73%
+[██████████████░░░░░░] 8/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -58,6 +58,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P04 | 2m 12s | 2 tasks | 6 files |
 | Phase 01-database-backend-skeleton P05 | 2m 30s | 2 tasks | 6 files |
 | Phase 01-database-backend-skeleton P06 | 4m 10s | 3 tasks | 14 files |
+| Phase 01-database-backend-skeleton P07 | 9m 0s | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,12 @@ Total Plans in Phase: 11
 - **Plan 01-06:** `messages.role` / `calls.outcome` / `orders.currency` / `order_events.actor` all chosen as plain `text` not ENUM — each domain is guaranteed to grow (system/broadcast actors; voicemail/dropped outcomes; KZT/BYN currencies; geofence/webhook actors) and PostgreSQL ENUM migrations require ALTER TYPE per new value. Validation lives in TS at the producing code path.
 - **Plan 01-06:** `webhook_updates.id` is `bigserial` (RESEARCH.md verbatim) — Telegram update_id is bigint; voice/gps external ids may also exceed int32. bigserial gives a numeric PK independent of the external_id semantics. UNIQUE(source, external_id) makes the duplicate-delivery case a no-op write via `onConflictDoNothing({target: [...]})`.
 - **Plan 01-06:** `bourse_cache.query_hash` UNIQUE via explicit `uniqueIndex` name (`'bourse_cache_query_hash_unq'`) not `.unique()` shortcut — Phase 2's cache writer can reference the constraint name in raw SQL ON CONFLICT clauses.
+- **Plan 01-07:** Drizzle 0.45.2 customType emits double-quoted type names for non-native types — `geography(Point, 4326)` gets wrapped as `"geography(Point, 4326)"` in generated SQL because drizzle-kit's `parseType()` `pgNativeTypes` list includes `geometry` but excludes `geography`. The quoted form would fail at apply time (Postgres treats it as a literal type identifier, not as the parameterized geography type). Fix: post-process the generated SQL via a small `node -e` script appended to `db:generate` — idempotent on re-runs. RESEARCH.md Pitfall #1 documented the customType pattern but missed this emission-quoting issue.
+- **Plan 01-07:** `ioredis` named import (`import { Redis } from 'ioredis'`) not default — RESEARCH.md verbatim default import fails under `module:NodeNext + esModuleInterop:true` because ioredis's CJS shape resolves the default as a namespace (TS2709/TS2351). Named import gives both type + value `Redis` cleanly.
+- **Plan 01-07:** HealthResponseSchema pattern (Zod v4 in `packages/shared-types/src/api/health.ts`, re-exported from package barrel, imported by route via `@ai-logist/shared-types/api/health` subpath) is the template for every future API-* DTO. Plan 01-08 will replicate it for leads/orders/trucks/clients/analytics/webhooks.
+- **Plan 01-07:** `buildApp()` registers plugins in deterministic order — sensible → db → redis → swagger → swagger-ui → routes. Both db.ts and redis.ts use `fastify-plugin (fp)` so `app.db`/`app.pgPool`/`app.redis` decorators escape encapsulation. Both smoke-test (`SELECT 1` / `PING`) on boot — fail-fast if infra is down. Plugin lifecycle drains connections on `app.close()`.
+- **Plan 01-07:** Live `pnpm dev &` + `curl /api/health` smoke skipped — Docker daemon unreachable on Claude's runner (consistent with Plans 01-02..06). testcontainers integration test (`tests/integration/health.test.ts`) ships the actual contract enforcement for verifier/developer machines that have Docker — boots `postgis/postgis:17-3.5`, applies both migrations, calls `app.inject({method:'GET',url:'/api/health'})`, asserts 200 + `checks.postgis ~ /3.5/`.
+- **Plan 01-07:** Integration test imports `app.ts` DYNAMICALLY (`await import('../../src/app.js')`) inside `beforeAll` AFTER `process.env.DATABASE_URL` is overridden to the testcontainers URL — `config.ts` validates env at module load, so any static top-of-file import would capture the original DATABASE_URL before the override.
 
 ### TODOs
 
@@ -121,11 +128,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-06-PLAN.md (5 channel/config schema tables: messages with FK cascade+set-null and role/text + 3 indexes; calls with FK set-null and direction/transcript jsonb default `'[]'`/outcome; bourse_cache with query_hash UNIQUE + source + payload + fetched_at TTL anchor; webhook_updates with bigserial PK + webhookSourceEnum + UNIQUE(source, external_id) for Telegram idempotency per DB-09; pricing_config key/value jsonb store for rate_per_km/dir_coef/season_coef; plus 6 thin per-aggregate repos per D-07 — trucks/cities/clients/leads/orders/messages — using namespace barrel `export * as fooRepo`; DB-07/DB-09/API-02 stub tests flipped to passing; unit suite 10 passed / 7 todo; tsc + biome clean across all 23 persistence files; all 13 spec §2 tables now declared).
+**Last session stopped at:** Completed 01-07-PLAN.md (Fastify v5 buildApp() factory at apps/api/src/app.ts wiring sensible + dbPlugin + redisPlugin + swagger + swagger-ui + healthRoutes with Zod type provider; entry index.ts with graceful SIGINT/SIGTERM shutdown; db plugin decorating app.db/app.pgPool with smoke `SELECT 1`; redis plugin decorating app.redis with PING + maxRetriesPerRequest=null for BullMQ Phase 5; /api/health route returning D-16 shape with PostGIS_Version() probe + 503 on any subsystem failure; HealthResponseSchema (Zod v4) published in packages/shared-types/src/api/health.ts and re-exported from barrel — first shared schema established; drizzle-kit generate produced 0001_init.sql covering all 13 spec §2 tables + 7 ENUMs + 3 GiST + 5 nullable-safe CHECK SRID; **Drizzle 0.45.2 customType double-quote bug patched** — `"geography(Point, 4326)"` → `geography(Point, 4326)` via post-process node -e in db:generate script (idempotent); drizzle-kit check clean + re-generate emits "No schema changes"; testcontainers integration test tests/integration/health.test.ts boots postgis/postgis:17-3.5, applies both migrations, asserts 200 + checks.postgis ~ /3.5/; API-01 + API-16 stub tests flipped from .todo() to passing; unit suite 12 passed / 5 todo; tsc + biome clean across 36 files).
 
-**Next action:** Run `/gsd:execute-plan 01-07` to execute the fastify-skeleton plan (Fastify v5 app + plugins: db / redis / swagger / sensible / type-provider-zod; generate single `0001_init.sql` covering all 13 tables via `pnpm db:generate`; land `/api/health` with PostGIS_Version() check flipping API-01).
+**Next action:** Run `/gsd:execute-plan 01-08` to execute the rest-stubs plan (501 stubs for /api/leads /orders /trucks /clients /analytics + /webhook/* routes; full Zod schemas in packages/shared-types/src/api/*.ts using the HealthResponseSchema pattern; reply.notImplemented() via @fastify/sensible; OpenAPI auto-generated via jsonSchemaTransform; possibly flip DEPLOY-02 if config.ts env-rejection path gets exercised).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-06 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3,4,5,6}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), 0000_postgis_extension.sql migration, ALL 13 schema tables live: clients (lang/tax_id/tax_id_country), cities (name_ru/name_ua/slug-UNIQUE/GiST/CHECK), trucks (capacity_t/body_type/status/GiST/CHECK), truck_positions (FK cascade + UNIQUE(truck_id, recorded_at) GPS idempotency), orders (number/public_token UNIQUE / bigint price kopecks / status enum / version), leads (5 extended cargo cols + price_overrides jsonb[] + version + bigint budget/declared_value/quoted_price), order_events (UNIQUE(order_id, type) FSM idempotency + nullable geom + nullable-safe CHECK SRID), pod_artifacts (signature_url/photo_url/gps nullable-safe CHECK SRID/captured_at), messages (client_id FK cascade + lead_id FK set-null + role/text + 3 indexes), calls (lead_id FK set-null + direction + transcript jsonb default `'[]'` + outcome), bourse_cache (query_hash UNIQUE + source + payload + fetched_at), webhook_updates (bigserial + UNIQUE(source, external_id) Telegram idempotency), pricing_config (key/value jsonb). Forward FK leads.order_id → orders.id compiles via lazy callback. 6 thin per-aggregate repos under apps/api/src/persistence/repos/ exposed via namespace barrel (trucksRepo/citiesRepo/clientsRepo/leadsRepo/ordersRepo/messagesRepo). Vitest unit suite: 10 passed / 7 todo. Next plan is 01-07.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-07 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0..7}-SUMMARY.md`). pnpm workspaces, TS strict, Biome 2.4.16, `@ai-logist/shared-types` with HealthResponseSchema (Zod v4) at api/health, apps/api Vitest 4.1.8 + testcontainers 12, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType, 7 pgEnums, 0000_postgis_extension.sql + 0001_init.sql (all 13 tables + 7 ENUMs + 3 GiST + 5 CHECK SRID — quoted-customType bug fixed via post-process), all 13 schema tables declared, 6 thin per-aggregate repos under apps/api/src/persistence/repos/ (namespace barrel). NEW IN 01-07: Fastify v5 stack installed (fastify@5.8.5 + @fastify/sensible@6 + @fastify/swagger@9.7 + @fastify/swagger-ui@5.2 + fastify-plugin@5 + fastify-type-provider-zod@6.1 + ioredis@5.11 + pino@10.3 + pino-pretty@13.1 dev + nanoid@5). apps/api/src/{app.ts, index.ts, plugins/db.ts, plugins/redis.ts, routes/health.ts} all live. packages/shared-types/src/api/health.ts (HealthResponseSchema + HealthResponse type). buildApp() FastifyInstance factory pattern established; plugin lifecycle drains connections on app.close. Vitest unit suite: 12 passed / 5 todo. Next plan is 01-08.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*

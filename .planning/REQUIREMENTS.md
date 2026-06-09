@@ -22,7 +22,7 @@
 
 ### Backend API & Infrastructure (API)
 
-- [ ] **API-01**: Fastify v5 + TypeScript 5.7 strict app с health-эндпоинтом `/api/health` (возвращает `PostGIS_Version()`)
+- [x] **API-01**: Fastify v5 + TypeScript 5.7 strict app с health-эндпоинтом `/api/health` (возвращает `PostGIS_Version()`)
 - [x] **API-02**: Drizzle ORM миграции и репозитории для всех таблиц §2
 - [ ] **API-03**: REST `/api/leads` (GET с фильтром по stage, PATCH для смены стадии вручную)
 - [ ] **API-04**: REST `/api/orders` (GET с фильтром по status), `/api/orders/:id` (заказ + order_events)
@@ -37,7 +37,7 @@
 - [ ] **API-13**: Webhook `/webhook/telegram` с проверкой `secret_token`
 - [ ] **API-14**: Webhook `/webhook/gps` для приёма позиций (демо: симулятор)
 - [ ] **API-15**: Webhook `/webhook/voice` (stub-эндпоинт для демо, возвращает 200)
-- [ ] **API-16**: Schema-validated routes с Zod, общая `packages/shared-types` для DTOs
+- [x] **API-16**: Schema-validated routes с Zod, общая `packages/shared-types` для DTOs
 
 ### Business Logic — LLM Pipeline (LOGIC)
 
@@ -205,7 +205,7 @@
 | DB-08 | Phase 1 | Complete |
 | DB-09 | Phase 1 | Complete |
 | DB-10 | Phase 1 | Pending |
-| API-01 | Phase 1 | Pending |
+| API-01 | Phase 1 | Complete |
 | API-02 | Phase 1 | Complete |
 | API-03 | Phase 4 | Pending |
 | API-04 | Phase 4 | Pending |
@@ -220,7 +220,7 @@
 | API-13 | Phase 3 | Pending |
 | API-14 | Phase 5 | Pending |
 | API-15 | Phase 3 | Pending |
-| API-16 | Phase 1 | Pending |
+| API-16 | Phase 1 | Complete |
 | LOGIC-01 | Phase 2 | Pending |
 | LOGIC-02 | Phase 2 | Pending |
 | LOGIC-03 | Phase 2 | Pending |
