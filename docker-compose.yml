@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: ailogist-postgres
+    environment:
+      POSTGRES_DB: ailogist
+      POSTGRES_USER: ailogist
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ailogist}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ailogist -d ailogist']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ailogist-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    ports:
+      - '127.0.0.1:6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ailogist-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://ailogist:${DB_PASSWORD:-ailogist}@postgres:5432/ailogist?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      VERSION: ${VERSION:-dev}
+    expose:
+      - '3000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: ailogist-web
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: http://api:3000
+    expose:
+      - '3001'
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: ailogist-caddy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
+  caddyconfig:

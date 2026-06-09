@@ -1,0 +1,31 @@
+# Local development — listens on :80 only, no TLS
+# For prod VPS, replace ':80' with your domain and Caddy auto-provisions Let's Encrypt.
+:80 {
+    encode gzip
+
+    # API: /api/* — preserve prefix (Fastify routes are /api/health, /api/leads, …)
+    # Pitfall #3 of 01-RESEARCH.md: the alternative directive STRIPS the prefix; we use `handle` here.
+    handle /api/* {
+        reverse_proxy api:3000
+    }
+
+    # Webhooks (Telegram in Phase 3, voice/gps in Phase 5)
+    handle /webhook/* {
+        reverse_proxy api:3000
+    }
+
+    # WebSocket (Phase 5: /ws/tracking, /ws/inbox)
+    handle /ws/* {
+        reverse_proxy api:3000
+    }
+
+    # Everything else → web (Next.js, including /track/[token] in Phase 5)
+    handle {
+        reverse_proxy web:3001
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}

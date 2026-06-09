@@ -1,0 +1,30 @@
+# Production overlay
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Steps before first run on a VPS:
+# 1. Set DOMAIN env var (e.g., ai-logist.example.com)
+# 2. Edit Caddyfile: replace ':80' with your domain — Caddy auto-acquires Let's Encrypt
+# 3. Open ports 80 + 443 in firewall
+
+services:
+  postgres:
+    ports: []  # Don't expose to host on prod — only api container connects via Docker network
+    restart: always
+
+  redis:
+    ports: []  # Same — no host exposure on prod
+    restart: always
+
+  api:
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+    restart: always
+
+  web:
+    restart: always
+
+  caddy:
+    restart: always
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
