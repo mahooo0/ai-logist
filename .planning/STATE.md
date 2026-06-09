@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 5
+current_plan: 6
 status: executing
-last_updated: "2026-06-09T05:41:02.374Z"
+last_updated: "2026-06-09T05:47:25.311Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 4
-  percent: 36
+  completed_plans: 5
+  percent: 45
 ---
 
 # State: AI-Логист
@@ -28,17 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 5 of 11
+Current Plan: 6
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00, 01-01, 01-02, 01-03 complete; next is 01-04 (schema-geo: clients, cities, trucks, truck_positions tables + first table-creating migration)
+**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04 complete; next is 01-05 (schema-domain: leads, orders, order_events, pod_artifacts)
 **Status:** Executing Phase 01
 
 **Progress:**
 
 ```
-[████░░░░░░] 36%
-[███████░░░░░░░░░░░░░] 4/11 plans complete in Phase 01
+[█████░░░░░] 45%
+[█████████░░░░░░░░░░░] 5/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -55,6 +55,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P01 | 5m46s | 2 tasks | 15 files |
 | Phase 01 P02 | 3m27s | 2 tasks | 14 files |
 | Phase 01-database-backend-skeleton P03 | 5m47s | 2 tasks | 15 files |
+| Phase 01-database-backend-skeleton P04 | 2m 12s | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,11 @@ Total Plans in Phase: 11
 - **Plan 01-03:** Removed `@ts-expect-error` directives in `tests/_helpers/test-db.ts` that Plan 01-01 added as forward-references. Plan 01-01's note claimed "Plan 01-04 must remove them" but Plan 01-03 is actually the plan that installs `drizzle-orm + pg` — directives became unused (TS2578) the moment Task 1 finished installing the deps. Also cleaned the two `deferred-items.md` Wave 0 lint warnings while editing the file.
 - **Plan 01-03:** Live `pnpm db:migrate` smoke against Docker Postgres deferred — Docker daemon unreachable on Claude's runner (same blocker as Plan 01-02). `drizzle-kit migrate` reaches the connection step before timing out, proving config + journal + SQL are syntactically valid. Developer/verifier must run `docker compose up -d postgres && pnpm --filter @ai-logist/api db:migrate && docker exec ailogist-postgres psql -U ailogist -d ailogist -c "SELECT PostGIS_Version();"` on a properly configured machine. Expected output: `3.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1` (or similar 3.5.x string).
 - **Plan 01-03:** Used `webhook_source` as the 7th pgEnum (CONTEXT D-06 enumerates 6; RESEARCH.md adds `webhook_source` for D-09 idempotency table).
+- **Plan 01-04:** Used Drizzle 0.45.2 callback-array API for table indexes (`(t) => [index(...), check(...)]`) — older Drizzle docs show the object form (`(t) => ({ ... })`); 0.45.2 requires the tuple/array form for correct `getTableConfig()` type inference.
+- **Plan 01-04:** `truck_positions.truck_id` is ON DELETE CASCADE — demo seed recreates data on every reset, orphan position rows would clutter the Phase 5 live tracking map. Production would soft-delete trucks instead.
+- **Plan 01-04:** `cities.country_code` is TEXT, not an ENUM — values today are RU/UA/border; future demos may add UA oblast codes / BY / KZ. TEXT keeps it migration-free; seed validates the set at write time.
+- **Plan 01-04:** `drizzle-kit generate` deferred to Plan 01-07 — Waves 3b + 3c + 3d will ship as ONE init migration (`0001_init.sql`) covering clients/cities/trucks/truck_positions + leads/orders + channels/repos tables together, avoiding 3 sequential migrations for never-released schema.
+- **Plan 01-04:** Test assertion strategy: `Object.keys(schemaObject)` + source-grep. Drizzle's public runtime API doesn't expose indexes/checks at runtime via the table object — only columns iterate. The eventual `0001_init.sql` (Plan 01-07) will let stricter tests assert DDL strings directly.
 
 ### TODOs
 
@@ -102,11 +108,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-03-PLAN.md (drizzle stack installed; geographyPoint customType + 7 pgEnums; 0000_postgis_extension migration ready; Zod env config + db factory wired).
+**Last session stopped at:** Completed 01-04-PLAN.md (clients/cities/trucks/truck_positions schemas; every geo column has GiST + CHECK SRID=4326; DB-02/03/04 stub tests flipped to passing; unit suite 4 passed / 13 todo).
 
-**Next action:** Run `/gsd:execute-plan 01-04` to execute the schema-geo plan (clients, cities, trucks, truck_positions tables + GiST indexes + CHECK SRID=4326 constraints + first table-creating migration).
+**Next action:** Run `/gsd:execute-plan 01-05` to execute the schema-domain plan (leads with extended cargo fields + price_overrides jsonb[], orders with public_token, order_events with UNIQUE(order_id, type), pod_artifacts).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00, 01-01, 01-02, 01-03 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), and 0000_postgis_extension.sql migration all live. Next plan is 01-04.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00, 01-01, 01-02, 01-03, 01-04 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3,4}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), 0000_postgis_extension.sql migration, and four geo-bearing schema tables (clients with lang/tax_id/tax_id_country; cities with name_ru/name_ua/slug-UNIQUE/GiST/CHECK; trucks with capacity_t/body_type/status/GiST/CHECK; truck_positions with FK cascade + UNIQUE(truck_id, recorded_at) for GPS idempotency) all live. Next plan is 01-05.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
