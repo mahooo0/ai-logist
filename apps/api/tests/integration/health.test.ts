@@ -61,6 +61,10 @@ describe('GET /api/health (integration)', () => {
       expect(body.checks.db).toBe('ok');
       expect(body.checks.postgis).toMatch(/3\.5/);
       expect(body.checks.redis).toBe('ok');
+      // Phase 2 Plan 02-05 — llm subcheck. Result depends on env: 'ok' if
+      // ANTHROPIC_API_KEY is set in the test environment, 'not_configured'
+      // otherwise. Either value is a valid health response.
+      expect(['ok', 'not_configured']).toContain(body.checks.llm);
     } finally {
       await app.close();
     }
@@ -68,11 +72,12 @@ describe('GET /api/health (integration)', () => {
 
   test('API-16: HealthResponseSchema validates the expected payload shape', async () => {
     const { HealthResponseSchema } = await import('@ai-logist/shared-types/api/health');
+    // Phase 2 Plan 02-05 — schema gained checks.llm subcheck.
     const valid = HealthResponseSchema.safeParse({
       status: 'ok',
       version: 'dev',
       uptime_s: 1,
-      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok' },
+      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok', llm: 'ok' },
     });
     expect(valid.success).toBe(true);
 
@@ -80,7 +85,7 @@ describe('GET /api/health (integration)', () => {
       status: 'whatever',
       version: 'dev',
       uptime_s: 1,
-      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok' },
+      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok', llm: 'ok' },
     });
     expect(invalid.success).toBe(false);
   });

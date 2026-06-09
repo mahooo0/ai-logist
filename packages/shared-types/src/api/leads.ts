@@ -50,27 +50,34 @@ export const LeadPatchBodySchema = z.object({
 });
 export type LeadPatchBody = z.infer<typeof LeadPatchBodySchema>;
 
+// Phase 2 Plan 02-05 — flattened schema matches nearestTruck row + REST handler.
+// Each row carries `meters` (spheroid distance from pickup) and a `source` tag so
+// the admin Kanban "re-match" button can show own-fleet vs bourse-stub provenance.
+// `id` is a plain string (not uuid) because bourse-stub external_ids are synthetic.
 export const LeadMatchResponseSchema = z.object({
-  lead: LeadSchema,
-  matches: z.array(
+  lead_id: z.string().uuid(),
+  trucks: z.array(
     z.object({
-      truckId: z.string().uuid(),
-      name: z.string(),
-      plateNumber: z.string(),
-      capacityT: z.number(),
-      distanceMeters: z.number(),
+      id: z.string(),
+      driver_phone: z.string(),
+      plate_number: z.string(),
+      capacity_t: z.string(), // numeric → string via pg
+      body_type: z.enum(['tent', 'ref', 'iso', 'container']),
+      meters: z.string(), // double precision → string via pg
+      source: z.enum(['own-fleet', 'bourse-stub']),
     })
   ),
 });
 export type LeadMatchResponse = z.infer<typeof LeadMatchResponseSchema>;
 
+// Phase 2 Plan 02-05 — flattened price corridor matches calcPrice output.
+// kopecks values are serialized as digit-only strings (bigint → JSON-safe).
 export const LeadQuoteResponseSchema = z.object({
-  lead: LeadSchema,
-  quote: z.object({
-    min: z.string(), // kopecks as string
-    default: z.string(),
-    max: z.string(),
-    routeKm: z.string(),
-  }),
+  lead_id: z.string().uuid(),
+  quoted_price_kopecks: z.string(),
+  min_kopecks: z.string(),
+  max_kopecks: z.string(),
+  route_km: z.number(),
+  stage: z.string(),
 });
 export type LeadQuoteResponse = z.infer<typeof LeadQuoteResponseSchema>;

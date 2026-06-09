@@ -28,6 +28,11 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
         db: 'fail' as 'ok' | 'fail',
         postgis: 'fail',
         redis: 'fail' as 'ok' | 'fail',
+        // Phase 2 Plan 02-05 — LLM subcheck. 'ok' when ANTHROPIC_API_KEY is
+        // configured, 'not_configured' otherwise. No HTTP ping to Anthropic
+        // here — rate-limit-safe for /health probes. POLISH-06 (Phase 6) will
+        // extend this to a real ping behind a circuit breaker.
+        llm: (config.ANTHROPIC_API_KEY ? 'ok' : 'not_configured') as 'ok' | 'not_configured',
       };
 
       try {

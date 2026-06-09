@@ -181,11 +181,13 @@ describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
   test('API-16: HealthResponseSchema is exported from @ai-logist/shared-types/api/health', async () => {
     const mod = await import('@ai-logist/shared-types/api/health');
     expect(mod.HealthResponseSchema).toBeDefined();
+    // Phase 2 Plan 02-05 — checks.llm subcheck added; the Phase 1 shape (no llm)
+    // is no longer valid. Schema accepts 'ok' | 'not_configured'.
     const valid = mod.HealthResponseSchema.safeParse({
       status: 'ok',
       version: 'dev',
       uptime_s: 1,
-      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok' },
+      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok', llm: 'ok' },
     });
     expect(valid.success).toBe(true);
   });
