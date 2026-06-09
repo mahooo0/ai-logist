@@ -8,6 +8,13 @@
       "when": 1780983386226,
       "tag": "0000_postgis_extension",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780985432060,
+      "tag": "0001_init",
+      "breakpoints": true
     }
   ]
 }

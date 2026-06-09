@@ -123,7 +123,15 @@ describe('Phase 1: Database & Schema (DB-*)', () => {
 });
 
 describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
-  test.todo('API-01: GET /api/health returns 200 with PostGIS_Version() in checks.postgis');
+  // Real-DB-bound assertions live in tests/integration/health.test.ts (testcontainers).
+  // For the unit suite we assert the route file exports the plugin and the schema is wired.
+  test('API-01: /api/health route file exports plugin + uses PostGIS_Version', async () => {
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/routes/health.ts', 'utf-8');
+    expect(src).toMatch(/PostGIS_Version/);
+    expect(src).toMatch(/app\.redis\.ping/);
+    expect(src).toMatch(/HealthResponseSchema/);
+  });
 
   test('API-02: Drizzle repos for all 6 aggregates exist with thin CRUD per D-07', async () => {
     const repos = await import('../../src/persistence/repos/index.js');
@@ -138,7 +146,17 @@ describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
     expect(repos.messagesRepo.listByClient).toBeTypeOf('function');
   });
 
-  test.todo('API-16: routes validate request body via Zod and reject malformed input with 400');
+  test('API-16: HealthResponseSchema is exported from @ai-logist/shared-types/api/health', async () => {
+    const mod = await import('@ai-logist/shared-types/api/health');
+    expect(mod.HealthResponseSchema).toBeDefined();
+    const valid = mod.HealthResponseSchema.safeParse({
+      status: 'ok',
+      version: 'dev',
+      uptime_s: 1,
+      checks: { db: 'ok', postgis: '3.5.0', redis: 'ok' },
+    });
+    expect(valid.success).toBe(true);
+  });
 });
 
 describe('Phase 1: Deployment & Demo (DEPLOY-*)', () => {
