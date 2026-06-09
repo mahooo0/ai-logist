@@ -1,28 +1,38 @@
-// Phase 2 Plan 02-04a — Wave 3 intake pipeline FIRST HALF (complete after Task 2).
+// Phase 2 Plan 02-04a + 02-04b — Wave 3 intake pipeline FULL (Steps 0..J).
 //
-// Implements steps 0 + A + B + C + D + E + F of the dialog turn (per 02-CONTEXT.md
-// "Pipeline step ordering"):
+// Plan 02-04a implemented Steps 0 + A + B + C + D + E + F (advisory lock,
+// persist + lang + budget + extract + clarify + city). Plan 02-04b extends with
+// Step D-pre (confirmation shortcut) and Steps G + H + I + J (match + price-lock
+// + templated reply + create-order chain).
 //
-//   STEP 0 — Per-client serialization via pg_advisory_xact_lock(hashtext(client_id))
-//            (CONTEXT D-30, FSM-04).
-//   STEP A — Persist incoming message + find-or-create open lead.
-//   STEP B — Sticky language detection (CONTEXT D-12..D-15, LOGIC-02). Sticky =
-//            detection runs ONCE on first message ≥ 20 chars; clients.lang never
-//            auto-flips on later messages.
-//   STEP C — Token-budget check (CONTEXT D-36, Pitfall #12). If
-//            leads.tokens_in + tokens_out > LLM_TOKEN_BUDGET_PER_LEAD →
-//            transitionLead → LOST with reason='token_budget_exhausted'.
-//   STEP D — extractRequest tool call + token-ledger UPDATE (LOGIC-01).
-//   STEP E — Clarification budget = 2 rounds (LOGIC-04). After 2 empty rounds the
-//            lead stays NEW with manual-triage payload + sorry reply.
-//   STEP F — City normalization (LOGIC-03). cities ILIKE on name_ru / name_ua first,
-//            then Nominatim fallback via geocoding lib; result cached in cities.
-//
-// Steps G..J (match → price-lock → confirm → scheduler) land in Plan 02-04b.
-//
-// Test surface — this file is consumed by:
-//   - apps/api/tests/_helpers/dialog-harness.ts via static `import { handleInboundMessage }`.
-//   - apps/api/tests/integration/{token-budget,pipeline-sticky-lang,pipeline-injection}.test.ts.
+//   STEP 0     — Per-client serialization via pg_advisory_xact_lock(hashtext(client_id))
+//                (CONTEXT D-30, FSM-04).
+//   STEP A     — Persist incoming message + find-or-create open lead.
+//   STEP B     — Sticky language detection (CONTEXT D-12..D-15, LOGIC-02). Sticky =
+//                detection runs ONCE on first message ≥ 20 chars; clients.lang never
+//                auto-flips on later messages.
+//   STEP C     — Token-budget check (CONTEXT D-36, Pitfall #12). If
+//                leads.tokens_in + tokens_out > LLM_TOKEN_BUDGET_PER_LEAD →
+//                transitionLead → LOST with reason='token_budget_exhausted'.
+//   STEP D-pre — Confirmation shortcut (Plan 02-04b). If lead is in QUOTED stage and
+//                text matches CONFIRM_PATTERNS → transitionLead → AGREED → createOrder
+//                → ORDER_CREATED. Skips Steps D..J. createOrder re-reads quoted_price
+//                from DB inside its own SELECT FOR UPDATE (D-06 — Pitfall #1 closure).
+//   STEP D     — extractRequest tool call + token-ledger UPDATE (LOGIC-01).
+//   STEP E     — Clarification budget = 2 rounds (LOGIC-04). After 2 empty rounds the
+//                lead stays NEW with manual-triage payload + sorry reply.
+//   STEP F     — City normalization (LOGIC-03). cities ILIKE on name_ru / name_ua first,
+//                then Nominatim fallback via geocoding lib; result cached in cities.
+//   STEP G     — Match (MATCH-01). transitionLead → QUALIFIED; call nearestTruck
+//                with CTE re-rank (sphere → spheroid); pick best; transitionLead → MATCHED.
+//                If 0 trucks → transitionLead → LOST (reason='no_trucks').
+//   STEP H     — Route + Price + Price-lock (MATCH-03/04/05/06). routeKm via OSRM
+//                with haversine × 1.3 fallback; calcPrice (pure); WRITE leads.quoted_price
+//                BEFORE rendering the reply (D-25 price-lock); transitionLead → QUOTED.
+//   STEP I     — Templated reply: read quoted_price from DB (paranoia), format,
+//                build template, apply defensive priceGuard (future-proofs against
+//                LLM-rendered numbers); persist + return.
+//   STEP J     — On client confirmation message (handled by STEP D-pre) → createOrder.
 
 import { sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
@@ -30,11 +40,18 @@ import { config } from '../config.js';
 import type { Db } from '../db.js';
 import { geocode } from '../lib/geocoding.js';
 import { cyrillicHeuristic, type Lang } from '../lib/lang-detect.js';
+import { formatPriceKop } from '../lib/money.js';
+import { priceGuard } from '../lib/price-guard.js';
+import { routeKm } from '../lib/routing.js';
 import { citiesRepo, clientsRepo, leadsRepo, messagesRepo } from '../persistence/repos/index.js';
 import { transitionLead } from './lifecycle/lead-fsm.js';
 import type { LlmProvider } from './llm-client.js';
+import { calcPrice, readPricingConfig } from './llm-tools/calc-price.js';
+import { createOrderHandler } from './llm-tools/create-order.js';
 import { type ExtractRequestOutput, ExtractRequestSchema } from './llm-tools/extract-request.js';
 import { EXTRACT_REQUEST_SYSTEM_PROMPT } from './llm-tools/extract-request.prompt.js';
+import type { ToolContext } from './llm-tools/index.js';
+import { nearestTruck } from './llm-tools/nearest-truck.js';
 
 export interface InboundMessageArgs {
   db: Db;
@@ -64,16 +81,25 @@ const RU_BOILERPLATE_SHORT = 'Здравствуйте! Расскажите п�
 const TOKEN_BUDGET_SORRY_RU = 'Превышен бюджет диалога. Свяжитесь с менеджером.';
 const TOKEN_BUDGET_SORRY_UA = "Перевищили бюджет. Будь ласка, зв'яжіться з менеджером.";
 
-// Plan 02-04b extends past Step F with match + price-lock + confirm. Until then
-// the post-city-resolve reply is a localized placeholder so smoke tests pass.
-const PLACEHOLDER_MATCHING_RU = 'Подбираю машину…';
-const PLACEHOLDER_MATCHING_UA = 'Обчислюю ціну…';
-
 const CITY_NOT_FOUND_RU = 'Не нашёл город. Уточните.';
 const CITY_NOT_FOUND_UA = 'Не знайшов місто. Уточніть.';
 
 const MANUAL_TRIAGE_RU = 'Не удалось понять. Менеджер свяжется.';
 const MANUAL_TRIAGE_UA = "Не вдалося розпізнати. Менеджер зв'яжеться.";
+
+// Step G — no own-fleet trucks AND bourse-stub empty.
+const NO_TRUCKS_RU = 'К сожалению, свободных машин нет. Менеджер свяжется.';
+const NO_TRUCKS_UA = "На жаль, вільних машин немає. Менеджер зв'яжеться.";
+
+/**
+ * STEP D-pre — confirmation regex.
+ *
+ * Matches RU + UA confirm tokens; word boundary makes "ок" + "да" stand-alone,
+ * but also accepts "подтверждаю", "согласен", "погоджуюсь", "підтверджую",
+ * "так". Case-insensitive + Unicode flag for Cyrillic boundaries.
+ */
+const CONFIRM_PATTERNS =
+  /\b(да|ок|подтверждаю|согласен|так|погоджуюсь|підтверджую|погоджуюся|підтверджую\s*замовлення)\b/iu;
 
 /**
  * Pipeline entry-point for an inbound client message.
@@ -188,6 +214,55 @@ export async function handleInboundMessage(
       return { leadId: lead.id, exchanges };
     }
 
+    // STEP D-pre — Confirmation shortcut (Plan 02-04b).
+    //
+    // If the lead is already in QUOTED and the client typed a confirm token, we
+    // skip the LLM pass entirely:
+    //   QUOTED → AGREED → createOrderHandler → ORDER_CREATED.
+    //
+    // createOrderHandler re-reads `quoted_price` from the DB inside its own
+    // SELECT FOR UPDATE transaction (D-06 — Pitfall #1 closure). Pricing here
+    // never originates from the LLM's in-memory state. We pass `tx` into
+    // createOrderHandler's ToolContext; createOrderHandler opens its own
+    // db.transaction internally, which is safe because the inner tx is shorthand
+    // for a savepoint when called on an already-active connection.
+    if (lead.stage === 'QUOTED' && CONFIRM_PATTERNS.test(args.text)) {
+      await transitionLead(tx, {
+        leadId: lead.id,
+        to: 'AGREED',
+        actor: 'ai',
+        payload: { confirm_text: args.text },
+      });
+      const ctx: ToolContext = {
+        db: tx,
+        log: args.log ?? noopLogger(),
+        llm: args.llm,
+        leadId: lead.id,
+        clientId: args.clientId,
+        clientLang: lang,
+      };
+      const order = await createOrderHandler(ctx, { lead_id: lead.id, confirmed: true });
+      await transitionLead(tx, {
+        leadId: lead.id,
+        to: 'ORDER_CREATED',
+        actor: 'ai',
+        payload: { order_id: order.order_id, order_number: order.order_number },
+      });
+      const reply =
+        lang === 'ua'
+          ? `Замовлення ${order.order_number} створено. Стеження: /track/${order.public_token}`
+          : `Заказ ${order.order_number} создан. Отслеживание: /track/${order.public_token}`;
+      await messagesRepo.create(tx, {
+        clientId: args.clientId,
+        leadId: lead.id,
+        role: 'ai',
+        text: reply,
+      });
+      exchanges.push({ role: 'tool', content: { name: 'createOrder', result: order } });
+      exchanges.push({ role: 'assistant', content: reply });
+      return { leadId: lead.id, exchanges };
+    }
+
     // STEP D — extractRequest (LOGIC-01, D-42 anti-injection wrap).
     //
     // CRITICAL: client text is wrapped in <client_message>...</client_message>
@@ -297,7 +372,7 @@ export async function handleInboundMessage(
       return { leadId: lead.id, exchanges };
     }
 
-    // Persist extraction result on the lead before Plan 02-04b's match step.
+    // Persist extraction result on the lead before the match step.
     // numeric columns accept strings via Drizzle; bigint columns accept bigint.
     await leadsRepo.update(tx, lead.id, {
       fromCityId: fromCity.id,
@@ -307,22 +382,173 @@ export async function handleInboundMessage(
       budget: extracted.budget_kopecks,
     });
 
-    // Placeholder — Plan 02-04b extends past this point with match + price-lock
-    // + confirm + scheduler. The placeholder lets unrelated tests (sticky lang,
-    // injection) verify the upstream behaviour without depending on price logic.
-    const placeholder = lang === 'ua' ? PLACEHOLDER_MATCHING_UA : PLACEHOLDER_MATCHING_RU;
+    // STEP G — Match (MATCH-01).
+    //
+    // Promote NEW → QUALIFIED (we have all extracted fields now), then call
+    // nearestTruck (CTE re-rank: sphere overfetch → spheroid re-rank). If 0 own-fleet
+    // rows the tool already falls back to the bourse stub; if still 0 → → LOST.
+    await transitionLead(tx, {
+      leadId: lead.id,
+      to: 'QUALIFIED',
+      actor: 'ai',
+      payload: { extracted: true },
+    });
+    const trucks = await nearestTruck(tx, {
+      pickupLon: fromCity.lon,
+      pickupLat: fromCity.lat,
+      tons: extracted.tons,
+      bodyType: extracted.body_type,
+    });
+    if (trucks.length === 0) {
+      await transitionLead(tx, {
+        leadId: lead.id,
+        to: 'LOST',
+        actor: 'system',
+        payload: { reason: 'no_trucks' },
+      });
+      const sorry = lang === 'ua' ? NO_TRUCKS_UA : NO_TRUCKS_RU;
+      await messagesRepo.create(tx, {
+        clientId: args.clientId,
+        leadId: lead.id,
+        role: 'ai',
+        text: sorry,
+      });
+      exchanges.push({ role: 'assistant', content: sorry });
+      return { leadId: lead.id, exchanges };
+    }
+    const best = trucks[0];
+    if (!best) {
+      throw new Error('handleInboundMessage: nearestTruck returned empty after length-check');
+    }
+    // matched_truck_id references own fleet only; bourse-stub rows have synthetic
+    // external_ids that won't resolve to trucks.id, so we leave matched_truck_id null
+    // when source='bourse-stub' and stash the external id in lead_events.payload below.
+    await leadsRepo.update(tx, lead.id, {
+      matchedTruckId: best.source === 'own-fleet' ? best.id : null,
+    });
+    await transitionLead(tx, {
+      leadId: lead.id,
+      to: 'MATCHED',
+      actor: 'ai',
+      payload: {
+        trucks_found: trucks.length,
+        best_id: best.id,
+        source: best.source,
+      },
+    });
+
+    // STEP H — Route + Price (MATCH-03/04/05).
+    const { route_km, source: routeSource } = await routeKm(
+      { lon: fromCity.lon, lat: fromCity.lat },
+      { lon: toCity.lon, lat: toCity.lat },
+      args.log
+    );
+    const cfg = await readPricingConfig(tx);
+    const priceOut = calcPrice(
+      {
+        route_km,
+        tons: extracted.tons,
+        bodyType: extracted.body_type ?? 'tent',
+        date: new Date(),
+        direction: 'default',
+      },
+      cfg
+    );
+
+    // STEP I — PRICE-LOCK (MATCH-06): write FIRST, read SECOND, render THIRD.
+    //
+    // (1) Persist quoted_price to the lead row BEFORE any reply text is built —
+    //     this is the audit-log proof that pricing is sourced from the DB, not
+    //     the LLM. The QUOTED stage transition then carries the same value in
+    //     lead_events.payload for off-line auditing (closes ROADMAP success
+    //     criterion #1: "quoted_price written BEFORE reply").
+    await leadsRepo.update(tx, lead.id, { quotedPrice: priceOut.default });
+    await transitionLead(tx, {
+      leadId: lead.id,
+      to: 'QUOTED',
+      actor: 'ai',
+      payload: {
+        quoted_price: priceOut.default.toString(),
+        min: priceOut.min.toString(),
+        max: priceOut.max.toString(),
+        route_km,
+        route_source: routeSource,
+      },
+    });
+
+    // (2) Paranoid re-fetch — never trust the in-memory bigint we just wrote.
+    //     If the row says no quoted_price after our UPDATE the write silently
+    //     failed (FK / null-cast oddity) and we MUST NOT render a reply.
+    const refreshed = await leadsRepo.findById(tx, lead.id);
+    if (refreshed?.quotedPrice === null || refreshed?.quotedPrice === undefined) {
+      throw new Error('price-lock: quoted_price missing after leadsRepo.update');
+    }
+    const quotedPriceKop = BigInt(refreshed.quotedPrice as unknown as string);
+
+    // (3) Render templated reply by substitution. No LLM call here — the only
+    //     numeric content is the formatted quoted_price.
+    const priceStr = formatPriceKop(quotedPriceKop, lang);
+    const reply =
+      lang === 'ua'
+        ? `Ціна за рейс: ${priceStr} ₽. Підтверджуєте?`
+        : `Цена за рейс: ${priceStr} ₽. Подтверждаете?`;
+
+    // (4) Defensive priceGuard. Templated text passes by construction; this
+    //     gate fires the moment a future plan switches to an LLM-rendered reply
+    //     and the model emits an off-corridor number.
+    const guard = priceGuard({
+      llmText: reply,
+      quotedPriceKop,
+      minKop: priceOut.min,
+      maxKop: priceOut.max,
+    });
+    if (!guard.ok) {
+      args.log?.warn(
+        { leadId: lead.id, badNumbers: guard.badNumbers, found: guard.found },
+        'price-guard: anomaly in templated reply'
+      );
+    }
+
     await messagesRepo.create(tx, {
       clientId: args.clientId,
       leadId: lead.id,
       role: 'ai',
-      text: placeholder,
+      text: reply,
     });
-    exchanges.push({ role: 'assistant', content: placeholder });
+    exchanges.push({
+      role: 'tool',
+      content: { name: 'calcPrice', result: { default: priceOut.default.toString() } },
+    });
+    exchanges.push({ role: 'assistant', content: reply });
     return { leadId: lead.id, exchanges };
   });
 }
 
 // ---------- helpers ----------
+
+/**
+ * Minimal pino-shaped logger used when the caller (e.g. `dialog-harness.ts`)
+ * invokes handleInboundMessage without a Fastify request logger. Tool handlers
+ * inside `ToolContext` expect a non-null logger; this satisfies the contract
+ * with zero-cost no-op methods.
+ */
+function noopLogger(): FastifyBaseLogger {
+  const fn = () => {};
+  const stub = {
+    info: fn,
+    warn: fn,
+    error: fn,
+    debug: fn,
+    trace: fn,
+    fatal: fn,
+    level: 'silent' as const,
+    silent: fn,
+    bindings: () => ({}),
+  };
+  // child returns itself — fine for off-Fastify callers (no per-request scope).
+  const withChild = { ...stub, child: () => withChild };
+  return withChild as unknown as FastifyBaseLogger;
+}
 
 /**
  * Find the most recent OPEN lead for a client. "Open" excludes terminal +
