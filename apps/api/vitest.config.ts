@@ -27,6 +27,11 @@ export default defineConfig({
           // Phase 2 Wave 0: bumped from 60s → 90s — testcontainers PostGIS 17-3.5 cold-start
           // plus migration apply plus seed run can exceed 60s on cold Docker pulls.
           testTimeout: 90_000,
+          // Plan 02-04a Task 1: pre-populate DATABASE_URL + REDIS_URL defaults so config.ts
+          // doesn't process.exit(1) when integration tests statically import production
+          // modules (e.g. dialog-harness → intake.ts → config.LLM_TOKEN_BUDGET_PER_LEAD).
+          // Tests that need real container URLs override inside beforeAll() via testcontainers.
+          setupFiles: ['./tests/_helpers/integration-env.ts'],
         },
       },
       {

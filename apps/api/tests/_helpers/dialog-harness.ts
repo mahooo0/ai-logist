@@ -8,9 +8,14 @@
 //   ]);
 //   expect(result.finalLead.stage).toBe('ORDER_CREATED');
 //   expect(result.finalOrder?.status).toBe('CREATED');
+//
+// Plan 02-04a Task 1 lands `apps/api/src/pipeline/intake.ts`, so this helper
+// now imports `handleInboundMessage` statically — the Wave 0 dynamic-import
+// fallback (with its forward-reference TS directive) is removed.
 
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../src/db.js';
+import { handleInboundMessage, type InboundMessageResult } from '../../src/pipeline/intake.js';
 import type { LlmProvider } from './mock-anthropic.js';
 
 export interface ScriptMessage {
@@ -27,12 +32,9 @@ export interface ScriptResult {
 /**
  * Drive a scripted dialog end-to-end without booting Fastify or hitting a webhook.
  *
- * Calls pipeline.handleInboundMessage one turn per client message and accumulates the
- * resulting conversation. Returns the final lead row + (optionally) created order row.
- *
- * The pipeline module is loaded dynamically so this helper compiles before Wave 3 ships
- * `apps/api/src/pipeline/intake.ts`. Wave 3's plan MUST remove the @ts-expect-error
- * directive once intake.ts lands.
+ * Calls `handleInboundMessage` once per client message and accumulates the
+ * resulting conversation. Returns the final lead row + (optionally) created
+ * order row.
  */
 export async function runScript(
   db: Db,
@@ -44,21 +46,7 @@ export async function runScript(
   let lastLeadId: string | undefined;
 
   for (const msg of messages) {
-    conversation.push({ role: 'user', content: msg.text });
-    // @ts-expect-error pipeline/intake.ts shipped Wave 3 — remove this directive then.
-    const intakeModule = await import('../../src/pipeline/intake.js');
-    const handleInboundMessage = intakeModule.handleInboundMessage as (args: {
-      db: Db;
-      llm: LlmProvider;
-      clientId: string;
-      text: string;
-      channel: string;
-    }) => Promise<{
-      leadId: string;
-      exchanges: Array<{ role: 'user' | 'assistant' | 'tool'; content: unknown }>;
-    }>;
-
-    const turn = await handleInboundMessage({
+    const turn: InboundMessageResult = await handleInboundMessage({
       db,
       llm: mockLlm,
       clientId,
