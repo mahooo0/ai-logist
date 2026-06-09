@@ -30,7 +30,7 @@
 **Plans**: 11 plans
   - [x] 01-00-test-infra-PLAN.md — Wave 0: vitest + testcontainers + stub tests for every Phase 1 requirement ✅ (2026-06-09)
   - [x] 01-01-monorepo-skeleton-PLAN.md — pnpm workspaces, root package.json, tsconfig.base, biome, .env.example, packages/shared-types stub
-  - [ ] 01-02-infrastructure-PLAN.md — docker-compose.yml (postgis 17-3.5, redis 7, api, web, caddy), Caddyfile (handle /api/*), Dockerfiles, apps/web Next.js placeholder
+  - [x] 01-02-infrastructure-PLAN.md — docker-compose.yml (postgis 17-3.5, redis 7, api, web, caddy), Caddyfile (handle /api/*), Dockerfiles, apps/web Next.js placeholder
   - [ ] 01-03-drizzle-setup-PLAN.md — drizzle-orm 0.45.2 + drizzle-kit, customType geographyPoint, 7 pgEnums, drizzle.config.ts, 0000 postgis extension migration
   - [ ] 01-04-schema-geo-PLAN.md — clients, cities, trucks, truck_positions tables (geography(Point,4326) + GiST + CHECK SRID)
   - [ ] 01-05-schema-domain-PLAN.md — orders (public_token), leads (extended cargo + price_overrides jsonb[] + version), order_events (UNIQUE order_id+type), pod_artifacts (gps geography)
