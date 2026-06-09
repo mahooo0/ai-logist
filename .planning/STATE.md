@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 9
+current_plan: 10
 status: executing
-last_updated: "2026-06-09T06:18:16.842Z"
+last_updated: "2026-06-09T06:31:35.465Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 8
-  percent: 73
+  completed_plans: 9
+  percent: 82
 ---
 
 # State: AI-Логист
@@ -28,17 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 9
+Current Plan: 10
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04, 01-05, 01-06, 01-07 complete; next is 01-08 (rest-stubs: 501 stubs for /api/leads /orders /trucks /clients /analytics + /webhook/* with Zod schemas)
+**Plan:** 01-00..01-08 complete; next is 01-09 (seed: 12 trucks + ~30 RU/UA cities + 8 clients + pricing config; canonical KNN smoke from Kyiv)
 **Status:** Ready to execute
 
 **Progress:**
 
 ```
-[███████░░░] 73%
-[██████████████░░░░░░] 8/11 plans complete in Phase 01
+[████████░░] 82%
+[████████████████░░░░] 9/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -59,6 +59,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P05 | 2m 30s | 2 tasks | 6 files |
 | Phase 01-database-backend-skeleton P06 | 4m 10s | 3 tasks | 14 files |
 | Phase 01-database-backend-skeleton P07 | 9m 0s | 2 tasks | 13 files |
+| Phase 01-database-backend-skeleton P08 | 6m 21s | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,12 @@ Total Plans in Phase: 11
 - **Plan 01-07:** `buildApp()` registers plugins in deterministic order — sensible → db → redis → swagger → swagger-ui → routes. Both db.ts and redis.ts use `fastify-plugin (fp)` so `app.db`/`app.pgPool`/`app.redis` decorators escape encapsulation. Both smoke-test (`SELECT 1` / `PING`) on boot — fail-fast if infra is down. Plugin lifecycle drains connections on `app.close()`.
 - **Plan 01-07:** Live `pnpm dev &` + `curl /api/health` smoke skipped — Docker daemon unreachable on Claude's runner (consistent with Plans 01-02..06). testcontainers integration test (`tests/integration/health.test.ts`) ships the actual contract enforcement for verifier/developer machines that have Docker — boots `postgis/postgis:17-3.5`, applies both migrations, calls `app.inject({method:'GET',url:'/api/health'})`, asserts 200 + `checks.postgis ~ /3.5/`.
 - **Plan 01-07:** Integration test imports `app.ts` DYNAMICALLY (`await import('../../src/app.js')`) inside `beforeAll` AFTER `process.env.DATABASE_URL` is overridden to the testcontainers URL — `config.ts` validates env at module load, so any static top-of-file import would capture the original DATABASE_URL before the override.
+- **Plan 01-08:** 501-stub route pattern (RESEARCH.md Pattern 7) — every API-* and webhook endpoint declared in Fastify with FULL Zod schema; handler calls `reply.notImplemented()` from @fastify/sensible; Phase 2/3/4/5 swap only the handler body, schemas remain. 17 total routes (1 health + 16 stubs); Swagger UI at /api/docs exposes the contract.
+- **Plan 01-08:** numeric + bigint columns serialise as `string` in DTOs (LeadSchema.tons, OrderSchema.price, etc.) — node-postgres returns NUMERIC/BIGINT as JS strings to preserve precision; Zod schemas mirror that with `z.string().nullable()` instead of `z.number()`. Avoids precision loss for kopecks (bigint) and tonnage (numeric(10,2)).
+- **Plan 01-08:** TelegramUpdateBodySchema + VoiceCallbackBodySchema use `.passthrough()` with only the idempotency-key field strict — Telegram Bot API ships hundreds of optional fields that evolve; we only need `update_id` to dedupe via `webhook_updates` (D-09). Phase 3 tightens with grammY-typed context.
+- **Plan 01-08:** PriceOverrideBodySchema enforces `reason` at the schema level (`z.string().min(3)`) — ADMIN-NEW-06 requires every price override to carry an audit reason. Phase 4 manager UI form validation reuses the same Zod schema so even automated clients can't submit without justification.
+- **Plan 01-08:** shared-types `package.json` exports map gains `./domain/*` subpath — Plan 01-07 added `./api/*` for HealthResponseSchema; Plan 01-08's `enums.ts` under `domain/` needed the symmetric entry for direct subpath imports (e.g. `@ai-logist/shared-types/domain/enums`) from apps/api tests and Phase 4 apps/web typed UI.
+- **Plan 01-08:** Multi-method route plugin per domain — e.g. `apps/api/src/routes/leads.ts` hosts 4 routes (GET, PATCH /:id, POST /:id/match, POST /:id/quote). Single `FastifyPluginAsyncZod` with multiple `app.{get,patch,post}()` calls is cleaner than one file per verb. Matches the Phase 4 handler shape where match + quote logic sits next to list/patch handlers.
 
 ### TODOs
 
@@ -128,11 +135,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-07-PLAN.md (Fastify v5 buildApp() factory at apps/api/src/app.ts wiring sensible + dbPlugin + redisPlugin + swagger + swagger-ui + healthRoutes with Zod type provider; entry index.ts with graceful SIGINT/SIGTERM shutdown; db plugin decorating app.db/app.pgPool with smoke `SELECT 1`; redis plugin decorating app.redis with PING + maxRetriesPerRequest=null for BullMQ Phase 5; /api/health route returning D-16 shape with PostGIS_Version() probe + 503 on any subsystem failure; HealthResponseSchema (Zod v4) published in packages/shared-types/src/api/health.ts and re-exported from barrel — first shared schema established; drizzle-kit generate produced 0001_init.sql covering all 13 spec §2 tables + 7 ENUMs + 3 GiST + 5 nullable-safe CHECK SRID; **Drizzle 0.45.2 customType double-quote bug patched** — `"geography(Point, 4326)"` → `geography(Point, 4326)` via post-process node -e in db:generate script (idempotent); drizzle-kit check clean + re-generate emits "No schema changes"; testcontainers integration test tests/integration/health.test.ts boots postgis/postgis:17-3.5, applies both migrations, asserts 200 + checks.postgis ~ /3.5/; API-01 + API-16 stub tests flipped from .todo() to passing; unit suite 12 passed / 5 todo; tsc + biome clean across 36 files).
+**Last session stopped at:** Completed 01-08-PLAN.md (7 shared-types DTO modules under packages/shared-types/src/{api/leads,api/orders,api/trucks,api/clients,api/analytics,api/webhooks,domain/enums}.ts — every Phase 2-5 endpoint contract published; 6 Fastify 501-stub route files under apps/api/src/routes/{leads,orders,trucks,clients,analytics,webhooks}.ts declaring FULL Zod request/response schemas with reply.notImplemented() handlers per RESEARCH.md Pattern 7; buildApp() registers all 7 route plugins (was 1; now 17 total routes — 1 health + 4 leads + 4 orders + 3 trucks + 1 clients + 1 analytics + 3 webhooks); integration test apps/api/tests/integration/swagger.test.ts with 5 cases (Swagger JSON surface, Zod 400 on querystring, sensible 501 shape, 501 after valid body, Zod 400 on body) — testcontainers-backed, runs on Docker-equipped machines; packages/shared-types/package.json exports map gains ./domain/* subpath; API-16 stub test expanded with 3 new assertions covering Plan 01-08 DTO surface, PriceOverrideBodySchema reason-required rule, route registration grep; unit suite: 15 passed / 5 todo (was 12 / 5); tsc + biome clean across 50 files).
 
-**Next action:** Run `/gsd:execute-plan 01-08` to execute the rest-stubs plan (501 stubs for /api/leads /orders /trucks /clients /analytics + /webhook/* routes; full Zod schemas in packages/shared-types/src/api/*.ts using the HealthResponseSchema pattern; reply.notImplemented() via @fastify/sensible; OpenAPI auto-generated via jsonSchemaTransform; possibly flip DEPLOY-02 if config.ts env-rejection path gets exercised).
+**Next action:** Run `/gsd:execute-plan 01-09` to execute the seed plan (TypeScript seed script apps/api/src/seed/run.ts using thin repos from Plan 01-06; ~30 RU/UA cities + 5+ border crossings, 12 trucks (tent×5 / ref×3 / iso×2 / container×2), 8 clients (4 RU + 4 UA), pricing config; idempotent via ON CONFLICT DO NOTHING; canonical KNN smoke from Kyiv → 3 nearest available trucks printed on completion — closes DB-10).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-07 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0..7}-SUMMARY.md`). pnpm workspaces, TS strict, Biome 2.4.16, `@ai-logist/shared-types` with HealthResponseSchema (Zod v4) at api/health, apps/api Vitest 4.1.8 + testcontainers 12, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType, 7 pgEnums, 0000_postgis_extension.sql + 0001_init.sql (all 13 tables + 7 ENUMs + 3 GiST + 5 CHECK SRID — quoted-customType bug fixed via post-process), all 13 schema tables declared, 6 thin per-aggregate repos under apps/api/src/persistence/repos/ (namespace barrel). NEW IN 01-07: Fastify v5 stack installed (fastify@5.8.5 + @fastify/sensible@6 + @fastify/swagger@9.7 + @fastify/swagger-ui@5.2 + fastify-plugin@5 + fastify-type-provider-zod@6.1 + ioredis@5.11 + pino@10.3 + pino-pretty@13.1 dev + nanoid@5). apps/api/src/{app.ts, index.ts, plugins/db.ts, plugins/redis.ts, routes/health.ts} all live. packages/shared-types/src/api/health.ts (HealthResponseSchema + HealthResponse type). buildApp() FastifyInstance factory pattern established; plugin lifecycle drains connections on app.close. Vitest unit suite: 12 passed / 5 todo. Next plan is 01-08.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-08 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0..8}-SUMMARY.md`). pnpm workspaces, TS strict, Biome 2.4.16, `@ai-logist/shared-types` with full DTO surface (HealthResponseSchema + LeadSchema + OrderSchema + TruckSchema + MessageSchema + KpiResponseSchema + TelegramUpdateBodySchema + GpsPushBodySchema + VoiceCallbackBodySchema + 7 Zod domain enums), apps/api Vitest 4.1.8 + testcontainers 12, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType, 7 pgEnums, 0000_postgis_extension.sql + 0001_init.sql (all 13 tables + 7 ENUMs + 3 GiST + 5 CHECK SRID — quoted-customType bug fixed via post-process), all 13 schema tables declared, 6 thin per-aggregate repos under apps/api/src/persistence/repos/. Fastify v5 buildApp() registers 7 route plugins (health + leads + orders + trucks + clients + analytics at /api, webhooks at /webhook); 16 of 17 routes are 501 stubs with full Zod schemas — Phase 2/3/4/5 just swap handler bodies. Vitest unit suite: 15 passed / 5 todo. Next plan is 01-09 (seed).
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
