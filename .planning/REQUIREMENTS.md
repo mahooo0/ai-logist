@@ -43,7 +43,7 @@
 
 - [x] **LOGIC-01**: `extractRequest(text, lang)` — Anthropic SDK `betaZodTool` извлекает `{from_city, to_city, tons, body_type?, budget?, deadline?}` со строгим JSON-Schema
 - [ ] **LOGIC-02**: Sticky-определение языка клиента (RU/UA) — fastText + Cyrillic-script-эвристика, сохраняется в `clients.lang` на первом сообщении ≥20 символов
-- [ ] **LOGIC-03**: Нормализация городов через `cities` (ILIKE на оба `name_ru`/`name_ua`) + геокодинг Nominatim для новых, кэш в БД
+- [x] **LOGIC-03**: Нормализация городов через `cities` (ILIKE на оба `name_ru`/`name_ua`) + геокодинг Nominatim для новых, кэш в БД
 - [x] **LOGIC-04**: LLM задаёт уточняющий вопрос при отсутствии ключевых полей (clarification budget — максимум 2 круга)
 - [x] **LOGIC-05**: Промпт принуждает строгий JSON, нераспознанные поля = null
 
@@ -223,7 +223,7 @@
 | API-16 | Phase 1 | Complete |
 | LOGIC-01 | Phase 2 | Complete |
 | LOGIC-02 | Phase 2 | Pending |
-| LOGIC-03 | Phase 2 | Pending |
+| LOGIC-03 | Phase 2 | Complete |
 | LOGIC-04 | Phase 2 | Complete |
 | LOGIC-05 | Phase 2 | Complete |
 | MATCH-01 | Phase 2 | Complete |

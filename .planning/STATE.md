@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 6
+current_plan: 7
 status: executing
-last_updated: "2026-06-09T11:52:53.046Z"
+last_updated: "2026-06-09T12:13:50.275Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 19
-  completed_plans: 16
-  percent: 84
+  completed_plans: 17
+  percent: 89
 ---
 
 # State: AI-Логист
@@ -28,16 +28,16 @@ progress:
 ## Current Position
 
 Phase: 02 (llm-pipeline-deterministic-core) — EXECUTING
-Plan: 6 of 8
-Current Plan: 6
+Plan: 7 of 8
+Current Plan: 7
 Total Plans in Phase: 8
 **Phase:** 2 of 6 (llm pipeline + deterministic core ⚠️ high risk)
-**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plans 02-00 (Wave 0 test infra), 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper), 02-02 (Wave 2a: 6 LLM tools via betaZodTool), 02-03 (Wave 2b: lead-fsm + order-fsm + errors + concurrency/audit integration tests), and 02-03b (Wave 2 atomic todo-flip: 9 phase-2-stubs.test.ts placeholders flipped to real it() assertions in a single commit) complete. Next serial step is Plan 02-04a (Wave 3 intake first half).
+**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plans 02-00 (Wave 0 test infra), 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper), 02-02 (Wave 2a: 6 LLM tools via betaZodTool), 02-03 (Wave 2b: lead-fsm + order-fsm + errors + concurrency/audit integration tests), 02-03b (Wave 2 atomic todo-flip: 9 phase-2-stubs.test.ts placeholders flipped to real it() assertions), and 02-04a (Wave 3 intake first half: handleInboundMessage Steps 0+A+B+C+D+E+F — advisory lock + sticky lang + token budget + extract → clarify → city; LOGIC-03 + LOGIC-04 flipped) complete. Next serial step is Plan 02-04b (Wave 3 intake second half).
 **Status:** Ready to execute
 
 **Progress:**
 
-[████████░░] 84%
+[█████████░] 89%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -68,6 +68,8 @@ Total Plans in Phase: 8
 | Phase 02-llm-pipeline-deterministic-core-high-risk P03 | 10min | 3 tasks | 7 files |
 | Phase 02-llm-pipeline-deterministic-core-high-risk P02 | ~12min | 3 tasks | 19 files |
 | Phase 02 P03b | 5min | 1 tasks | 1 files |
+| Phase 02 P04a | 13min | 2 tasks | 9 files |
+| Phase 02-llm-pipeline-deterministic-core-high-risk P04a | 13min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -146,6 +148,9 @@ Total Plans in Phase: 8
 - **Plan 02-02 deviations:** (1) Actual GiST index name is `trucks_geom_gist`, not `trucks_geom_gist_idx` as RESEARCH §12 referenced — test asserts the real name. (2) Pre-existing `package.json` `test:snapshot` script was broken (vitest 4 dropped `--repeat=10`) — replaced with `for i in 1..10; do vitest run -t snapshot \|\| exit 1; done` bash loop. Rule 1 auto-fixes; no plan change required. (3) `phase-2-stubs.test.ts` UNCHANGED per design — Plan 02-03b atomic-flips all Wave-2 todos after both 02-02 and 02-03 merge.
 - **Plan 02-03b:** Atomic single-commit flip of 9 phase-2-stubs todos (LOGIC-01, LOGIC-05, MATCH-01, MATCH-03, MATCH-05, FSM-01, FSM-02, FSM-03, FSM-05) — closes Wave 2 BLOCKER #2 (the parallel-write race that would have happened if 02-02 + 02-03 both modified the same test file in parallel). Pattern reusable: dedicated post-merge micro-plan owns ALL shared-file writes for a wave. Post-flip: phase-2-stubs.test.ts has exactly 5 test.todo remaining (LOGIC-03, LOGIC-04, FSM-04, FSM-06, API-07) for Waves 3 + 4.
 - **Plan 02-03b deviations:** (1) Plan-supplied MATCH-01 regex used single-line `.*` patterns; real `nearest-truck.ts` SQL template is line-broken — switched to `[\s\S]*` for multi-line and dropped the explicit `WHERE` token from the status-check regex (kept `status = 'available'` alone). Rule 1 auto-fix. (2) File-header narrative comment contained the literal string `test.todo` — the plan's verify gate uses `grep -c "test.todo"` (literal byte-count), so the prose mention pushed the count to 6, failing the gate. Rewrote the comment to break the literal across the page. Rule 1 auto-fix.
+- **Plan 02-04a:** intake.ts handleInboundMessage entry-point implements Steps 0+A+B+C+D+E+F inside one db.transaction. Step 0 = pg_advisory_xact_lock(hashtext(client_id)) per-client serialization (FSM-04 wired; integration test deferred to 02-04b). Step B = sticky lang detection — runs ONCE on first ≥20-char msg via cyrillicHeuristic; clients.lang never auto-flips (Pitfall #7 closed at code level). Step C = token-budget guard — tokens_in+out > LLM_TOKEN_BUDGET_PER_LEAD → transitionLead → LOST + reason='token_budget_exhausted' (Pitfall #12 closed). Step D = extractRequest with <client_message>...</client_message> anti-injection wrap (D-42, Pitfall #11 closed). Step E = clarification budget = 2 via Cyrillic уточн/Уточн stem counter (LOGIC-04). Step F = cities ILIKE → Nominatim → citiesRepo.upsert (LOGIC-03). incrementTokenLedger exported for 02-04b reuse. dialog-harness.ts now static-imports handleInboundMessage; Wave 0 dynamic import + @ts-expect-error gone.
+- **Plan 02-04a:** 3-assertion sticky-lang integration test is the formal closure of Pitfall #7. Critical assertion (#3) — client whose lang flipped to 'ua' on UA-marker msg KEEPS getting UA replies even when subsequently writing clearly-RU msg — verifies clients.lang doesn't auto-flip mid-conversation on Surzhyk/mixed input. Test drops NOT NULL + DEFAULT on clients.lang in beforeAll so test can insert NULL-lang clients (production schema unchanged).
+- **Plan 02-04a deviations:** (1) [Rule 3 - Blocking] Integration tests transitively import intake.ts → config.ts; missing DATABASE_URL/REDIS_URL → process.exit(1) BEFORE describe.skipIf(!dockerAvailable) short-circuit. Fix: added apps/api/tests/_helpers/integration-env.ts setupFile (DATABASE_URL/REDIS_URL localhost defaults) + registered on integration project in vitest.config.ts. Tests needing real container URLs override inside beforeAll() via testcontainers. (2) [Rule 1 - Bug] dialog-harness.ts header comment contained literal `@ts-expect-error` which TypeScript parsed as a real directive (TS2578). Reworded to avoid the literal. (3) Plan-supplied LOGIC-04 flip was scheduled for 02-04b in old phase-2-stubs.test.ts docstring, but 02-04a invocation explicitly listed LOGIC-04 as 02-04a flip (matches Step E implementation). Updated docstring schedule to match.
 
 ### TODOs
 
@@ -167,13 +172,15 @@ Total Plans in Phase: 8
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 02-03b-stub-flips-PLAN.md (Wave 2 atomic todo-flip). Single-task single-file commit (`d383a85`) flips 9 phase-2-stubs.test.ts placeholders to real `it()` assertions for LOGIC-01/05, MATCH-01/03/05, FSM-01/02/03/05. Post-flip: 13 it() passing + 5 test.todo remaining (LOGIC-03, LOGIC-04, FSM-04, FSM-06, API-07). Whole unit project: 143 passed | 5 todo | 0 failures. tsc + biome clean. Next serial step is Plan 02-04a (Wave 3 intake first half).
+**Last session stopped at:** Completed 02-04a-pipeline-intake-first-half-PLAN.md (Wave 3 first half). Two commits: `171907d` (Task 1 — intake.ts skeleton with Steps 0+A+B+C + dialog-harness static import + 3 integration tests: token-budget, pipeline-sticky-lang [3 assertions including RU-after-UA stickiness], pipeline-injection [5 fixtures]) + `09f18dd` (Task 2 — intake.ts Steps D+E+F: extract → clarify → city resolve + flip LOGIC-03 + LOGIC-04 todos in phase-2-stubs.test.ts). intake.ts now ships `handleInboundMessage(args)` inside one db.transaction with pg_advisory_xact_lock(hashtext(client_id)) (FSM-04), sticky lang detection (closes Pitfall #7), token budget guard (closes Pitfall #12), anti-injection wrap (closes Pitfall #11), 2-round clarification budget, two-stage city normalization. Plan 02-04b extends past Step F's placeholder with match + price-lock + confirm + scheduler. Whole unit project: 145 passed | 3 todo | 0 failures. tsc + biome clean. Next serial step is Plan 02-04b (intake second half + FSM-04 + FSM-06 flips).
+
+**Previous session stopped at:** Completed 02-03b-stub-flips-PLAN.md (Wave 2 atomic todo-flip). Single-task single-file commit (`d383a85`) flips 9 phase-2-stubs.test.ts placeholders to real `it()` assertions for LOGIC-01/05, MATCH-01/03/05, FSM-01/02/03/05. Post-flip: 13 it() passing + 5 test.todo remaining (LOGIC-03, LOGIC-04, FSM-04, FSM-06, API-07). Whole unit project: 143 passed | 5 todo | 0 failures. tsc + biome clean.
 
 Plan 02-00 shipped: 4 helper files in `apps/api/tests/_helpers/` (dialog-harness with `runScript(db, llm, clientId, messages)` driving scripted dialogs via dynamic import of pipeline/intake.js; mock-anthropic with LlmProvider interface that Wave 1 production llm-client.ts MUST implement; fake-timers preset at FIXED_NOW=2026-06-09T12:00:00Z registered as setupFile on unit project only; db-seed with 20 RFC 4122 v4 deterministic UUIDs + installDeterministicCrypto teardown helper), 4 JSON fixtures (canonical-inputs.json with 20 dialog scripts; llm-responses.json as `{}` placeholder; cities-extra.json with 5 cities forcing Nominatim path; injection-attempts.json with 5 Pitfall #11 corpus entries), apps/api/tests/unit/phase-2-stubs.test.ts (EXACTLY 18 `test.todo()` markers — one per Phase 2 req), apps/api/tests/PHASE-2.md harness usage doc, vitest.config.ts (added unit setupFiles + bumped integration timeout 60s → 90s), apps/api/package.json (added test:llm, test:snapshot, typecheck scripts). Unit suite: 20 passed (Phase 1) + 18 todo (Phase 2) / 0 failures. Biome + tsc --noEmit clean.
 
 **Phase 2 status:** Plan 1 of 8 complete (Wave 0). Plans 2-8 cover migration + LLM tools + FSM + pipeline orchestration + routes API. Per VALIDATION.md, the test harness this plan locked in is the foundation Waves 1-4 build against; every snapshot test must use FIXED_NOW + installDeterministicCrypto, every LLM-dependent test must use MockAnthropicClient (real LLM only via `pnpm test:llm` gated on ANTHROPIC_API_KEY).
 
-**Next action:** Execute Plan 02-04a (Wave 3 intake first half) — wires `pg_advisory_xact_lock(hashtext(client_id))` around the per-turn `transitionLead` call and assembles the `ToolContext` per dialog turn so `buildToolRegistry(ctx)` lands in the production tool loop. After 02-04a: flips LOGIC-03 todo. Then 02-04b (intake second half): flips LOGIC-04, FSM-04, FSM-06. Then 02-05 (routes): flips API-07.
+**Next action:** Execute Plan 02-04b (Wave 3 intake second half) — extends intake.ts past Step F's placeholder with Steps G+H+I+J: match (nearestTruck) + price-lock (calcPrice + leads.quoted_price + priceGuard regex) + confirm (transitionLead → AGREED → ORDER_CREATED via createOrder) + follow-up scheduler (setInterval polling for QUOTED/AGREED leads stuck > 4h → emit follow-up; > 24h → auto → LOST). Flips FSM-04 (advisory-lock integration test — verifies serialization of two concurrent messages from same client) + FSM-06 (scheduler integration test using fake timers) todos. After 02-04b: 1 todo remaining (API-07 for Plan 02-05). Then 02-05 (routes): un-stubs POST /api/leads/:id/{match,quote} → API-07 flipped → Phase 2 complete (18/18 reqs).
 
 **To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Phase 1 (11/11 plans) complete; Phase 2 plan 02-00 (Wave 0 test infra) complete; Plans 02-01..05 ahead. Wave 0 ships LlmProvider interface + MockAnthropicClient + runScript harness + FIXED_NOW preset + DETERMINISTIC_UUIDS + 18 test.todo placeholders. Wave 1 (Plan 02-01) ships migration 0002 + lib primitives + llm-client wrapper. Wave 2 (Plan 02-02 + 02-03) ships LLM tools + FSMs. Wave 3 (Plan 02-03b + 02-04a/b) ships stub-flips + pipeline/intake.ts (which the Wave 0 dialog-harness imports dynamically with @ts-expect-error — Wave 3 MUST remove the directive). Wave 4 (Plan 02-05) ships routes API-07 un-stub. Docker daemon remains unreachable on Claude's runner; live testcontainers integration tests deferred to verifier/developer machine. Next: `/gsd:execute-plan 02-01-PLAN.md` or continue chained auto-mode.
 
