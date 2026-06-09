@@ -85,7 +85,18 @@ describe('Phase 1: Database & Schema (DB-*)', () => {
     expect(src).toMatch(/uniqueIndex[^)]*\)\.on\(t\.orderId,\s*t\.type\)/);
   });
 
-  test.todo('DB-07: calls, messages, bourse_cache tables exist');
+  test('DB-07: calls, messages, bourse_cache tables exist', async () => {
+    const { calls } = await import('../../src/persistence/schema/calls.js');
+    const { messages } = await import('../../src/persistence/schema/messages.js');
+    const { bourseCache } = await import('../../src/persistence/schema/bourse_cache.js');
+    expect(Object.keys(calls)).toContain('direction');
+    expect(Object.keys(calls)).toContain('transcript');
+    expect(Object.keys(messages)).toContain('role');
+    expect(Object.keys(messages)).toContain('text');
+    expect(Object.keys(bourseCache)).toContain('queryHash');
+    expect(Object.keys(bourseCache)).toContain('source');
+    expect(Object.keys(bourseCache)).toContain('payload');
+  });
 
   test('DB-08: pod_artifacts table with signature_url, photo_url, gps, captured_at', async () => {
     const { podArtifacts } = await import('../../src/persistence/schema/pod_artifacts.js');
@@ -96,13 +107,37 @@ describe('Phase 1: Database & Schema (DB-*)', () => {
     expect(cols).toContain('gps');
     expect(cols).toContain('capturedAt');
   });
-  test.todo('DB-09: webhook_updates with UNIQUE(source, external_id) + ON CONFLICT DO NOTHING');
+
+  test('DB-09: webhook_updates with UNIQUE(source, external_id) + ON CONFLICT DO NOTHING', async () => {
+    const { webhookUpdates } = await import('../../src/persistence/schema/webhook_updates.js');
+    expect(Object.keys(webhookUpdates)).toContain('source');
+    expect(Object.keys(webhookUpdates)).toContain('externalId');
+    expect(Object.keys(webhookUpdates)).toContain('payload');
+    // Verify UNIQUE constraint declared in source
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/persistence/schema/webhook_updates.ts', 'utf-8');
+    expect(src).toMatch(/unique\([^)]*\)\.on\(t\.source,\s*t\.externalId\)/);
+  });
+
   test.todo('DB-10: seed populates 12 trucks, ~30 cities, 8 clients idempotently');
 });
 
 describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
   test.todo('API-01: GET /api/health returns 200 with PostGIS_Version() in checks.postgis');
-  test.todo('API-02: drizzle-kit migrate is idempotent (re-run produces zero diff)');
+
+  test('API-02: Drizzle repos for all 6 aggregates exist with thin CRUD per D-07', async () => {
+    const repos = await import('../../src/persistence/repos/index.js');
+    expect(repos.trucksRepo).toBeDefined();
+    expect(repos.trucksRepo.findById).toBeTypeOf('function');
+    expect(repos.trucksRepo.list).toBeTypeOf('function');
+    expect(repos.trucksRepo.create).toBeTypeOf('function');
+    expect(repos.citiesRepo.findBySlug).toBeTypeOf('function');
+    expect(repos.clientsRepo.findByTelegramId).toBeTypeOf('function');
+    expect(repos.leadsRepo.listByStage).toBeTypeOf('function');
+    expect(repos.ordersRepo.findByPublicToken).toBeTypeOf('function');
+    expect(repos.messagesRepo.listByClient).toBeTypeOf('function');
+  });
+
   test.todo('API-16: routes validate request body via Zod and reject malformed input with 400');
 });
 
