@@ -53,7 +53,13 @@
   3. PostGIS KNN returns correct top-3 trucks via CTE re-rank pattern (overfetch 20 by `<->`, re-rank by spheroid `ST_Distance`); EXPLAIN ANALYZE shows GiST `Index Scan`; filters by `capacity_t` and `body_type` are applied INSIDE the CTE.
   4. Concurrency test fires two simultaneous transitions on the same lead — exactly one succeeds, the other reports illegal-transition via version mismatch; FSM audit log records actor (ai/manager/system) and payload.
   5. Sticky language detect: a client sending "ок" followed by "Київ-Львів 18т" lands in `clients.lang='ua'` once (≥20-char rule), and all subsequent replies stay UA even if the client later sends RU text.
-**Plans**: TBD
+**Plans**: 6 plans
+  - [ ] 02-00-test-infra-PLAN.md — Wave 0: dialog-harness + MockAnthropicClient + fixtures + 18 stub todos
+  - [ ] 02-01-migration-lib-llm-client-PLAN.md — Migration 0002 + lib/* primitives + Anthropic SDK wrapper
+  - [ ] 02-02-llm-tools-PLAN.md — 6 LLM tools (extractRequest, nearestTruck, calcPrice, createOrder, discount, detectLanguage)
+  - [ ] 02-03-fsm-PLAN.md — Lead + Order FSM with FOR UPDATE + version CAS + audit log (parallel with 02-02)
+  - [ ] 02-04-pipeline-intake-PLAN.md — handleInboundMessage orchestrator + sticky lang + price-lock + token budget + follow-up scheduler
+  - [ ] 02-05-routes-api-PLAN.md — Un-stub POST /api/leads/:id/{match,quote} (API-07) + final stub-flip
 
 ---
 
@@ -160,7 +166,7 @@ Phase 1 ──> Phase 2 ──> Phase 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Database + Backend Skeleton | 1/11 | Executing | - |
-| 2. LLM Pipeline + Deterministic Core | 0/0 | Not started | - |
+| 2. LLM Pipeline + Deterministic Core | 0/6 | Planned | - |
 | 3. Telegram Channel | 0/0 | Not started | - |
 | 4. Admin Web | 0/0 | Not started | - |
 | 5. Tracking Loop + Live Map + Public | 0/0 | Not started | - |
