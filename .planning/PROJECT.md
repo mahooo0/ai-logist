@@ -23,26 +23,39 @@
 - ✓ /api/health с PostGIS_Version() — Phase 1
 - ⏳ UAT-01: human verification 10-min walkthrough на чистой машине — отложено (Docker недоступен в runner-окружении агентов)
 
+**Phase 2 — LLM Pipeline + Deterministic Core (2026-06-09):**
+- ✓ Anthropic SDK + betaZodTool registry: 6 tools (extractRequest, detectLanguage, nearestTruck, calcPrice, createOrder, discount) — Phase 2
+- ✓ Sticky RU/UA language detection (Cyrillic-script heuristic + ≥20-char gate) — Pitfall #7 closed — Phase 2
+- ✓ PostGIS KNN с CTE re-rank (overfetch 20 + spheroid ST_Distance) — Pitfall #2 closed — Phase 2
+- ✓ Детерминированный calcPrice + price-lock протокол (quoted_price пишется в БД ДО ответа LLM; regex guard) — Pitfall #1 closed — Phase 2
+- ✓ Hand-rolled FSM (Lead 9 stages + Order 7 statuses) с SELECT FOR UPDATE + version CAS — Pitfall #6 closed (100× concurrency test зелёный) — Phase 2
+- ✓ Anti-prompt-injection: ANTI_INJECTION_PREFIX + `<client_message>` wrapping + tools-as-security-boundary — Pitfall #11 closed — Phase 2
+- ✓ Per-lead token ledger (tokens_in/out/llm_calls) + 30k budget → LOST — Pitfall #12 closed — Phase 2
+- ✓ Pipeline intake.ts полный (advisory lock → sticky lang → token check → extract → clarify → match → price-lock → confirm → createOrder) — Phase 2
+- ✓ Follow-up scheduler (setInterval с fake-timers test, Fastify lifecycle hook) — Phase 2
+- ✓ POST /api/leads/:id/match + /:id/quote реальные handler'ы (был 501 stub в Phase 1) — Phase 2
+- ✓ 148 unit tests passing / 0 todos; snapshot byte-stable across 10× runs — Phase 2
+- ⏳ UAT-02: Docker-gated integration tests (12 файлов) — требует Docker daemon для testcontainers PostGIS
+
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
 
-**Бэкенд-каркас (продолжение):**
-- [ ] WebSocket эндпоинты (/ws/tracking, /ws/inbox) — Phase 5
-- [ ] Webhook handlers (/webhook/telegram реальный, voice стаб, gps симулятор) — Phase 3/5
-- [ ] WebSocket эндпоинты (/ws/tracking, /ws/inbox) — §6 спеки
-- [ ] Webhook эндпоинты (/webhook/telegram, /webhook/voice, /webhook/gps) — §6 спеки
-- [ ] Сидинг парка машин (исходные данные) — §9.1
+**Каналы (Phase 3 — следующая):**
+- [ ] Telegram webhook + grammY bot (две-этапный handler с update_id идемпотентностью) — Phase 3
+- [ ] Inline-кнопки + driver confirmation loop + manager intercept — Phase 3
 
-**Бизнес-логика (детерминированные функции/tools):**
-- [ ] extractRequest(text, lang) — LLM с function calling извлекает {from, to, tons, body_type, budget} — §4.1
-- [ ] nearestTruck — PostGIS KNN-запрос по свободным машинам с фильтром по тоннажу/типу кузова — §4.2
-- [ ] calcPrice — детерминированный расчёт: route_km × rate_per_km × dir_coef × season_coef, округление до 50 — §4.3
-- [ ] createOrder — создание заказа из лида + назначение водителя — §4.5
-- [ ] Воронка лидов (FSM): NEW → QUALIFIED → MATCHED → QUOTED → AGREED → ORDER_CREATED → IN_PROGRESS → DONE/LOST — §4.4
-- [ ] Жизненный цикл заказа (FSM): CREATED → DRIVER_ASSIGNED → AT_LOADING → IN_TRANSIT → AT_BORDER → DELIVERED → CLOSED — §4.5
-- [ ] Fallback на биржи ATI.SU / Lardi-Trans (для демо — стаб с мок-ответом, опционально) — §4.6
-- [ ] Цикл трекинга: позиция машины → WebSocket → автоматические события заказа по гео-фенсу — §4.7
+**Веб-админка (Phase 4):**
+- [ ] Форк next-shadcn-admin-dashboard, 4 existing pages подключены + 3 новых (fleet/orders/tracking) — Phase 4
+
+**Трекинг (Phase 5):**
+- [ ] WebSocket эндпоинты (/ws/tracking, /ws/inbox) — Phase 5
+- [ ] GPS-симулятор по OSRM маршруту + Geofence auto-FSM транзитов — Phase 5
+- [ ] Cycle трекинга: позиция → WebSocket → автоматические события заказа по гео-фенсу — §4.7 — Phase 5
+- [ ] Fallback на биржи ATI.SU / Lardi-Trans (Phase 2 stub → реальные API в v2) — §4.6 → отложено к v2 EXT-01/02
+
+**Demo polish (Phase 6):**
+- [ ] ICU pluralization, voice fallback video, локали дат — Phase 6
 
 **Telegram-канал:**
 - [ ] Telegram-бот (aiogram или grammY) с webhook → пайплайн §3
@@ -138,4 +151,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-09 after Phase 1 completion*
+*Last updated: 2026-06-09 after Phase 2 completion*
