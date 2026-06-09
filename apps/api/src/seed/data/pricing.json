@@ -1,0 +1,8 @@
+{
+  "rate_per_km": 4200,
+  "dir_coef": {
+    "default": 1.0,
+    "back_haul": 0.85
+  },
+  "season_coef": 1.1
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Volvo FH 540 #1",
+    "plate_number": "А123ВС777",
+    "driver_name": "Иван Петров",
+    "driver_phone": "+79001234501",
+    "capacity_t": 20,
+    "body_type": "tent",
+    "lng": 37.6173,
+    "lat": 55.7558
+  },
+  {
+    "name": "Scania R 500 #2",
+    "plate_number": "А234ВС777",
+    "driver_name": "Алексей Смирнов",
+    "driver_phone": "+79001234502",
+    "capacity_t": 22,
+    "body_type": "tent",
+    "lng": 39.1843,
+    "lat": 51.672
+  },
+  {
+    "name": "MAN TGX 540 #3",
+    "plate_number": "А345ВС777",
+    "driver_name": "Сергей Кузнецов",
+    "driver_phone": "+79001234503",
+    "capacity_t": 18,
+    "body_type": "tent",
+    "lng": 39.7015,
+    "lat": 47.2357
+  },
+  {
+    "name": "DAF XF 480 #4",
+    "plate_number": "АА1234АА",
+    "driver_name": "Олег Бондаренко",
+    "driver_phone": "+380501234504",
+    "capacity_t": 20,
+    "body_type": "tent",
+    "lng": 30.5234,
+    "lat": 50.4501
+  },
+  {
+    "name": "Mercedes Actros #5",
+    "plate_number": "АА2345АА",
+    "driver_name": "Микола Іванов",
+    "driver_phone": "+380501234505",
+    "capacity_t": 18,
+    "body_type": "tent",
+    "lng": 24.0297,
+    "lat": 49.8397
+  },
+  {
+    "name": "Volvo FH 460 Ref #6",
+    "plate_number": "А456ВС777",
+    "driver_name": "Дмитрий Соколов",
+    "driver_phone": "+79001234506",
+    "capacity_t": 10,
+    "body_type": "ref",
+    "lng": 30.3158,
+    "lat": 59.9391
+  },
+  {
+    "name": "Renault Premium Ref #7",
+    "plate_number": "АА3456АА",
+    "driver_name": "Андрій Шевченко",
+    "driver_phone": "+380501234507",
+    "capacity_t": 10,
+    "body_type": "ref",
+    "lng": 30.7233,
+    "lat": 46.4825
+  },
+  {
+    "name": "Iveco Stralis Ref #8",
+    "plate_number": "А567ВС777",
+    "driver_name": "Павел Морозов",
+    "driver_phone": "+79001234508",
+    "capacity_t": 5,
+    "body_type": "ref",
+    "lng": 38.9753,
+    "lat": 45.0355
+  },
+  {
+    "name": "Mercedes Atego ISO #9",
+    "plate_number": "А678ВС777",
+    "driver_name": "Виктор Лебедев",
+    "driver_phone": "+79001234509",
+    "capacity_t": 5,
+    "body_type": "iso",
+    "lng": 49.1064,
+    "lat": 55.7963
+  },
+  {
+    "name": "Volvo FL ISO #10",
+    "plate_number": "АА4567АА",
+    "driver_name": "Тарас Коваль",
+    "driver_phone": "+380501234510",
+    "capacity_t": 10,
+    "body_type": "iso",
+    "lng": 36.2304,
+    "lat": 49.9935
+  },
+  {
+    "name": "MAN TGS Container #11",
+    "plate_number": "А789ВС777",
+    "driver_name": "Николай Орлов",
+    "driver_phone": "+79001234511",
+    "capacity_t": 22,
+    "body_type": "container",
+    "lng": 39.7233,
+    "lat": 43.5855
+  },
+  {
+    "name": "DAF CF Container #12",
+    "plate_number": "АА5678АА",
+    "driver_name": "Богдан Мельник",
+    "driver_phone": "+380501234512",
+    "capacity_t": 20,
+    "body_type": "container",
+    "lng": 35.0462,
+    "lat": 48.4647
+  }
+]

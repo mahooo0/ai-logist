@@ -1,0 +1,66 @@
+[
+  {
+    "name": "ООО Логистика-Москва",
+    "phone": "+74951234567",
+    "telegram_id": "100001",
+    "lang": "ru",
+    "tax_id": "7700000001",
+    "tax_id_country": "RU"
+  },
+  {
+    "name": "Грузоперевозки Северная Столица",
+    "phone": "+78121234567",
+    "telegram_id": null,
+    "lang": "ru",
+    "tax_id": "7800000002",
+    "tax_id_country": "RU"
+  },
+  {
+    "name": "Южный Транзит",
+    "phone": "+78631234567",
+    "telegram_id": null,
+    "lang": "ru",
+    "tax_id": "6100000003",
+    "tax_id_country": "RU"
+  },
+  {
+    "name": "Уральская Логистика",
+    "phone": "+73431234567",
+    "telegram_id": null,
+    "lang": "ru",
+    "tax_id": "6600000004",
+    "tax_id_country": "RU"
+  },
+  {
+    "name": "ТОВ Київ-Транс",
+    "phone": "+380441234567",
+    "telegram_id": "200001",
+    "lang": "ua",
+    "tax_id": "37000005",
+    "tax_id_country": "UA"
+  },
+  {
+    "name": "Львівська Логістика",
+    "phone": "+380321234567",
+    "telegram_id": null,
+    "lang": "ua",
+    "tax_id": "37000006",
+    "tax_id_country": "UA"
+  },
+  {
+    "name": "ТОВ Одеса-Карго",
+    "phone": "+380481234567",
+    "telegram_id": null,
+    "lang": "ua",
+    "tax_id": "37000007",
+    "tax_id_country": "UA"
+  },
+  {
+    "name": "Харків-Логістика",
+    "phone": "+380571234567",
+    "telegram_id": null,
+    "lang": "ua",
+    "tax_id": "37000008",
+    "tax_id_country": "UA"
+  }
+]

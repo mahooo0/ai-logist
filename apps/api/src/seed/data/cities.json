@@ -1,0 +1,242 @@
+[
+  {
+    "slug": "moscow",
+    "name_ru": "Москва",
+    "name_ua": "Москва",
+    "country_code": "RU",
+    "lng": 37.6173,
+    "lat": 55.7558
+  },
+  {
+    "slug": "saint-petersburg",
+    "name_ru": "Санкт-Петербург",
+    "name_ua": "Санкт-Петербург",
+    "country_code": "RU",
+    "lng": 30.3158,
+    "lat": 59.9391
+  },
+  {
+    "slug": "voronezh",
+    "name_ru": "Воронеж",
+    "name_ua": "Воронеж",
+    "country_code": "RU",
+    "lng": 39.1843,
+    "lat": 51.672
+  },
+  {
+    "slug": "rostov-on-don",
+    "name_ru": "Ростов-на-Дону",
+    "name_ua": "Ростов-на-Дону",
+    "country_code": "RU",
+    "lng": 39.7015,
+    "lat": 47.2357
+  },
+  {
+    "slug": "krasnodar",
+    "name_ru": "Краснодар",
+    "name_ua": "Краснодар",
+    "country_code": "RU",
+    "lng": 38.9753,
+    "lat": 45.0355
+  },
+  {
+    "slug": "sochi",
+    "name_ru": "Сочи",
+    "name_ua": "Сочі",
+    "country_code": "RU",
+    "lng": 39.7233,
+    "lat": 43.5855
+  },
+  {
+    "slug": "kazan",
+    "name_ru": "Казань",
+    "name_ua": "Казань",
+    "country_code": "RU",
+    "lng": 49.1064,
+    "lat": 55.7963
+  },
+  {
+    "slug": "nizhny-novgorod",
+    "name_ru": "Нижний Новгород",
+    "name_ua": "Нижній Новгород",
+    "country_code": "RU",
+    "lng": 44.002,
+    "lat": 56.3269
+  },
+  {
+    "slug": "samara",
+    "name_ru": "Самара",
+    "name_ua": "Самара",
+    "country_code": "RU",
+    "lng": 50.1606,
+    "lat": 53.2415
+  },
+  {
+    "slug": "ekaterinburg",
+    "name_ru": "Екатеринбург",
+    "name_ua": "Єкатеринбург",
+    "country_code": "RU",
+    "lng": 60.6122,
+    "lat": 56.8431
+  },
+  {
+    "slug": "novosibirsk",
+    "name_ru": "Новосибирск",
+    "name_ua": "Новосибірськ",
+    "country_code": "RU",
+    "lng": 82.9357,
+    "lat": 55.0084
+  },
+  {
+    "slug": "kaliningrad",
+    "name_ru": "Калининград",
+    "name_ua": "Калінінград",
+    "country_code": "RU",
+    "lng": 20.4522,
+    "lat": 54.7104
+  },
+  {
+    "slug": "kursk",
+    "name_ru": "Курск",
+    "name_ua": "Курськ",
+    "country_code": "RU",
+    "lng": 36.1873,
+    "lat": 51.7373
+  },
+  {
+    "slug": "kyiv",
+    "name_ru": "Киев",
+    "name_ua": "Київ",
+    "country_code": "UA",
+    "lng": 30.5234,
+    "lat": 50.4501
+  },
+  {
+    "slug": "lviv",
+    "name_ru": "Львов",
+    "name_ua": "Львів",
+    "country_code": "UA",
+    "lng": 24.0297,
+    "lat": 49.8397
+  },
+  {
+    "slug": "odesa",
+    "name_ru": "Одесса",
+    "name_ua": "Одеса",
+    "country_code": "UA",
+    "lng": 30.7233,
+    "lat": 46.4825
+  },
+  {
+    "slug": "kharkiv",
+    "name_ru": "Харьков",
+    "name_ua": "Харків",
+    "country_code": "UA",
+    "lng": 36.2304,
+    "lat": 49.9935
+  },
+  {
+    "slug": "dnipro",
+    "name_ru": "Днепр",
+    "name_ua": "Дніпро",
+    "country_code": "UA",
+    "lng": 35.0462,
+    "lat": 48.4647
+  },
+  {
+    "slug": "zaporizhzhia",
+    "name_ru": "Запорожье",
+    "name_ua": "Запоріжжя",
+    "country_code": "UA",
+    "lng": 35.1396,
+    "lat": 47.8388
+  },
+  {
+    "slug": "chernihiv",
+    "name_ru": "Чернигов",
+    "name_ua": "Чернігів",
+    "country_code": "UA",
+    "lng": 31.2893,
+    "lat": 51.4982
+  },
+  {
+    "slug": "poltava",
+    "name_ru": "Полтава",
+    "name_ua": "Полтава",
+    "country_code": "UA",
+    "lng": 34.5514,
+    "lat": 49.5883
+  },
+  {
+    "slug": "vinnytsia",
+    "name_ru": "Винница",
+    "name_ua": "Вінниця",
+    "country_code": "UA",
+    "lng": 28.4682,
+    "lat": 49.2331
+  },
+  {
+    "slug": "lutsk",
+    "name_ru": "Луцк",
+    "name_ua": "Луцьк",
+    "country_code": "UA",
+    "lng": 25.3424,
+    "lat": 50.7472
+  },
+  {
+    "slug": "uzhhorod",
+    "name_ru": "Ужгород",
+    "name_ua": "Ужгород",
+    "country_code": "UA",
+    "lng": 22.2879,
+    "lat": 48.6208
+  },
+  {
+    "slug": "ivano-frankivsk",
+    "name_ru": "Ивано-Франковск",
+    "name_ua": "Івано-Франківськ",
+    "country_code": "UA",
+    "lng": 24.7111,
+    "lat": 48.9226
+  },
+  {
+    "slug": "border-hoptivka",
+    "name_ru": "Гоптовка (КПП)",
+    "name_ua": "Гоптівка (КПП)",
+    "country_code": "border",
+    "lng": 36.4253,
+    "lat": 50.3608
+  },
+  {
+    "slug": "border-shehyni",
+    "name_ru": "Шегини (КПП)",
+    "name_ua": "Шегині (КПП)",
+    "country_code": "border",
+    "lng": 22.955,
+    "lat": 49.7986
+  },
+  {
+    "slug": "border-krakovets",
+    "name_ru": "Краковец (КПП)",
+    "name_ua": "Краковець (КПП)",
+    "country_code": "border",
+    "lng": 23.1675,
+    "lat": 49.9419
+  },
+  {
+    "slug": "border-yahodyn",
+    "name_ru": "Ягодин (КПП)",
+    "name_ua": "Ягодин (КПП)",
+    "country_code": "border",
+    "lng": 23.7544,
+    "lat": 51.5436
+  },
+  {
+    "slug": "border-brest",
+    "name_ru": "Брест (КПП)",
+    "name_ua": "Брест (КПП)",
+    "country_code": "border",
+    "lng": 23.7227,
+    "lat": 52.0976
+  }
+]
