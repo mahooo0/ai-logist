@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 10
+current_plan: 11
 status: executing
-last_updated: "2026-06-09T06:31:35.465Z"
+last_updated: "2026-06-09T06:42:07.117Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # State: AI-Логист
@@ -28,17 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 10
+Current Plan: 11
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00..01-08 complete; next is 01-09 (seed: 12 trucks + ~30 RU/UA cities + 8 clients + pricing config; canonical KNN smoke from Kyiv)
+**Plan:** 01-00..01-09 complete; next is 01-10 (readme-smoke: end-to-end 10-minute fresh-clone walkthrough + DEPLOY-01..04 final verification)
 **Status:** Ready to execute
 
 **Progress:**
 
 ```
-[████████░░] 82%
-[████████████████░░░░] 9/11 plans complete in Phase 01
+[█████████░] 91%
+[██████████████████░░] 10/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -60,6 +60,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P06 | 4m 10s | 3 tasks | 14 files |
 | Phase 01-database-backend-skeleton P07 | 9m 0s | 2 tasks | 13 files |
 | Phase 01-database-backend-skeleton P08 | 6m 21s | 2 tasks | 18 files |
+| Phase 01-database-backend-skeleton P09 | 3m 50s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -114,13 +115,19 @@ Total Plans in Phase: 11
 - **Plan 01-08:** PriceOverrideBodySchema enforces `reason` at the schema level (`z.string().min(3)`) — ADMIN-NEW-06 requires every price override to carry an audit reason. Phase 4 manager UI form validation reuses the same Zod schema so even automated clients can't submit without justification.
 - **Plan 01-08:** shared-types `package.json` exports map gains `./domain/*` subpath — Plan 01-07 added `./api/*` for HealthResponseSchema; Plan 01-08's `enums.ts` under `domain/` needed the symmetric entry for direct subpath imports (e.g. `@ai-logist/shared-types/domain/enums`) from apps/api tests and Phase 4 apps/web typed UI.
 - **Plan 01-08:** Multi-method route plugin per domain — e.g. `apps/api/src/routes/leads.ts` hosts 4 routes (GET, PATCH /:id, POST /:id/match, POST /:id/quote). Single `FastifyPluginAsyncZod` with multiple `app.{get,patch,post}()` calls is cleaner than one file per verb. Matches the Phase 4 handler shape where match + quote logic sits next to list/patch handlers.
+- **Plan 01-09:** Added kursk as the 30th city to match D-19's "~30 cities" literally; gives the KNN smoke a third reasonable RU candidate within ~500km of Kyiv (plan literally suggested this as the "exactly 30" option). Final composition: 13 RU + 12 UA + 5 border.
+- **Plan 01-09:** `onConflictDoNothing` targets the natural unique column (`cities.slug` / `trucks.plateNumber` / `clients.phone`), NOT the auto-generated UUID id — auto IDs differ per run so targeting id would never trigger the conflict path. Idempotency requires the natural key. `pricing_config` uses raw `db.execute(sql\`...ON CONFLICT (key) DO NOTHING\`)` because the 3 rows have heterogeneous jsonb shapes (number / object / number); single SQL statement is cleaner than 3 separate Drizzle calls and 1 RTT vs 3.
+- **Plan 01-09:** JSON fixtures (apps/api/src/seed/data/*.json) over TS literal arrays — non-coders can edit coordinates without compile step; type-safety lives in run.ts via local fixture type aliases (CityFixture, TruckFixture, etc.) that cast on read. RESEARCH Open Question 1 recommendation. JSON imports use Node 22 native ESM with-attributes (`with { type: 'json' }`).
+- **Plan 01-09:** Integration test (`apps/api/tests/integration/seed.test.ts`) runs `seed()` TWICE in `beforeAll()` — single best signal for D-20 idempotency. If `onConflictDoNothing` is wrong, second run either errors (unique violation) or doubles counts (24 trucks, 16 clients). Both fail the assertion. 6 cases total (idempotency, RU/UA split, body_type mix, KNN ascending, border count ≥5, rate_per_km=4200 kopecks contract).
+- **Plan 01-09:** DB-10 unit test imports JSON via Node 22 native ESM `with { type: 'json' }` — same syntax run.ts uses; Vitest 4 supports it. Lets the unit suite verify fixture shape OFFLINE without spinning up testcontainers (unit suite: 16 / 4 todo, was 15 / 5). Remaining 4 todos are DEPLOY-01..04 (Plan 01-10).
+- **Plan 01-09:** Canonical KNN smoke (`smoke.ts` → `printNearestTrucksSmoke(db)`) uses CTE re-rank pattern per PITFALLS.md #2: overfetch 20 by `<->` (GiST-accelerated sphere) inside a CTE filtering trucks `WHERE status='available'`, then re-rank by `ST_Distance(geom, pickup, true)` (spheroid meters) and LIMIT 3. Pickup point pinned to Kyiv center (30.5234, 50.4501) — Phase 1 sanity check. Phase 2's `nearestTruck` reuses the shape with `tons` + `body_type` filters added inside the CTE.
 
 ### TODOs
 
 - Decide TTN/CMR template fidelity for demo (real RU legal form vs stylized PDF) — flagged in SUMMARY.md gaps; address during Phase 4 planning.
 - Decide driver delivery mechanism for demo (real Telegram for one demo-driver vs simulator-only) — address during Phase 3 planning.
 - Decide counterparty verification scope (mock badge only vs wire Opendatabot for UA EDRPOU) — likely defer to v2; verify during Phase 4 planning.
-- Confirm pricing config seed values (`rate_per_km`, `dir_coef`, `season_coef` realistic ranges for RU↔UA market) — Phase 1 seed task.
+- ~~Confirm pricing config seed values (`rate_per_km`, `dir_coef`, `season_coef` realistic ranges for RU↔UA market)~~ — RESOLVED in Plan 01-09: rate_per_km=4200 kopecks (42 ₽/км per D-19), dir_coef {default:1.0, back_haul:0.85}, season_coef 1.1.
 
 ### Blockers
 
@@ -135,11 +142,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-08-PLAN.md (7 shared-types DTO modules under packages/shared-types/src/{api/leads,api/orders,api/trucks,api/clients,api/analytics,api/webhooks,domain/enums}.ts — every Phase 2-5 endpoint contract published; 6 Fastify 501-stub route files under apps/api/src/routes/{leads,orders,trucks,clients,analytics,webhooks}.ts declaring FULL Zod request/response schemas with reply.notImplemented() handlers per RESEARCH.md Pattern 7; buildApp() registers all 7 route plugins (was 1; now 17 total routes — 1 health + 4 leads + 4 orders + 3 trucks + 1 clients + 1 analytics + 3 webhooks); integration test apps/api/tests/integration/swagger.test.ts with 5 cases (Swagger JSON surface, Zod 400 on querystring, sensible 501 shape, 501 after valid body, Zod 400 on body) — testcontainers-backed, runs on Docker-equipped machines; packages/shared-types/package.json exports map gains ./domain/* subpath; API-16 stub test expanded with 3 new assertions covering Plan 01-08 DTO surface, PriceOverrideBodySchema reason-required rule, route registration grep; unit suite: 15 passed / 5 todo (was 12 / 5); tsc + biome clean across 50 files).
+**Last session stopped at:** Completed 01-09-PLAN.md (seed: 4 JSON fixtures in apps/api/src/seed/data/ — 30 cities (13 RU incl. kursk + moscow/spb/voronezh/rostov/krasnodar/sochi/kazan/nn/samara/ekaterinburg/novosibirsk/kaliningrad; 12 UA incl. kyiv/lviv/odesa/kharkiv/dnipro/zaporizhzhia/chernihiv/poltava/vinnytsia/lutsk/uzhhorod/ivano-frankivsk; 5 border crossings: hoptivka, shehyni, krakovets, yahodyn, brest); 12 trucks with exact body_type mix tent×5+ref×3+iso×2+container×2 and capacities 5/10/18/20/22t positioned across RU+UA; 8 clients evenly split 4 RU + 4 UA with 2 telegram_id seeds (100001, 200001) and tax_id/tax_id_country for EDRPOU/ИНН demo display; pricing.json with rate_per_km=4200 kopecks (= 42 ₽/км per D-19, bigint per D-05), dir_coef {default:1.0, back_haul:0.85}, season_coef=1.1. apps/api/src/seed/smoke.ts ships printNearestTrucksSmoke(db) with canonical CTE re-rank pattern per PITFALLS.md #2 (overfetch 20 by `<->`, re-rank by ST_Distance(geog, true)) pinned to Kyiv center (30.5234, 50.4501). apps/api/src/seed/run.ts loads JSON via Node 22 native ESM `with { type: 'json' }`, inserts via Drizzle .insert().onConflictDoNothing({target}) — cities (slug), trucks (plateNumber), clients (phone) — plus raw db.execute(sql) with ON CONFLICT (key) DO NOTHING for pricing_config; closes with smoke print. `pnpm seed` script registered. Integration test apps/api/tests/integration/seed.test.ts with 6 cases: idempotency (seed runs TWICE), 4 RU + 4 UA, body type mix, canonical KNN ascending meters, ≥5 border crossings, rate_per_km=4200 jsonb assertion. Unit suite: 16 passed / 4 todo (was 15 / 5; DB-10 flipped). tsc + biome clean. Docker daemon unreachable on runner (consistent posture w/ Plans 01-02..08) so live `pnpm seed` smoke deferred to verifier; integration test parses + lists all 6 cases via `vitest list --project integration`.
 
-**Next action:** Run `/gsd:execute-plan 01-09` to execute the seed plan (TypeScript seed script apps/api/src/seed/run.ts using thin repos from Plan 01-06; ~30 RU/UA cities + 5+ border crossings, 12 trucks (tent×5 / ref×3 / iso×2 / container×2), 8 clients (4 RU + 4 UA), pricing config; idempotent via ON CONFLICT DO NOTHING; canonical KNN smoke from Kyiv → 3 nearest available trucks printed on completion — closes DB-10).
+**Next action:** Run `/gsd:execute-plan 01-10` to execute the readme-smoke plan (10-minute fresh-clone walkthrough README + DEPLOY-01..04 verification: docker compose config -q passes, Zod env rejects missing DATABASE_URL with process.exit(1), pnpm workspaces resolve @ai-logist/shared-types from apps/api, README "fresh dev in ≤10 min" sequence is executable end-to-end). Closes Phase 1.
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-08 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0..8}-SUMMARY.md`). pnpm workspaces, TS strict, Biome 2.4.16, `@ai-logist/shared-types` with full DTO surface (HealthResponseSchema + LeadSchema + OrderSchema + TruckSchema + MessageSchema + KpiResponseSchema + TelegramUpdateBodySchema + GpsPushBodySchema + VoiceCallbackBodySchema + 7 Zod domain enums), apps/api Vitest 4.1.8 + testcontainers 12, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType, 7 pgEnums, 0000_postgis_extension.sql + 0001_init.sql (all 13 tables + 7 ENUMs + 3 GiST + 5 CHECK SRID — quoted-customType bug fixed via post-process), all 13 schema tables declared, 6 thin per-aggregate repos under apps/api/src/persistence/repos/. Fastify v5 buildApp() registers 7 route plugins (health + leads + orders + trucks + clients + analytics at /api, webhooks at /webhook); 16 of 17 routes are 501 stubs with full Zod schemas — Phase 2/3/4/5 just swap handler bodies. Vitest unit suite: 15 passed / 5 todo. Next plan is 01-09 (seed).
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-09 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0..9}-SUMMARY.md`). pnpm workspaces, TS strict, Biome 2.4.16, `@ai-logist/shared-types` with full DTO surface (HealthResponseSchema + LeadSchema + OrderSchema + TruckSchema + MessageSchema + KpiResponseSchema + TelegramUpdateBodySchema + GpsPushBodySchema + VoiceCallbackBodySchema + 7 Zod domain enums), apps/api Vitest 4.1.8 + testcontainers 12, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType, 7 pgEnums, 0000_postgis_extension.sql + 0001_init.sql (all 13 tables + 7 ENUMs + 3 GiST + 5 CHECK SRID), all 13 schema tables declared, 6 thin per-aggregate repos. Fastify v5 buildApp() registers 7 route plugins (health + leads + orders + trucks + clients + analytics at /api, webhooks at /webhook); 16 of 17 routes are 501 stubs. Seed infrastructure shipped: 4 JSON fixtures (apps/api/src/seed/data/) + run.ts + smoke.ts + integration test + `pnpm seed` script. Vitest unit suite: 16 passed / 4 todo (DB-10 flipped; remaining = DEPLOY-01..04 for Plan 01-10). Next plan is 01-10 (readme-smoke).
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*

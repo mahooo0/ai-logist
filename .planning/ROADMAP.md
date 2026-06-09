@@ -37,7 +37,7 @@
   - [x] 01-06-schema-channels-repos-PLAN.md — messages, calls, bourse_cache, webhook_updates (UNIQUE source+external_id), pricing_config + 6 thin per-aggregate repos
   - [x] 01-07-fastify-skeleton-PLAN.md — Fastify v5 buildApp, db+redis plugins, /api/health with PostGIS_Version, HealthResponseSchema in shared-types, drizzle-kit generate 0001_init.sql + apply
   - [x] 01-08-rest-stubs-PLAN.md — Zod DTO schemas for leads/orders/trucks/clients/analytics/webhooks in shared-types + 501-stub routes in Fastify + Swagger UI integration test
-  - [ ] 01-09-seed-PLAN.md — JSON fixtures (~30 cities incl. 5+ borders, 12 trucks, 8 clients, pricing rate_per_km=4200 kopecks), idempotent seed run.ts, canonical KNN smoke print from Kyiv
+  - [x] 01-09-seed-PLAN.md — JSON fixtures (~30 cities incl. 5+ borders, 12 trucks, 8 clients, pricing rate_per_km=4200 kopecks), idempotent seed run.ts, canonical KNN smoke print from Kyiv
   - [ ] 01-10-readme-smoke-PLAN.md — README 10-min setup + VPS deploy + Phase 1 status table + full-stack smoke test + checkpoint:human-verify
 
 ---

@@ -18,7 +18,7 @@
 - [x] **DB-07**: Схема `calls`, `messages`, `bourse_cache` для каналов и кэша
 - [x] **DB-08**: Схема `pod_artifacts` для Proof of Delivery (signature_url, photo_url, gps, captured_at)
 - [x] **DB-09**: Схема `webhook_updates` для идемпотентности Telegram по `update_id` (`ON CONFLICT DO NOTHING`)
-- [ ] **DB-10**: Сидинг данных: 10-15 машин, ~30 RU/UA городов + пограничные переходы, 5-10 клиентов, конфиг цен (`rate_per_km`, `dir_coef`, `season_coef`)
+- [x] **DB-10**: Сидинг данных: 10-15 машин, ~30 RU/UA городов + пограничные переходы, 5-10 клиентов, конфиг цен (`rate_per_km`, `dir_coef`, `season_coef`)
 
 ### Backend API & Infrastructure (API)
 
@@ -204,7 +204,7 @@
 | DB-07 | Phase 1 | Complete |
 | DB-08 | Phase 1 | Complete |
 | DB-09 | Phase 1 | Complete |
-| DB-10 | Phase 1 | Pending |
+| DB-10 | Phase 1 | Complete |
 | API-01 | Phase 1 | Complete |
 | API-02 | Phase 1 | Complete |
 | API-03 | Phase 4 | Pending |
