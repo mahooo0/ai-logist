@@ -1,0 +1,27 @@
+{
+  "name": "ai-logist",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @ai-logist/api dev",
+    "dev:web": "pnpm --filter @ai-logist/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm exec biome check .",
+    "lint:fix": "pnpm exec biome check --write .",
+    "tsc": "pnpm -r exec tsc --noEmit",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @ai-logist/api db:generate",
+    "db:migrate": "pnpm --filter @ai-logist/api db:migrate",
+    "seed": "pnpm --filter @ai-logist/api seed",
+    "compose:up": "docker compose up -d postgres redis",
+    "compose:down": "docker compose down",
+    "compose:full": "docker compose up -d"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "typescript": "^5.7.0",
+    "tsx": "^4.22.0",
+    "vitest": "^4.1.0"
+  }
+}
