@@ -9,7 +9,7 @@
 
 ### Database & Schema (DB)
 
-- [ ] **DB-01**: Postgres 17 + PostGIS 3.5 запущены через docker-compose, `CREATE EXTENSION postgis` в первой миграции
+- [x] **DB-01**: Postgres 17 + PostGIS 3.5 запущены через docker-compose, `CREATE EXTENSION postgis` в первой миграции
 - [ ] **DB-02**: Схема `clients` создана с полями `lang ('ru'|'ua')`, `tax_id`, `tax_id_country` (EDRPOU/ИНН)
 - [ ] **DB-03**: Схема `cities` со столбцами `name_ru`/`name_ua` + `geom geography(Point,4326)` для нормализации городов
 - [ ] **DB-04**: Схема `trucks` с `geom geography(Point,4326)`, `capacity_t`, `body_type`, `status`, GiST-индекс на `geom`
@@ -195,7 +195,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | Phase 1 | Pending |
+| DB-01 | Phase 1 | Complete |
 | DB-02 | Phase 1 | Pending |
 | DB-03 | Phase 1 | Pending |
 | DB-04 | Phase 1 | Pending |
