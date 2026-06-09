@@ -13,7 +13,17 @@
 // in the correct order automatically.
 
 import { sql } from 'drizzle-orm';
-import { bigint, index, jsonb, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { bodyTypeEnum, leadStageEnum } from './_enums.js';
 import { cities } from './cities.js';
 import { clients } from './clients.js';
@@ -51,6 +61,11 @@ export const leads = pgTable(
 
     // CONTEXT FSM-03 — optimistic concurrency (Phase 2)
     version: bigint('version', { mode: 'number' }).notNull().default(0),
+
+    // Phase 2 Plan 02-01 — CONTEXT D-36 token ledger (Pitfall #12). Migration 0002 adds these columns.
+    tokensIn: bigint('tokens_in', { mode: 'number' }).notNull().default(0),
+    tokensOut: bigint('tokens_out', { mode: 'number' }).notNull().default(0),
+    llmCalls: integer('llm_calls').notNull().default(0),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

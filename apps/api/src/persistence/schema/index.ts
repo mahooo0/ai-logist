@@ -10,6 +10,7 @@ export * from './bourse_cache.js';
 export * from './calls.js';
 export * from './cities.js';
 export * from './clients.js';
+export * from './lead_events.js';
 export * from './leads.js';
 export * from './messages.js';
 export * from './order_events.js';

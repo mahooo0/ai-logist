@@ -9,6 +9,7 @@
 
 export * as citiesRepo from './cities.js';
 export * as clientsRepo from './clients.js';
+export * as leadEventsRepo from './lead_events.js';
 export * as leadsRepo from './leads.js';
 export * as messagesRepo from './messages.js';
 export * as ordersRepo from './orders.js';

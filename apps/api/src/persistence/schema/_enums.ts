@@ -38,3 +38,6 @@ export const truckStatusEnum = pgEnum('truck_status', ['available', 'busy', 'mai
 export const clientLangEnum = pgEnum('client_lang', ['ru', 'ua']);
 
 export const webhookSourceEnum = pgEnum('webhook_source', ['telegram', 'voice', 'gps']);
+
+// Phase 2 Plan 02-01 — FSM-05 audit-log actor enum. D-29.
+export const leadEventActorEnum = pgEnum('lead_event_actor', ['ai', 'manager', 'system']);

@@ -15,6 +15,13 @@
       "when": 1780985432060,
       "tag": "0001_init",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780995452000,
+      "tag": "0002_phase2_lead_events_tokens",
+      "breakpoints": true
     }
   ]
 }
