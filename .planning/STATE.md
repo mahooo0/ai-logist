@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_plan: 11
-status: executing
-last_updated: "2026-06-09T06:42:07.117Z"
+status: verifying
+last_updated: "2026-06-09T06:52:24.095Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # State: AI-Логист
@@ -27,19 +27,19 @@ progress:
 
 ## Current Position
 
-Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 11
+Phase: 01 (database-backend-skeleton) — COMPLETE (awaiting verifier)
+Current Plan: 11 (all complete)
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00..01-09 complete; next is 01-10 (readme-smoke: end-to-end 10-minute fresh-clone walkthrough + DEPLOY-01..04 final verification)
-**Status:** Ready to execute
+**Plan:** 01-00..01-10 complete. Phase 1 ships: monorepo skeleton, docker-compose topology (postgres + redis + api + web + caddy), Drizzle 0.45.2 + Postgres 17 + PostGIS 3.5 schema (13 tables + 7 pgEnums + customType geographyPoint), idempotent seed with canonical KNN smoke, Fastify v5 buildApp() with /api/health + Swagger UI + 16 501-stubs, README ≤10-min setup, full-stack smoke test (gated on AI_LOGIST_FULL_STACK_SMOKE=1).
+**Status:** Phase 1 COMPLETE — ready for `/gsd:verify-work` then Phase 2 planning.
 
 **Progress:**
 
 ```
-[█████████░] 91%
-[██████████████████░░] 10/11 plans complete in Phase 01
-[░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
+[██████████] 100%
+[████████████████████] 11/11 plans complete in Phase 01
+[█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
 ```
 
 ## Performance Metrics
@@ -61,6 +61,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P07 | 9m 0s | 2 tasks | 13 files |
 | Phase 01-database-backend-skeleton P08 | 6m 21s | 2 tasks | 18 files |
 | Phase 01-database-backend-skeleton P09 | 3m 50s | 2 tasks | 9 files |
+| Phase 01-database-backend-skeleton P10 | 3m 33s | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,11 @@ Total Plans in Phase: 11
 - **Plan 01-09:** Integration test (`apps/api/tests/integration/seed.test.ts`) runs `seed()` TWICE in `beforeAll()` — single best signal for D-20 idempotency. If `onConflictDoNothing` is wrong, second run either errors (unique violation) or doubles counts (24 trucks, 16 clients). Both fail the assertion. 6 cases total (idempotency, RU/UA split, body_type mix, KNN ascending, border count ≥5, rate_per_km=4200 kopecks contract).
 - **Plan 01-09:** DB-10 unit test imports JSON via Node 22 native ESM `with { type: 'json' }` — same syntax run.ts uses; Vitest 4 supports it. Lets the unit suite verify fixture shape OFFLINE without spinning up testcontainers (unit suite: 16 / 4 todo, was 15 / 5). Remaining 4 todos are DEPLOY-01..04 (Plan 01-10).
 - **Plan 01-09:** Canonical KNN smoke (`smoke.ts` → `printNearestTrucksSmoke(db)`) uses CTE re-rank pattern per PITFALLS.md #2: overfetch 20 by `<->` (GiST-accelerated sphere) inside a CTE filtering trucks `WHERE status='available'`, then re-rank by `ST_Distance(geom, pickup, true)` (spheroid meters) and LIMIT 3. Pickup point pinned to Kyiv center (30.5234, 50.4501) — Phase 1 sanity check. Phase 2's `nearestTruck` reuses the shape with `tons` + `body_type` filters added inside the CTE.
+- **Plan 01-10:** Auto-approved checkpoint:human-verify in --auto mode; created HUMAN-UAT.md UAT-01 (status ⏳ pending) to track the deferred real-human 10-minute README walkthrough — sweep before Phase 1 milestone tag. Pattern reusable across phases: every auto-mode-approved human-verify logs a UAT-NN entry with acceptance checklist so the deferred human verification debt is explicit rather than invisible.
+- **Plan 01-10:** Full-stack smoke test (`apps/api/tests/smoke/full-stack.test.ts`) gated on `AI_LOGIST_FULL_STACK_SMOKE=1` env (default skipped) — opt-in for verifier/buyer-eval pass; needs `docker compose up -d` beforehand (postgres + redis + api + web + caddy). 3 cases discoverable via `AI_LOGIST_FULL_STACK_SMOKE=1 vitest list --project smoke`: health-via-Caddy + OpenAPI surface + Next.js placeholder. Same gating pattern reusable for Phase 5 tracking WS smoke, Phase 3 Telegram webhook smoke.
+- **Plan 01-10:** DEPLOY-01..04 acceptance asserts via filesystem + grep (5-service line count in docker-compose, env-var presence + Zod ConfigSchema + process.exit(1) in config.ts source, workspace protocol + 'apps/*'/'packages/*' globs, README 10-min copy + 6 verbatim command strings: `docker compose up -d postgres redis`, `pnpm install`, `pnpm db:migrate`, `pnpm seed`, `pnpm dev`, `curl http://localhost:3000/api/health`). Single-test cross-cutting deploy assertions without YAML parser dep. Locks the README to its canonical commands — any rename breaks the test and forces a deliberate update.
+- **Plan 01-10:** Removed `test.todo()` literal mentions from the phase-1-stubs.test.ts header docstring to satisfy `grep -c "test.todo" ... is 0` acceptance criterion. The grep is naive (doesn't distinguish code from comments); rewrote the docstring as "Phase 1 acceptance criteria assertions" framing. Lesson: literal-grep acceptance criteria require careful comment hygiene.
+- **Plan 01-10:** Pre-existing apps/web/next-env.d.ts biome format issue (single-vs-double-quote on auto-generated import) logged to deferred-items.md. Next.js says "This file should not be edited" — hand-edit would be reverted on next `next build`. Out of scope for Plan 01-10 (README + smoke); absorbed by Phase 4 (admin web refactor).
 
 ### TODOs
 
@@ -142,11 +148,15 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-09-PLAN.md (seed: 4 JSON fixtures in apps/api/src/seed/data/ — 30 cities (13 RU incl. kursk + moscow/spb/voronezh/rostov/krasnodar/sochi/kazan/nn/samara/ekaterinburg/novosibirsk/kaliningrad; 12 UA incl. kyiv/lviv/odesa/kharkiv/dnipro/zaporizhzhia/chernihiv/poltava/vinnytsia/lutsk/uzhhorod/ivano-frankivsk; 5 border crossings: hoptivka, shehyni, krakovets, yahodyn, brest); 12 trucks with exact body_type mix tent×5+ref×3+iso×2+container×2 and capacities 5/10/18/20/22t positioned across RU+UA; 8 clients evenly split 4 RU + 4 UA with 2 telegram_id seeds (100001, 200001) and tax_id/tax_id_country for EDRPOU/ИНН demo display; pricing.json with rate_per_km=4200 kopecks (= 42 ₽/км per D-19, bigint per D-05), dir_coef {default:1.0, back_haul:0.85}, season_coef=1.1. apps/api/src/seed/smoke.ts ships printNearestTrucksSmoke(db) with canonical CTE re-rank pattern per PITFALLS.md #2 (overfetch 20 by `<->`, re-rank by ST_Distance(geog, true)) pinned to Kyiv center (30.5234, 50.4501). apps/api/src/seed/run.ts loads JSON via Node 22 native ESM `with { type: 'json' }`, inserts via Drizzle .insert().onConflictDoNothing({target}) — cities (slug), trucks (plateNumber), clients (phone) — plus raw db.execute(sql) with ON CONFLICT (key) DO NOTHING for pricing_config; closes with smoke print. `pnpm seed` script registered. Integration test apps/api/tests/integration/seed.test.ts with 6 cases: idempotency (seed runs TWICE), 4 RU + 4 UA, body type mix, canonical KNN ascending meters, ≥5 border crossings, rate_per_km=4200 jsonb assertion. Unit suite: 16 passed / 4 todo (was 15 / 5; DB-10 flipped). tsc + biome clean. Docker daemon unreachable on runner (consistent posture w/ Plans 01-02..08) so live `pnpm seed` smoke deferred to verifier; integration test parses + lists all 6 cases via `vitest list --project integration`.
+**Last session stopped at:** Completed 01-10-PLAN.md — final plan of Phase 1. Phase 1 status: COMPLETE, ready for `/gsd:verify-work` then Phase 2 planning.
 
-**Next action:** Run `/gsd:execute-plan 01-10` to execute the readme-smoke plan (10-minute fresh-clone walkthrough README + DEPLOY-01..04 verification: docker compose config -q passes, Zod env rejects missing DATABASE_URL with process.exit(1), pnpm workspaces resolve @ai-logist/shared-types from apps/api, README "fresh dev in ≤10 min" sequence is executable end-to-end). Closes Phase 1.
+Plan 01-10 shipped: README.md (~200 lines, 11 sections: Phase 1 status banner, Prerequisites, 5-step Local setup ≤10 min, Verify, Full stack via Caddy on :80, VPS deploy via docker-compose.prod.yml, Project layout, Scripts table, Phase 1 status req-table, 9-row Troubleshooting matrix, Roadmap+License), apps/api/tests/smoke/full-stack.test.ts (3 cases gated on AI_LOGIST_FULL_STACK_SMOKE=1: health-via-Caddy + OpenAPI surface + Next.js placeholder), DEPLOY-01..04 flipped from test.todo to real filesystem+grep assertions. Unit suite: 20 passed / 0 todo (was 16 / 4). Checkpoint:human-verify auto-approved per --auto mode; UAT-01 (real human 10-min walkthrough) recorded in HUMAN-UAT.md with status ⏳ pending + 9-step verification protocol + 5-item acceptance checklist.
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-09 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0..9}-SUMMARY.md`). pnpm workspaces, TS strict, Biome 2.4.16, `@ai-logist/shared-types` with full DTO surface (HealthResponseSchema + LeadSchema + OrderSchema + TruckSchema + MessageSchema + KpiResponseSchema + TelegramUpdateBodySchema + GpsPushBodySchema + VoiceCallbackBodySchema + 7 Zod domain enums), apps/api Vitest 4.1.8 + testcontainers 12, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType, 7 pgEnums, 0000_postgis_extension.sql + 0001_init.sql (all 13 tables + 7 ENUMs + 3 GiST + 5 CHECK SRID), all 13 schema tables declared, 6 thin per-aggregate repos. Fastify v5 buildApp() registers 7 route plugins (health + leads + orders + trucks + clients + analytics at /api, webhooks at /webhook); 16 of 17 routes are 501 stubs. Seed infrastructure shipped: 4 JSON fixtures (apps/api/src/seed/data/) + run.ts + smoke.ts + integration test + `pnpm seed` script. Vitest unit suite: 16 passed / 4 todo (DB-10 flipped; remaining = DEPLOY-01..04 for Plan 01-10). Next plan is 01-10 (readme-smoke).
+**Phase 1 ships:** monorepo skeleton (pnpm workspaces, TS 5.7 strict ESM, Biome 2.4.16), docker-compose topology (postgres + redis + api + web + caddy with 5 pinned image tags), Drizzle 0.45.2 schema (13 tables + 7 pgEnums + geographyPoint customType + GiST indexes + 5 CHECK SRID constraints), migrations 0000_postgis_extension.sql + 0001_init.sql, 6 thin per-aggregate repos (trucksRepo/citiesRepo/clientsRepo/leadsRepo/ordersRepo/messagesRepo), Fastify v5 buildApp() with /api/health (real impl with PostGIS_Version() check) + Swagger UI + 16 501-stubs across leads/orders/trucks/clients/analytics + 3 webhooks (telegram/voice/gps), idempotent seed (30 cities + 12 trucks + 8 clients + pricing) with canonical KNN smoke from Kyiv, packages/shared-types Zod DTOs (HealthResponseSchema + LeadSchema + OrderSchema + TruckSchema + MessageSchema + KpiResponseSchema + TelegramUpdateBodySchema + GpsPushBodySchema + VoiceCallbackBodySchema + 7 Zod domain enums), README ≤10-min setup, full-stack smoke test (opt-in via env flag).
+
+**Next action:** Run `/gsd:verify-work` (verifier reviews Phase 1 against REQUIREMENTS.md + manual UAT-01 sweep on a clean machine via README walkthrough). On verifier pass, run `/gsd:transition` to enter Phase 2 (LLM tools + KNN matching + FSM + pricing — absorbs 5+ PITFALLS.md critical pitfalls).
+
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. All 11 Phase 1 plans complete (see `.planning/phases/01-database-backend-skeleton/01-{00..10}-SUMMARY.md`). Phase 1 status: COMPLETE / awaiting verifier. Pending real-human verification: HUMAN-UAT.md UAT-01 (10-min walkthrough). Unit suite final: 20 passed / 0 todo (DB-01..10 + API-01/02/16 + DEPLOY-01..04 all real assertions). Integration suite: 13 cases across health/swagger/seed (needs testcontainers PostGIS 17-3.5). Full-stack smoke: 3 cases gated on AI_LOGIST_FULL_STACK_SMOKE=1. Docker daemon was unreachable on Claude's runner across all 11 plans (consistent posture documented in 10 prior summaries); live verification deferred to Docker-equipped verifier or developer machine. Next: `/gsd:verify-work` → `/gsd:transition` → Phase 2 planning.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
