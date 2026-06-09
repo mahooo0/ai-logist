@@ -1,5 +1,6 @@
-// @ai-logist/shared-types
+// @ai-logist/shared-types — Phase 1
 // Zod schemas for REST DTOs and domain enums, shared by apps/api and apps/web.
-// Phase 1: empty barrel — Plan 01-04 adds HealthResponseSchema and 501-stub schemas.
 
 export const SHARED_TYPES_VERSION = '0.0.0';
+
+export * from './api/health.js';

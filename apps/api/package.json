@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch --env-file=../../.env.local src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file=.env.local dist/index.js",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
@@ -16,8 +19,17 @@
   },
   "dependencies": {
     "@ai-logist/shared-types": "workspace:*",
+    "@fastify/sensible": "^6.0",
+    "@fastify/swagger": "^9.7",
+    "@fastify/swagger-ui": "^5.2",
     "drizzle-orm": "0.45.2",
+    "fastify": "5.8.5",
+    "fastify-plugin": "^5",
+    "fastify-type-provider-zod": "^6.1",
+    "ioredis": "^5.11",
+    "nanoid": "^5",
     "pg": "^8.21.0",
+    "pino": "^10.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -26,6 +38,7 @@
     "@types/pg": "^8.11.0",
     "@vitest/coverage-v8": "^4.1.0",
     "drizzle-kit": "^0.31.10",
+    "pino-pretty": "^13.1",
     "testcontainers": "^12.0.1",
     "tsx": "^4.22.0",
     "typescript": "^5.7.0",
