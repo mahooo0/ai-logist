@@ -1,0 +1,96 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`extractRequestHandler (LOGIC-01, LOGIC-04) > snapshot: 6 canonical extracts byte-stable 1`] = `
+{
+  "canon-01": {
+    "body_type": "tent",
+    "budget_kopecks": null,
+    "clarifying_question_ru": null,
+    "clarifying_question_ua": null,
+    "confidence": {
+      "from_city": 1,
+      "to_city": 1,
+      "tons": 1,
+    },
+    "deadline_iso": "2026-06-10T08:00:00.000Z",
+    "from_city": "Киев",
+    "to_city": "Львов",
+    "tons": 18,
+  },
+  "canon-02": {
+    "body_type": "tent",
+    "budget_kopecks": null,
+    "clarifying_question_ru": null,
+    "clarifying_question_ua": null,
+    "confidence": {
+      "from_city": 1,
+      "to_city": 1,
+      "tons": 1,
+    },
+    "deadline_iso": null,
+    "from_city": "Київ",
+    "to_city": "Львів",
+    "tons": 18,
+  },
+  "canon-03": {
+    "body_type": "tent",
+    "budget_kopecks": null,
+    "clarifying_question_ru": null,
+    "clarifying_question_ua": null,
+    "confidence": {
+      "from_city": 0.9,
+      "to_city": 0.9,
+      "tons": 1,
+    },
+    "deadline_iso": null,
+    "from_city": "Kyiv",
+    "to_city": "Lviv",
+    "tons": 18,
+  },
+  "canon-04": {
+    "body_type": null,
+    "budget_kopecks": null,
+    "clarifying_question_ru": "Откуда и куда везём? Например: Киев → Львов.",
+    "clarifying_question_ua": null,
+    "confidence": {
+      "from_city": 0,
+      "to_city": 0,
+      "tons": 0.6,
+    },
+    "deadline_iso": null,
+    "from_city": null,
+    "to_city": null,
+    "tons": 18,
+  },
+  "canon-05": {
+    "body_type": null,
+    "budget_kopecks": null,
+    "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+    "clarifying_question_ua": null,
+    "confidence": {
+      "from_city": 0,
+      "to_city": 0,
+      "tons": 0,
+    },
+    "deadline_iso": null,
+    "from_city": null,
+    "to_city": null,
+    "tons": null,
+  },
+  "canon-11": {
+    "body_type": null,
+    "budget_kopecks": null,
+    "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+    "clarifying_question_ua": null,
+    "confidence": {
+      "from_city": 0,
+      "to_city": 0,
+      "tons": 0,
+    },
+    "deadline_iso": null,
+    "from_city": null,
+    "to_city": null,
+    "tons": null,
+  },
+}
+`;
