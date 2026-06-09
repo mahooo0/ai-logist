@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@ai-logist/shared-types": "workspace:*",
+    "@anthropic-ai/sdk": "^0.102.0",
     "@fastify/sensible": "^6.0",
     "@fastify/swagger": "^9.7",
     "@fastify/swagger-ui": "^5.2",
