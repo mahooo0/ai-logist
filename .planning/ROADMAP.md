@@ -28,7 +28,7 @@
   3. Seed script populates 10-15 trucks across realistic RU/UA cities, ~30 cities (Київ↔Киев, Львів↔Львов pairs) plus 5+ border crossings, 5-10 clients, pricing config (`rate_per_km`, `dir_coef`, `season_coef`); a canonical `SELECT … ORDER BY geom <-> :pickup LIMIT 3` returns plausible trucks from psql.
   4. Monorepo layout is `apps/api` + `apps/web` + `packages/shared-types` with pnpm workspaces, Zod-validated env via Node 22 `--env-file`, and README that lets a fresh developer run the demo in ≤10 minutes.
 **Plans**: 11 plans
-  - [ ] 01-00-test-infra-PLAN.md — Wave 0: vitest + testcontainers + stub tests for every Phase 1 requirement
+  - [x] 01-00-test-infra-PLAN.md — Wave 0: vitest + testcontainers + stub tests for every Phase 1 requirement ✅ (2026-06-09)
   - [ ] 01-01-monorepo-skeleton-PLAN.md — pnpm workspaces, root package.json, tsconfig.base, biome, .env.example, packages/shared-types stub
   - [ ] 01-02-infrastructure-PLAN.md — docker-compose.yml (postgis 17-3.5, redis 7, api, web, caddy), Caddyfile (handle /api/*), Dockerfiles, apps/web Next.js placeholder
   - [ ] 01-03-drizzle-setup-PLAN.md — drizzle-orm 0.45.2 + drizzle-kit, customType geographyPoint, 7 pgEnums, drizzle.config.ts, 0000 postgis extension migration
@@ -159,7 +159,7 @@ Phase 1 ──> Phase 2 ──> Phase 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database + Backend Skeleton | 0/11 | Planned | - |
+| 1. Database + Backend Skeleton | 1/11 | Executing | - |
 | 2. LLM Pipeline + Deterministic Core | 0/0 | Not started | - |
 | 3. Telegram Channel | 0/0 | Not started | - |
 | 4. Admin Web | 0/0 | Not started | - |

@@ -1,23 +1,41 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+last_updated: "2026-06-09T05:10:00.000Z"
+progress:
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 11
+  completed_plans: 1
+---
+
 # State: AI-Логист
 
-**Last updated:** 2026-06-08
+**Last updated:** 2026-06-09
 
 ## Project Reference
 
 **Core value:** Диалог ведёт LLM, но решения по деньгам и подбору принимает детерминированный код — цена и подбор должны быть предсказуемыми, тестируемыми, воспроизводимыми.
 
-**Current focus:** Phase 1 — Database + Backend Skeleton (foundation; PostGIS correctness is the bedrock that gates every downstream phase)
+**Current focus:** Phase 01 — database-backend-skeleton
 
 **Stack (locked):** Node 22 LTS + TypeScript 5.7 strict + Fastify 5 + Drizzle ORM 0.45.2 + PostgreSQL 17 + PostGIS 3.5 + Redis 7.4 + grammY 1.43 + Anthropic SDK 0.102 (betaZodTool) + Next.js 16 / React 19 / Tailwind v4 / shadcn/ui (Zenith Admin template) + Leaflet + OSM. Monorepo via pnpm workspaces. Deploy: docker-compose + Caddy on single VM.
 
 ## Current Position
 
+Phase: 01 (database-backend-skeleton) — EXECUTING
+Current Plan: 2 of 11
+Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** none (planning not yet started)
-**Status:** Roadmap created, awaiting `/gsd:plan-phase 1`
+**Plan:** 01-00 complete; next is 01-01 (monorepo skeleton)
+**Status:** Executing Phase 01
 
 **Progress:**
+
 ```
+[█░░░░░░░░░░░░░░░░░░░] 1/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -30,6 +48,7 @@
 | Granularity | standard |
 | Parallelization | Phase 4 parallelizable with Phase 3 after P2 contracts |
 | High-risk phases | Phase 2, Phase 5 (per PITFALLS.md) |
+| 01-00 duration | ~3 min, 2 tasks, 9 files |
 
 ## Accumulated Context
 
@@ -41,6 +60,8 @@
 - **PostGIS CTE re-rank** is mandatory for `nearestTruck`: overfetch 20 by `<->` (sphere, GiST-accelerated), re-rank by `ST_Distance(geog, true)` (spheroid). KNN sphere ≠ ST_Distance spheroid is a documented PostGIS gotcha (ticket #3127).
 - **Telegram idempotency** on `update_id` is a non-negotiable Phase 3 invariant.
 - **Demo-credibility additions** (beyond spec §9) merged into v1 from FEATURES research: public tracking link `/track/[token]`, TTN/CMR PDF stub, driver-confirmation loop, extended cargo fields, price-override audit, POD section, global search.
+- **Plan 01-00:** Wave 0 test infrastructure landed BEFORE any production code — Vitest 4.1.8 + @testcontainers/postgresql 12.0.1; 19 `test.todo()` markers cover every Phase 1 acceptance criterion (DB-01..10, API-01/02/16, DEPLOY-01..04). Testcontainers helper pinned to `postgis/postgis:17-3.5` to match the docker-compose image (D-22).
+- **Plan 01-00:** Bumped @testcontainers/postgresql from planned 10.18.0 → 12.0.1 (latest GA on npm — 10.x line was superseded). Plan's documented fallback (`npm view`) was used.
 
 ### TODOs
 
@@ -62,9 +83,11 @@
 
 ## Session Continuity
 
-**Next action:** Run `/gsd:plan-phase 1` to decompose Phase 1 (Database + Backend Skeleton) into executable plans.
+**Last session stopped at:** Completed Plan 01-00 (Wave 0 test infrastructure)
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Stack is locked; phases 1-6 are derived from requirements with 100% coverage; Phase 1 is next.
+**Next action:** Run `/gsd:execute-plan 01-01` to execute the monorepo skeleton plan (pnpm-workspace.yaml, root package.json, tsconfig.base.json, biome.json).
+
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plan 01-00 is complete (see `.planning/phases/01-database-backend-skeleton/01-00-SUMMARY.md`). Stack is locked; phases 1-6 are derived from requirements with 100% coverage; next plan is 01-01.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
