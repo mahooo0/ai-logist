@@ -125,8 +125,8 @@
 ### Deployment & Demo (DEPLOY)
 
 - [ ] **DEPLOY-01**: docker-compose.yml с сервисами: `api` (Fastify), `web` (Next.js), `postgres+postgis`, `redis`, `caddy` (HTTPS auto-ACME)
-- [ ] **DEPLOY-02**: ENV-конфиг через `.env` + Node 22 `--env-file`, secrets отдельно
-- [ ] **DEPLOY-03**: `pnpm` workspaces монорепо: `apps/api`, `apps/web`, `packages/shared-types`
+- [x] **DEPLOY-02**: ENV-конфиг через `.env` + Node 22 `--env-file`, secrets отдельно
+- [x] **DEPLOY-03**: `pnpm` workspaces монорепо: `apps/api`, `apps/web`, `packages/shared-types`
 - [ ] **DEPLOY-04**: README с инструкцией запуска демо локально и на VPS
 
 ### Demo Polish (POLISH)
@@ -275,8 +275,8 @@
 | NOTIF-01 | Phase 6 | Pending |
 | NOTIF-02 | Phase 6 | Pending |
 | DEPLOY-01 | Phase 1 | Pending |
-| DEPLOY-02 | Phase 1 | Pending |
-| DEPLOY-03 | Phase 1 | Pending |
+| DEPLOY-02 | Phase 1 | Complete |
+| DEPLOY-03 | Phase 1 | Complete |
 | DEPLOY-04 | Phase 1 | Pending |
 | POLISH-01 | Phase 6 | Pending |
 | POLISH-02 | Phase 6 | Pending |

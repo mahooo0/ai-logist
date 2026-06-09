@@ -29,7 +29,7 @@
   4. Monorepo layout is `apps/api` + `apps/web` + `packages/shared-types` with pnpm workspaces, Zod-validated env via Node 22 `--env-file`, and README that lets a fresh developer run the demo in ≤10 minutes.
 **Plans**: 11 plans
   - [x] 01-00-test-infra-PLAN.md — Wave 0: vitest + testcontainers + stub tests for every Phase 1 requirement ✅ (2026-06-09)
-  - [ ] 01-01-monorepo-skeleton-PLAN.md — pnpm workspaces, root package.json, tsconfig.base, biome, .env.example, packages/shared-types stub
+  - [x] 01-01-monorepo-skeleton-PLAN.md — pnpm workspaces, root package.json, tsconfig.base, biome, .env.example, packages/shared-types stub
   - [ ] 01-02-infrastructure-PLAN.md — docker-compose.yml (postgis 17-3.5, redis 7, api, web, caddy), Caddyfile (handle /api/*), Dockerfiles, apps/web Next.js placeholder
   - [ ] 01-03-drizzle-setup-PLAN.md — drizzle-orm 0.45.2 + drizzle-kit, customType geographyPoint, 7 pgEnums, drizzle.config.ts, 0000 postgis extension migration
   - [ ] 01-04-schema-geo-PLAN.md — clients, cities, trucks, truck_positions tables (geography(Point,4326) + GiST + CHECK SRID)

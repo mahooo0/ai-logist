@@ -2,13 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
+current_plan: 3
 status: executing
-last_updated: "2026-06-09T05:10:00.000Z"
+last_updated: "2026-06-09T05:19:08.723Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 1
+  completed_plans: 2
+  percent: 18
 ---
 
 # State: AI-Логист
@@ -26,16 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 2 of 11
+Current Plan: 3 of 11
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00 complete; next is 01-01 (monorepo skeleton)
+**Plan:** 01-00 and 01-01 complete; next is 01-02 (infrastructure: docker-compose + Caddyfile)
 **Status:** Executing Phase 01
 
 **Progress:**
 
 ```
-[█░░░░░░░░░░░░░░░░░░░] 1/11 plans complete in Phase 01
+[██░░░░░░░░] 18%
+[██░░░░░░░░░░░░░░░░░░] 2/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -49,6 +52,7 @@ Total Plans in Phase: 11
 | Parallelization | Phase 4 parallelizable with Phase 3 after P2 contracts |
 | High-risk phases | Phase 2, Phase 5 (per PITFALLS.md) |
 | 01-00 duration | ~3 min, 2 tasks, 9 files |
+| Phase 01-database-backend-skeleton P01 | 5m46s | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -62,6 +66,10 @@ Total Plans in Phase: 11
 - **Demo-credibility additions** (beyond spec §9) merged into v1 from FEATURES research: public tracking link `/track/[token]`, TTN/CMR PDF stub, driver-confirmation loop, extended cargo fields, price-override audit, POD section, global search.
 - **Plan 01-00:** Wave 0 test infrastructure landed BEFORE any production code — Vitest 4.1.8 + @testcontainers/postgresql 12.0.1; 19 `test.todo()` markers cover every Phase 1 acceptance criterion (DB-01..10, API-01/02/16, DEPLOY-01..04). Testcontainers helper pinned to `postgis/postgis:17-3.5` to match the docker-compose image (D-22).
 - **Plan 01-00:** Bumped @testcontainers/postgresql from planned 10.18.0 → 12.0.1 (latest GA on npm — 10.x line was superseded). Plan's documented fallback (`npm view`) was used.
+- **Plan 01-01:** Biome 2.4.16 schema migration — plan used 2.4.0 schema with `files.ignore`+`noConsoleLog`; CLI required matching schema. Ran `biome migrate --write` to convert to `files.includes` (negative globs) + `noConsole` rule, then dropped trailing `/**` from folder ignores per `useBiomeIgnoreFolder` lint rule (Biome 2.2+ convention).
+- **Plan 01-01:** Dropped `rootDir: ./src` from `apps/api/tsconfig.json` — plan's rootDir contradicted `include: [src/**/*, tests/**/*, drizzle.config.ts]` producing TS6059. Removing rootDir lets TS infer it from include; outDir still drives emit.
+- **Plan 01-01:** Added `@ts-expect-error` on `await import('pg')` and `await import('drizzle-orm/node-postgres')` in Wave 0's `tests/_helpers/test-db.ts` so the apps/api project type-checks before Plan 01-04 installs the deps. Plan 01-04 must remove the directives.
+- **Plan 01-01:** Removed stale `apps/api/pnpm-lock.yaml` (Plan 01-00 created via `--ignore-workspace`; root lockfile is now authoritative — anticipated in Plan 01-00 SUMMARY).
 
 ### TODOs
 
@@ -83,11 +91,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed Plan 01-00 (Wave 0 test infrastructure)
+**Last session stopped at:** Completed Plan 01-01 (monorepo skeleton — pnpm workspaces + TS + Biome + shared-types)
 
-**Next action:** Run `/gsd:execute-plan 01-01` to execute the monorepo skeleton plan (pnpm-workspace.yaml, root package.json, tsconfig.base.json, biome.json).
+**Next action:** Run `/gsd:execute-plan 01-02` to execute the infrastructure plan (docker-compose.yml with postgres+postgis / redis / api / web / caddy services, Caddyfile path routing).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plan 01-00 is complete (see `.planning/phases/01-database-backend-skeleton/01-00-SUMMARY.md`). Stack is locked; phases 1-6 are derived from requirements with 100% coverage; next plan is 01-01.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 and 01-01 are complete (see `.planning/phases/01-database-backend-skeleton/01-00-SUMMARY.md` and `01-01-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, and apps/api Vitest infra are all live. Next plan is 01-02.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
