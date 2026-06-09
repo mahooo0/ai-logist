@@ -1,0 +1,31 @@
+[
+  { "name_ru": "Тула", "name_ua": "Тула", "lon": 37.6173, "lat": 54.1928, "country_code": "ru" },
+  {
+    "name_ru": "Полтава",
+    "name_ua": "Полтава",
+    "lon": 34.5407,
+    "lat": 49.5883,
+    "country_code": "ua"
+  },
+  {
+    "name_ru": "Калининград",
+    "name_ua": "Калінінград",
+    "lon": 20.5114,
+    "lat": 54.7104,
+    "country_code": "ru"
+  },
+  {
+    "name_ru": "Винница",
+    "name_ua": "Вінниця",
+    "lon": 28.4682,
+    "lat": 49.2331,
+    "country_code": "ua"
+  },
+  {
+    "name_ru": "Воронеж",
+    "name_ua": "Воронеж",
+    "lon": 39.1843,
+    "lat": 51.672,
+    "country_code": "ru"
+  }
+]
