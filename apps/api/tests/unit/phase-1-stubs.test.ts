@@ -157,6 +157,57 @@ describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
     });
     expect(valid.success).toBe(true);
   });
+
+  test('API-16: All Plan 01-08 DTO schemas exported from @ai-logist/shared-types', async () => {
+    const leads = await import('@ai-logist/shared-types/api/leads');
+    const orders = await import('@ai-logist/shared-types/api/orders');
+    const trucks = await import('@ai-logist/shared-types/api/trucks');
+    const clients = await import('@ai-logist/shared-types/api/clients');
+    const analytics = await import('@ai-logist/shared-types/api/analytics');
+    const webhooks = await import('@ai-logist/shared-types/api/webhooks');
+    const enums = await import('@ai-logist/shared-types/domain/enums');
+
+    expect(leads.LeadSchema).toBeDefined();
+    expect(leads.LeadListQuerySchema).toBeDefined();
+    expect(leads.LeadPatchBodySchema).toBeDefined();
+    expect(orders.OrderSchema).toBeDefined();
+    expect(orders.OrderDetailSchema).toBeDefined();
+    expect(orders.PriceOverrideBodySchema).toBeDefined();
+    expect(trucks.TruckSchema).toBeDefined();
+    expect(trucks.CreateTruckBodySchema).toBeDefined();
+    expect(clients.MessageSchema).toBeDefined();
+    expect(analytics.KpiResponseSchema).toBeDefined();
+    expect(webhooks.TelegramUpdateBodySchema).toBeDefined();
+    expect(webhooks.GpsPushBodySchema).toBeDefined();
+    expect(enums.LeadStage).toBeDefined();
+    expect(enums.OrderStatus).toBeDefined();
+    expect(enums.BodyType).toBeDefined();
+  });
+
+  test('API-16: PriceOverrideBodySchema rejects body missing reason (ADMIN-NEW-06)', async () => {
+    const { PriceOverrideBodySchema } = await import('@ai-logist/shared-types/api/orders');
+    const invalid = PriceOverrideBodySchema.safeParse({ newPrice: '100000', version: 1 });
+    expect(invalid.success).toBe(false);
+    const valid = PriceOverrideBodySchema.safeParse({
+      newPrice: '100000',
+      reason: 'driver requested fuel cost coverage',
+      version: 1,
+    });
+    expect(valid.success).toBe(true);
+  });
+
+  test('API-16: 6 stub route files exist + register in app.ts', async () => {
+    const fs = await import('node:fs/promises');
+    for (const f of ['leads', 'orders', 'trucks', 'clients', 'analytics', 'webhooks']) {
+      const src = await fs.readFile(`src/routes/${f}.ts`, 'utf-8');
+      expect(src).toMatch(/reply\.notImplemented/);
+      expect(src).toMatch(/@ai-logist\/shared-types\/api\//);
+    }
+    const appSrc = await fs.readFile('src/app.ts', 'utf-8');
+    // Match all 7 register lines: health + 5 api stubs + webhooks
+    const matches = appSrc.match(/app\.register\([a-zA-Z]+Routes/g) ?? [];
+    expect(matches.length).toBeGreaterThanOrEqual(7);
+  });
 });
 
 describe('Phase 1: Deployment & Demo (DEPLOY-*)', () => {
