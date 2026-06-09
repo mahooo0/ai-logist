@@ -118,5 +118,125 @@
     ],
     "finalText": null,
     "usage": { "input_tokens": 318, "output_tokens": 110 }
+  },
+  "extractRequest::dda2893a95c35090": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Київ",
+          "to_city": "Львів",
+          "tons": 18,
+          "body_type": "tent",
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": { "from_city": 1.0, "to_city": 1.0, "tons": 1.0 },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": { "input_tokens": 312, "output_tokens": 84 }
+  },
+  "extractRequest::83e52d2966d47a37": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "clarifying_question_ru": "Откуда и куда везём?",
+          "clarifying_question_ua": "Звідки й куди везти?"
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": { "input_tokens": 304, "output_tokens": 70 }
+  },
+  "extractRequest::bd0450efae740bc8": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": { "input_tokens": 320, "output_tokens": 100 }
+  },
+  "extractRequest::70c76323e789174c": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": { "input_tokens": 322, "output_tokens": 100 }
+  },
+  "extractRequest::b7dc21d9f708722b": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": { "input_tokens": 320, "output_tokens": 100 }
+  },
+  "extractRequest::0884b49cf44b1490": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": { "input_tokens": 318, "output_tokens": 100 }
   }
 }
