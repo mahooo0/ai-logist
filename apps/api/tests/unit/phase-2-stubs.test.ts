@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { describe, expect, it, test } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { filterBourseStub } from '../../src/lib/bourse-stub.js';
 import { cyrillicHeuristic, detectLang } from '../../src/lib/lang-detect.js';
 import { priceGuard } from '../../src/lib/price-guard.js';
@@ -294,6 +294,19 @@ describe('Phase 2 acceptance criteria', () => {
     // vi.useFakeTimers + setSystemTime + advanceTimersByTime to drive the
     // setInterval lifecycle and verify clearInterval on app.close().
   });
-  // API-07 — leads routes
-  test.todo('API-07: POST /api/leads/:id/match and /quote return 200 (not 501)');
+  // API-07 — leads routes (FLIPPED in Plan 02-05)
+  it('API-07: POST /api/leads/:id/match and /quote return 200 (not 501) — see tests/integration/api-leads-routes.test.ts', async () => {
+    const leadsRoute = await import('../../src/routes/leads.js');
+    expect(leadsRoute.default).toBeDefined();
+    // Sanity: the routes module imports the same primitives the pipeline uses.
+    const src = await readFile('src/routes/leads.ts', 'utf8');
+    expect(src).toMatch(/nearestTruck/);
+    expect(src).toMatch(/calcPrice/);
+    expect(src).toMatch(/transitionLead/);
+    expect(src).toMatch(/leadsRepo\.update.*quotedPrice/);
+    // 501-stub handler bodies for /:id/match + /:id/quote are gone.
+    expect(src).not.toMatch(/notImplemented\(['"]Phase 2/);
+    // Full coverage: tests/integration/api-leads-routes.test.ts boots Fastify
+    // via app.inject() and verifies 200 + price-lock + 404 + 400.
+  });
 });
