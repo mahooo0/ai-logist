@@ -8,10 +8,19 @@ const ConfigSchema = z.object({
   REDIS_URL: z.string().url().or(z.string().startsWith('redis://')),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
-  // Phase 2+ — optional in Phase 1 so the schema doesn't reject .env.local
+  // Phase 2+ — optional in Phase 1 so the schema doesn't reject .env.local.
+  // Optional at config level (tests use MockAnthropicClient); AnthropicLlmClient
+  // constructor throws if instantiated in prod without a key.
   ANTHROPIC_API_KEY: z.string().optional(),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
+
+  // Phase 2 — LLM pipeline + deterministic-core env vars.
+  LLM_MODEL: z.string().default('claude-sonnet-4-7'),
+  LLM_TOKEN_BUDGET_PER_LEAD: z.coerce.number().int().positive().default(30_000),
+  OSRM_URL: z.string().url().default('https://router.project-osrm.org'),
+  NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
+  NOMINATIM_CONTACT_EMAIL: z.string().email().default('demo@ai-logist.local'),
 
   // Build info (passed at docker build time)
   VERSION: z.string().default('dev'),

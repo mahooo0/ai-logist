@@ -6,6 +6,13 @@
 // across runs (RESEARCH.md Pitfall #7).
 //
 // FIXED_NOW is exported so tests can compare Date.now() to it where needed.
+//
+// Also pre-populates the env vars required by config.ts Zod validation so unit tests can
+// import production modules (which transitively load config.ts) without DATABASE_URL set.
+// Plan 02-01 — production libs (routing, geocoding) import from config.ts.
+
+process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test?sslmode=disable';
+process.env.REDIS_URL ??= 'redis://localhost:6379';
 
 import { afterEach, beforeEach, vi } from 'vitest';
 

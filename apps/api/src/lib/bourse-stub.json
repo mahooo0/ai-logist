@@ -1,0 +1,47 @@
+[
+  {
+    "source": "ati.su",
+    "external_id": "ATI-1001",
+    "geom_wkt": "POINT(30.5234 50.4501)",
+    "capacity_t": 20,
+    "body_type": "tent",
+    "contact_phone": "+380501234567",
+    "rate_per_km_kopecks": 4500
+  },
+  {
+    "source": "ati.su",
+    "external_id": "ATI-1002",
+    "geom_wkt": "POINT(30.7234 50.4501)",
+    "capacity_t": 18,
+    "body_type": "tent",
+    "contact_phone": "+380501234568",
+    "rate_per_km_kopecks": 4400
+  },
+  {
+    "source": "lardi",
+    "external_id": "LRD-2001",
+    "geom_wkt": "POINT(31.5234 50.6501)",
+    "capacity_t": 22,
+    "body_type": "ref",
+    "contact_phone": "+380501234569",
+    "rate_per_km_kopecks": 5200
+  },
+  {
+    "source": "ati.su",
+    "external_id": "ATI-1003",
+    "geom_wkt": "POINT(30.5234 50.6501)",
+    "capacity_t": 25,
+    "body_type": "container",
+    "contact_phone": "+380501234570",
+    "rate_per_km_kopecks": 4800
+  },
+  {
+    "source": "lardi",
+    "external_id": "LRD-2002",
+    "geom_wkt": "POINT(30.5234 50.4501)",
+    "capacity_t": 15,
+    "body_type": "iso",
+    "contact_phone": "+380501234571",
+    "rate_per_km_kopecks": 4900
+  }
+]
