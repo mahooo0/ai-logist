@@ -51,10 +51,51 @@ describe('Phase 1: Database & Schema (DB-*)', () => {
     expect(src).toMatch(/ST_SRID/);
   });
 
-  test.todo('DB-05: leads table has extended cargo fields + price_overrides jsonb[]');
-  test.todo('DB-06: orders + order_events tables with UNIQUE (order_id, type)');
+  test('DB-05: leads table has extended cargo fields + price_overrides jsonb[]', async () => {
+    const { leads } = await import('../../src/persistence/schema/leads.js');
+    const cols = Object.keys(leads);
+    expect(cols).toContain('volumeM3');
+    expect(cols).toContain('dimensionsLxwxh');
+    expect(cols).toContain('packaging');
+    expect(cols).toContain('adrClass');
+    expect(cols).toContain('declaredValue');
+    expect(cols).toContain('priceOverrides');
+    expect(cols).toContain('version');
+    // Verify source for jsonb[] declaration
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/persistence/schema/leads.ts', 'utf-8');
+    expect(src).toMatch(/jsonb\(['"]price_overrides['"]\)\s*\.array\(\)/);
+  });
+
+  test('DB-06: orders + order_events tables with UNIQUE (order_id, type)', async () => {
+    const { orders } = await import('../../src/persistence/schema/orders.js');
+    const { orderEvents } = await import('../../src/persistence/schema/order_events.js');
+    const orderCols = Object.keys(orders);
+    const eventCols = Object.keys(orderEvents);
+    expect(orderCols).toContain('number');
+    expect(orderCols).toContain('publicToken');
+    expect(orderCols).toContain('status');
+    expect(orderCols).toContain('price');
+    expect(eventCols).toContain('orderId');
+    expect(eventCols).toContain('type');
+    expect(eventCols).toContain('actor');
+    // Verify UNIQUE (orderId, type) declared in source
+    const fs = await import('node:fs/promises');
+    const src = await fs.readFile('src/persistence/schema/order_events.ts', 'utf-8');
+    expect(src).toMatch(/uniqueIndex[^)]*\)\.on\(t\.orderId,\s*t\.type\)/);
+  });
+
   test.todo('DB-07: calls, messages, bourse_cache tables exist');
-  test.todo('DB-08: pod_artifacts table with signature_url, photo_url, gps, captured_at');
+
+  test('DB-08: pod_artifacts table with signature_url, photo_url, gps, captured_at', async () => {
+    const { podArtifacts } = await import('../../src/persistence/schema/pod_artifacts.js');
+    const cols = Object.keys(podArtifacts);
+    expect(cols).toContain('orderId');
+    expect(cols).toContain('signatureUrl');
+    expect(cols).toContain('photoUrl');
+    expect(cols).toContain('gps');
+    expect(cols).toContain('capturedAt');
+  });
   test.todo('DB-09: webhook_updates with UNIQUE(source, external_id) + ON CONFLICT DO NOTHING');
   test.todo('DB-10: seed populates 12 trucks, ~30 cities, 8 clients idempotently');
 });
