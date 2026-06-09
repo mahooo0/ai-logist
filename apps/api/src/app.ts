@@ -11,7 +11,13 @@ import {
 import { config } from './config.js';
 import { dbPlugin } from './plugins/db.js';
 import { redisPlugin } from './plugins/redis.js';
+import analyticsRoutes from './routes/analytics.js';
+import clientsRoutes from './routes/clients.js';
 import healthRoutes from './routes/health.js';
+import leadsRoutes from './routes/leads.js';
+import ordersRoutes from './routes/orders.js';
+import trucksRoutes from './routes/trucks.js';
+import webhooksRoutes from './routes/webhooks.js';
 
 /**
  * Build the Fastify v5 app with all plugins wired:
@@ -63,8 +69,16 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
   await app.register(swaggerUi, { routePrefix: '/api/docs' });
 
-  // Routes — only /api/health implemented in Wave 7; 501 stubs land in Plan 01-08
+  // Routes — /api/health is the real implementation; all other API-* + webhook
+  // endpoints are 501 stubs (Plan 01-08, RESEARCH.md Pattern 7).
+  // Schemas come from packages/shared-types (D-27); Phase 2/3/4/5 swap handler bodies.
   await app.register(healthRoutes, { prefix: '/api' });
+  await app.register(leadsRoutes, { prefix: '/api' });
+  await app.register(ordersRoutes, { prefix: '/api' });
+  await app.register(trucksRoutes, { prefix: '/api' });
+  await app.register(clientsRoutes, { prefix: '/api' });
+  await app.register(analyticsRoutes, { prefix: '/api' });
+  await app.register(webhooksRoutes, { prefix: '/webhook' });
 
   return app;
 }
