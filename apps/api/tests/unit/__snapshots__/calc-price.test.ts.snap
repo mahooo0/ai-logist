@@ -1,0 +1,66 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`calcPrice — determinism (10× repeat-safe via test:snapshot) > snapshot: 6 calcPrice outputs byte-stable 1`] = `
+{
+  "case-01-540km-18t-tent-default": {
+    "breakdown": {
+      "base_kopecks": "2268000",
+      "dir_factor": 1,
+      "season_factor": 1,
+    },
+    "default": "2270000",
+    "max": "2610000",
+    "min": "1930000",
+  },
+  "case-02-540km-18t-ref-backhaul": {
+    "breakdown": {
+      "base_kopecks": "2268000",
+      "dir_factor": 0.85,
+      "season_factor": 1,
+    },
+    "default": "1930000",
+    "max": "2215000",
+    "min": "1640000",
+  },
+  "case-03-1200km-20t-container-default": {
+    "breakdown": {
+      "base_kopecks": "5040000",
+      "dir_factor": 1,
+      "season_factor": 1,
+    },
+    "default": "5040000",
+    "max": "5795000",
+    "min": "4285000",
+  },
+  "case-04-100km-5t-iso-default": {
+    "breakdown": {
+      "base_kopecks": "420000",
+      "dir_factor": 1,
+      "season_factor": 1,
+    },
+    "default": "420000",
+    "max": "485000",
+    "min": "355000",
+  },
+  "case-05-0p5km-1t-tent-default": {
+    "breakdown": {
+      "base_kopecks": "2100",
+      "dir_factor": 1,
+      "season_factor": 1,
+    },
+    "default": "0",
+    "max": "0",
+    "min": "0",
+  },
+  "case-06-2000km-25t-tent-default": {
+    "breakdown": {
+      "base_kopecks": "8400000",
+      "dir_factor": 1,
+      "season_factor": 1,
+    },
+    "default": "8400000",
+    "max": "9660000",
+    "min": "7140000",
+  },
+}
+`;
