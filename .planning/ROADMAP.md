@@ -33,7 +33,7 @@
   - [x] 01-02-infrastructure-PLAN.md — docker-compose.yml (postgis 17-3.5, redis 7, api, web, caddy), Caddyfile (handle /api/*), Dockerfiles, apps/web Next.js placeholder
   - [x] 01-03-drizzle-setup-PLAN.md — drizzle-orm 0.45.2 + drizzle-kit, customType geographyPoint, 7 pgEnums, drizzle.config.ts, 0000 postgis extension migration
   - [x] 01-04-schema-geo-PLAN.md — clients, cities, trucks, truck_positions tables (geography(Point,4326) + GiST + CHECK SRID)
-  - [ ] 01-05-schema-domain-PLAN.md — orders (public_token), leads (extended cargo + price_overrides jsonb[] + version), order_events (UNIQUE order_id+type), pod_artifacts (gps geography)
+  - [x] 01-05-schema-domain-PLAN.md — orders (public_token), leads (extended cargo + price_overrides jsonb[] + version), order_events (UNIQUE order_id+type), pod_artifacts (gps geography)
   - [ ] 01-06-schema-channels-repos-PLAN.md — messages, calls, bourse_cache, webhook_updates (UNIQUE source+external_id), pricing_config + 6 thin per-aggregate repos
   - [ ] 01-07-fastify-skeleton-PLAN.md — Fastify v5 buildApp, db+redis plugins, /api/health with PostGIS_Version, HealthResponseSchema in shared-types, drizzle-kit generate 0001_init.sql + apply
   - [ ] 01-08-rest-stubs-PLAN.md — Zod DTO schemas for leads/orders/trucks/clients/analytics/webhooks in shared-types + 501-stub routes in Fastify + Swagger UI integration test

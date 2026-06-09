@@ -13,10 +13,10 @@
 - [x] **DB-02**: Схема `clients` создана с полями `lang ('ru'|'ua')`, `tax_id`, `tax_id_country` (EDRPOU/ИНН)
 - [x] **DB-03**: Схема `cities` со столбцами `name_ru`/`name_ua` + `geom geography(Point,4326)` для нормализации городов
 - [x] **DB-04**: Схема `trucks` с `geom geography(Point,4326)`, `capacity_t`, `body_type`, `status`, GiST-индекс на `geom`
-- [ ] **DB-05**: Схема `leads` с расширенными полями груза (`volume_m3`, `dimensions_lxwxh`, `packaging`, `adr_class`, `declared_value`) и `price_overrides jsonb[]` для audit log
-- [ ] **DB-06**: Схема `orders` + `order_events` с `UNIQUE (order_id, type)` для идемпотентности и таймлайна
+- [x] **DB-05**: Схема `leads` с расширенными полями груза (`volume_m3`, `dimensions_lxwxh`, `packaging`, `adr_class`, `declared_value`) и `price_overrides jsonb[]` для audit log
+- [x] **DB-06**: Схема `orders` + `order_events` с `UNIQUE (order_id, type)` для идемпотентности и таймлайна
 - [ ] **DB-07**: Схема `calls`, `messages`, `bourse_cache` для каналов и кэша
-- [ ] **DB-08**: Схема `pod_artifacts` для Proof of Delivery (signature_url, photo_url, gps, captured_at)
+- [x] **DB-08**: Схема `pod_artifacts` для Proof of Delivery (signature_url, photo_url, gps, captured_at)
 - [ ] **DB-09**: Схема `webhook_updates` для идемпотентности Telegram по `update_id` (`ON CONFLICT DO NOTHING`)
 - [ ] **DB-10**: Сидинг данных: 10-15 машин, ~30 RU/UA городов + пограничные переходы, 5-10 клиентов, конфиг цен (`rate_per_km`, `dir_coef`, `season_coef`)
 
@@ -199,10 +199,10 @@
 | DB-02 | Phase 1 | Complete |
 | DB-03 | Phase 1 | Complete |
 | DB-04 | Phase 1 | Complete |
-| DB-05 | Phase 1 | Pending |
-| DB-06 | Phase 1 | Pending |
+| DB-05 | Phase 1 | Complete |
+| DB-06 | Phase 1 | Complete |
 | DB-07 | Phase 1 | Pending |
-| DB-08 | Phase 1 | Pending |
+| DB-08 | Phase 1 | Complete |
 | DB-09 | Phase 1 | Pending |
 | DB-10 | Phase 1 | Pending |
 | API-01 | Phase 1 | Pending |

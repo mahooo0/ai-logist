@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 6
+current_plan: 7
 status: executing
-last_updated: "2026-06-09T05:47:25.311Z"
+last_updated: "2026-06-09T05:54:18.031Z"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 5
-  percent: 45
+  completed_plans: 6
+  percent: 55
 ---
 
 # State: AI-Логист
@@ -28,17 +28,17 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — EXECUTING
-Current Plan: 6
+Current Plan: 7
 Total Plans in Phase: 11
 **Phase:** 1 of 6 (Database + Backend Skeleton)
-**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04 complete; next is 01-05 (schema-domain: leads, orders, order_events, pod_artifacts)
+**Plan:** 01-00, 01-01, 01-02, 01-03, 01-04, 01-05 complete; next is 01-06 (schema-channels-repos: calls, messages, bourse_cache, webhook_updates, pricing_config + thin repos)
 **Status:** Executing Phase 01
 
 **Progress:**
 
 ```
-[█████░░░░░] 45%
-[█████████░░░░░░░░░░░] 5/11 plans complete in Phase 01
+[██████░░░░] 55%
+[███████████░░░░░░░░░] 6/11 plans complete in Phase 01
 [░░░░░░░░░░░░░░░░░░░░] 0/6 phases complete
 ```
 
@@ -56,6 +56,7 @@ Total Plans in Phase: 11
 | Phase 01 P02 | 3m27s | 2 tasks | 14 files |
 | Phase 01-database-backend-skeleton P03 | 5m47s | 2 tasks | 15 files |
 | Phase 01-database-backend-skeleton P04 | 2m 12s | 2 tasks | 6 files |
+| Phase 01-database-backend-skeleton P05 | 2m 30s | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,12 @@ Total Plans in Phase: 11
 - **Plan 01-04:** `cities.country_code` is TEXT, not an ENUM — values today are RU/UA/border; future demos may add UA oblast codes / BY / KZ. TEXT keeps it migration-free; seed validates the set at write time.
 - **Plan 01-04:** `drizzle-kit generate` deferred to Plan 01-07 — Waves 3b + 3c + 3d will ship as ONE init migration (`0001_init.sql`) covering clients/cities/trucks/truck_positions + leads/orders + channels/repos tables together, avoiding 3 sequential migrations for never-released schema.
 - **Plan 01-04:** Test assertion strategy: `Object.keys(schemaObject)` + source-grep. Drizzle's public runtime API doesn't expose indexes/checks at runtime via the table object — only columns iterate. The eventual `0001_init.sql` (Plan 01-07) will let stricter tests assert DDL strings directly.
+- **Plan 01-05:** orders declared before leads in source ordering — though Drizzle's lazy `references(() => x.id)` callback resolves circular FKs at runtime, source-first orders matches the migration's ALTER TABLE ADD CONSTRAINT order and keeps the conceptual flow intuitive.
+- **Plan 01-05:** orders.lead_id is a bare uuid (no .references() callback). leads.order_id carries the FK constraint instead so deleting a lead in demo cleanup doesn't cascade or block the order.
+- **Plan 01-05:** orders.public_token is text + UNIQUE (not uuid) so the Phase 5 `/track/[token]` URL stays short and shareable. nanoid 5 will generate the values in seed (Plan 01-09) and createOrder (Phase 2).
+- **Plan 01-05:** orders.currency and order_events.actor are plain text not ENUM — the domains will grow (UAH/KZT, geofence/scheduler) and migrations-on-every-new-value isn't worth the ENUM type safety here. Validation lives in createOrder / appendEvent helpers.
+- **Plan 01-05:** pod_artifacts.gps has no GiST index — POD points are written once at delivery and never queried by KNN/radius. GiST would add write cost for zero read benefit until a hypothetical delivered-density heatmap feature (deferred to Phase 6).
+- **Plan 01-05:** Nullable-safe SRID CHECK pattern established for optional geo columns (order_events.geom, pod_artifacts.gps): `IS NULL OR ST_SRID(col) = 4326`. Reusable invariant for any future optional geo column.
 
 ### TODOs
 
@@ -108,11 +115,11 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-04-PLAN.md (clients/cities/trucks/truck_positions schemas; every geo column has GiST + CHECK SRID=4326; DB-02/03/04 stub tests flipped to passing; unit suite 4 passed / 13 todo).
+**Last session stopped at:** Completed 01-05-PLAN.md (orders/leads/order_events/pod_artifacts schemas; forward FK leads.order_id → orders.id compiles via lazy callback; orders.public_token UNIQUE for Phase 5 tracking; leads has 5 extended cargo cols + price_overrides jsonb[] + version; order_events has UNIQUE(order_id, type) for FSM idempotency; pod_artifacts has gps with nullable-safe SRID CHECK; DB-05/06/08 stub tests flipped to passing; unit suite 7 passed / 10 todo).
 
-**Next action:** Run `/gsd:execute-plan 01-05` to execute the schema-domain plan (leads with extended cargo fields + price_overrides jsonb[], orders with public_token, order_events with UNIQUE(order_id, type), pod_artifacts).
+**Next action:** Run `/gsd:execute-plan 01-06` to execute the schema-channels-repos plan (calls, messages, bourse_cache, webhook_updates with UNIQUE(source, external_id) idempotency, pricing_config tables + thin per-aggregate repos under apps/api/src/persistence/repos/).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00, 01-01, 01-02, 01-03, 01-04 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3,4}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), 0000_postgis_extension.sql migration, and four geo-bearing schema tables (clients with lang/tax_id/tax_id_country; cities with name_ru/name_ua/slug-UNIQUE/GiST/CHECK; trucks with capacity_t/body_type/status/GiST/CHECK; truck_positions with FK cascade + UNIQUE(truck_id, recorded_at) for GPS idempotency) all live. Next plan is 01-05.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Plans 01-00 through 01-05 are complete (see `.planning/phases/01-database-backend-skeleton/01-0{0,1,2,3,4,5}-SUMMARY.md`). pnpm workspaces, TS strict, Biome, `@ai-logist/shared-types` empty barrel, apps/api Vitest infra, docker-compose topology, Caddyfile, Dockerfiles, Next.js 16 placeholder, Drizzle 0.45.2 + drizzle-kit 0.31.10 + pg + zod-v4 stack, `geographyPoint` customType (emits `geography(Point, 4326)`), 7 pgEnums (lead_stage / order_status / order_event_type / body_type_t / truck_status / client_lang / webhook_source), 0000_postgis_extension.sql migration, and EIGHT schema tables now live: clients (lang/tax_id/tax_id_country), cities (name_ru/name_ua/slug-UNIQUE/GiST/CHECK), trucks (capacity_t/body_type/status/GiST/CHECK), truck_positions (FK cascade + UNIQUE(truck_id, recorded_at) GPS idempotency), orders (number/public_token UNIQUE / bigint price kopecks / status enum / version), leads (5 extended cargo cols + price_overrides jsonb[] + version + bigint budget/declared_value/quoted_price), order_events (UNIQUE(order_id, type) FSM idempotency + nullable geom + nullable-safe CHECK SRID), pod_artifacts (signature_url/photo_url/gps nullable-safe CHECK SRID/captured_at). Forward FK leads.order_id → orders.id compiles via lazy callback. Next plan is 01-06.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
