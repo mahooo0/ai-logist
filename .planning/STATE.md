@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 8
-status: verifying
-last_updated: "2026-06-09T12:51:11.382Z"
+current_plan: Not started
+status: planning
+last_updated: "2026-06-09T12:59:42.183Z"
 progress:
   total_phases: 6
   completed_phases: 2
@@ -29,11 +29,11 @@ progress:
 
 Phase: 02 (llm-pipeline-deterministic-core) — EXECUTING
 Plan: 8 of 8
-Current Plan: 8
+Current Plan: Not started
 Total Plans in Phase: 8
-**Phase:** 2 of 6 (llm pipeline + deterministic core ⚠️ high risk)
+**Phase:** 3 of 6 (telegram channel)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plans 02-00 (Wave 0 test infra), 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper), 02-02 (Wave 2a: 6 LLM tools via betaZodTool), 02-03 (Wave 2b: lead-fsm + order-fsm + errors + concurrency/audit integration tests), 02-03b (Wave 2 atomic todo-flip: 9 phase-2-stubs.test.ts placeholders flipped to real it() assertions), 02-04a (Wave 3 intake first half: handleInboundMessage Steps 0+A+B+C+D+E+F — advisory lock + sticky lang + token budget + extract → clarify → city; LOGIC-03 + LOGIC-04 flipped), and 02-04b (Wave 3 intake second half: Steps D-pre + G + H + I + J — confirmation shortcut + match + price-lock + templated reply + create-order chain; follow-up-scheduler.ts; FSM-04 + FSM-06 flipped) complete. Next serial step is Plan 02-05 (routes API-07).
-**Status:** Phase complete — ready for verification
+**Status:** Ready to plan
 
 **Progress:**
 
