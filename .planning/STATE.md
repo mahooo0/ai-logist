@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: planning
-last_updated: "2026-06-09T07:03:42.596Z"
+current_plan: 2
+status: executing
+last_updated: "2026-06-09T08:51:14.597Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 19
+  completed_plans: 12
+  percent: 63
 ---
 
 # State: AI-Логист
@@ -20,25 +21,27 @@ progress:
 
 **Core value:** Диалог ведёт LLM, но решения по деньгам и подбору принимает детерминированный код — цена и подбор должны быть предсказуемыми, тестируемыми, воспроизводимыми.
 
-**Current focus:** Phase 01 — database-backend-skeleton
+**Current focus:** Phase 02 — llm-pipeline-deterministic-core
 
 **Stack (locked):** Node 22 LTS + TypeScript 5.7 strict + Fastify 5 + Drizzle ORM 0.45.2 + PostgreSQL 17 + PostGIS 3.5 + Redis 7.4 + grammY 1.43 + Anthropic SDK 0.102 (betaZodTool) + Next.js 16 / React 19 / Tailwind v4 / shadcn/ui (Zenith Admin template) + Leaflet + OSM. Monorepo via pnpm workspaces. Deploy: docker-compose + Caddy on single VM.
 
 ## Current Position
 
-Phase: 01 (database-backend-skeleton) — COMPLETE (awaiting verifier)
-Current Plan: Not started
-Total Plans in Phase: 11
+Phase: 02 (llm-pipeline-deterministic-core) — EXECUTING
+Plan: 2 of 8
+Current Plan: 2
+Total Plans in Phase: 8
 **Phase:** 2 of 6 (llm pipeline + deterministic core ⚠️ high risk)
-**Plan:** 01-00..01-10 complete. Phase 1 ships: monorepo skeleton, docker-compose topology (postgres + redis + api + web + caddy), Drizzle 0.45.2 + Postgres 17 + PostGIS 3.5 schema (13 tables + 7 pgEnums + customType geographyPoint), idempotent seed with canonical KNN smoke, Fastify v5 buildApp() with /api/health + Swagger UI + 16 501-stubs, README ≤10-min setup, full-stack smoke test (gated on AI_LOGIST_FULL_STACK_SMOKE=1).
-**Status:** Ready to plan
+**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plan 02-00 (Wave 0 test infrastructure) complete: LlmProvider interface + MockAnthropicClient + runScript dialog harness + FIXED_NOW fake-timers + DETERMINISTIC_UUIDS + 20 canonical inputs + 5 cities-extra + 5 injection-attempts + 18 test.todo markers + PHASE-2.md harness doc. Unit suite: 38 tests (20 passed + 18 todo). Plan 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper) is next.
+**Status:** Ready to execute
 
 **Progress:**
 
-```
+[██████░░░░] 63%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
+
 ```
 
 ## Performance Metrics
@@ -61,6 +64,7 @@ Total Plans in Phase: 11
 | Phase 01-database-backend-skeleton P08 | 6m 21s | 2 tasks | 18 files |
 | Phase 01-database-backend-skeleton P09 | 3m 50s | 2 tasks | 9 files |
 | Phase 01-database-backend-skeleton P10 | 3m 33s | 2 tasks | 5 files |
+| Phase 02-llm-pipeline-deterministic-core-high-risk P00 | 6min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -126,6 +130,13 @@ Total Plans in Phase: 11
 - **Plan 01-10:** DEPLOY-01..04 acceptance asserts via filesystem + grep (5-service line count in docker-compose, env-var presence + Zod ConfigSchema + process.exit(1) in config.ts source, workspace protocol + 'apps/*'/'packages/*' globs, README 10-min copy + 6 verbatim command strings: `docker compose up -d postgres redis`, `pnpm install`, `pnpm db:migrate`, `pnpm seed`, `pnpm dev`, `curl http://localhost:3000/api/health`). Single-test cross-cutting deploy assertions without YAML parser dep. Locks the README to its canonical commands — any rename breaks the test and forces a deliberate update.
 - **Plan 01-10:** Removed `test.todo()` literal mentions from the phase-1-stubs.test.ts header docstring to satisfy `grep -c "test.todo" ... is 0` acceptance criterion. The grep is naive (doesn't distinguish code from comments); rewrote the docstring as "Phase 1 acceptance criteria assertions" framing. Lesson: literal-grep acceptance criteria require careful comment hygiene.
 - **Plan 01-10:** Pre-existing apps/web/next-env.d.ts biome format issue (single-vs-double-quote on auto-generated import) logged to deferred-items.md. Next.js says "This file should not be edited" — hand-edit would be reverted on next `next build`. Out of scope for Plan 01-10 (README + smoke); absorbed by Phase 4 (admin web refactor).
+- **Plan 02-00:** `LlmProvider` interface returns `{ toolCalls[], finalText, usage{ input_tokens, output_tokens } }` — Wave 1 production wrapper around `client.beta.messages.toolRunner` MUST flatten the SDK's response into this shape so handlers see one stable contract regardless of SDK version. MockAnthropicClient in tests implements the same interface so Wave 2-4 tests are SDK-version-agnostic.
+- **Plan 02-00:** `FIXED_NOW` pinned at `2026-06-09T12:00:00Z` (project time, business-hours) rather than RESEARCH.md §11's `10:00Z` example — `12:00Z` keeps `deadline_iso` math intact in snapshot scenarios that touch business-hour logic. Registered as `setupFile` on the **unit** project only; integration project MUST NOT freeze Date because testcontainers Postgres `NOW()` and JS `Date.now()` would drift, producing ambiguous `FOR UPDATE` / version-mismatch failures.
+- **Plan 02-00:** `phase-2-stubs.test.ts` comment hygiene rule — NO literal `test.todo` mentions in docstrings since the verifier uses naive `grep -c 'test.todo'` to assert exactly 18 markers. Phase 1 Plan 01-10 burned this lesson; encoded again here. Waves 1-4 stub-flip plans must preserve the count gate when editing the file.
+- **Plan 02-00:** `DETERMINISTIC_UUIDS` sized at exactly 20 entries (mirrors canonical-inputs.json count). Tests needing more UUIDs throw on `nextUuid()` — forces test authors to think about scope rather than silently wrap around. RFC 4122 v4-compliant (version-4 marker in third group, variant `8` in fourth group).
+- **Plan 02-00:** Dynamic-import + `@ts-expect-error` pattern reused from Phase 1 Plans 01-01/01-03: `dialog-harness.ts` imports `src/pipeline/intake.js` dynamically with the directive so the Wave 0 helper compiles before Wave 3 ships `intake.ts`. Wave 3 plan 02-04a/b MUST remove the directive once `intake.ts` lands — failure to remove will produce a TS2578 "Unused @ts-expect-error directive" error.
+- **Plan 02-00:** Added `typecheck` script to `apps/api/package.json` — Phase 1 never added it (only documented in 02-VALIDATION.md "Auxiliary commands"); subsequent plans had no way to run `pnpm typecheck`. Now `pnpm --filter @ai-logist/api typecheck` executes `tsc --noEmit -p tsconfig.json` exit 0. Reusable across Waves 1-4.
+- **Plan 02-00:** Biome `apps/api/tests/...` paths only resolve when run from monorepo root (not from `apps/api/` cwd). Documented in the SUMMARY's "Issues Encountered" — Wave 1-4 plans must run biome from project root, not the package cwd.
 
 ### TODOs
 
@@ -147,15 +158,15 @@ Total Plans in Phase: 11
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 01-10-PLAN.md — final plan of Phase 1. Phase 1 status: COMPLETE, ready for `/gsd:verify-work` then Phase 2 planning.
+**Last session stopped at:** Completed 02-00-PLAN.md — Wave 0 test infrastructure for Phase 2. Plan 02-01 (Wave 1: mini-migration `0002_phase2_fsm_and_tokens.sql` + lib primitives `money/lang-detect/routing/geocoding/price-guard` + `llm-client.ts` wrapper) is next.
 
-Plan 01-10 shipped: README.md (~200 lines, 11 sections: Phase 1 status banner, Prerequisites, 5-step Local setup ≤10 min, Verify, Full stack via Caddy on :80, VPS deploy via docker-compose.prod.yml, Project layout, Scripts table, Phase 1 status req-table, 9-row Troubleshooting matrix, Roadmap+License), apps/api/tests/smoke/full-stack.test.ts (3 cases gated on AI_LOGIST_FULL_STACK_SMOKE=1: health-via-Caddy + OpenAPI surface + Next.js placeholder), DEPLOY-01..04 flipped from test.todo to real filesystem+grep assertions. Unit suite: 20 passed / 0 todo (was 16 / 4). Checkpoint:human-verify auto-approved per --auto mode; UAT-01 (real human 10-min walkthrough) recorded in HUMAN-UAT.md with status ⏳ pending + 9-step verification protocol + 5-item acceptance checklist.
+Plan 02-00 shipped: 4 helper files in `apps/api/tests/_helpers/` (dialog-harness with `runScript(db, llm, clientId, messages)` driving scripted dialogs via dynamic import of pipeline/intake.js; mock-anthropic with LlmProvider interface that Wave 1 production llm-client.ts MUST implement; fake-timers preset at FIXED_NOW=2026-06-09T12:00:00Z registered as setupFile on unit project only; db-seed with 20 RFC 4122 v4 deterministic UUIDs + installDeterministicCrypto teardown helper), 4 JSON fixtures (canonical-inputs.json with 20 dialog scripts; llm-responses.json as `{}` placeholder; cities-extra.json with 5 cities forcing Nominatim path; injection-attempts.json with 5 Pitfall #11 corpus entries), apps/api/tests/unit/phase-2-stubs.test.ts (EXACTLY 18 `test.todo()` markers — one per Phase 2 req), apps/api/tests/PHASE-2.md harness usage doc, vitest.config.ts (added unit setupFiles + bumped integration timeout 60s → 90s), apps/api/package.json (added test:llm, test:snapshot, typecheck scripts). Unit suite: 20 passed (Phase 1) + 18 todo (Phase 2) / 0 failures. Biome + tsc --noEmit clean.
 
-**Phase 1 ships:** monorepo skeleton (pnpm workspaces, TS 5.7 strict ESM, Biome 2.4.16), docker-compose topology (postgres + redis + api + web + caddy with 5 pinned image tags), Drizzle 0.45.2 schema (13 tables + 7 pgEnums + geographyPoint customType + GiST indexes + 5 CHECK SRID constraints), migrations 0000_postgis_extension.sql + 0001_init.sql, 6 thin per-aggregate repos (trucksRepo/citiesRepo/clientsRepo/leadsRepo/ordersRepo/messagesRepo), Fastify v5 buildApp() with /api/health (real impl with PostGIS_Version() check) + Swagger UI + 16 501-stubs across leads/orders/trucks/clients/analytics + 3 webhooks (telegram/voice/gps), idempotent seed (30 cities + 12 trucks + 8 clients + pricing) with canonical KNN smoke from Kyiv, packages/shared-types Zod DTOs (HealthResponseSchema + LeadSchema + OrderSchema + TruckSchema + MessageSchema + KpiResponseSchema + TelegramUpdateBodySchema + GpsPushBodySchema + VoiceCallbackBodySchema + 7 Zod domain enums), README ≤10-min setup, full-stack smoke test (opt-in via env flag).
+**Phase 2 status:** Plan 1 of 8 complete (Wave 0). Plans 2-8 cover migration + LLM tools + FSM + pipeline orchestration + routes API. Per VALIDATION.md, the test harness this plan locked in is the foundation Waves 1-4 build against; every snapshot test must use FIXED_NOW + installDeterministicCrypto, every LLM-dependent test must use MockAnthropicClient (real LLM only via `pnpm test:llm` gated on ANTHROPIC_API_KEY).
 
-**Next action:** Run `/gsd:verify-work` (verifier reviews Phase 1 against REQUIREMENTS.md + manual UAT-01 sweep on a clean machine via README walkthrough). On verifier pass, run `/gsd:transition` to enter Phase 2 (LLM tools + KNN matching + FSM + pricing — absorbs 5+ PITFALLS.md critical pitfalls).
+**Next action:** Execute Plan 02-01 (Wave 1) — migration 0002, lib primitives, llm-client wrapper. The migration adds `leads.{tokens_in, tokens_out, llm_calls}` columns (token ledger for Pitfall #12), creates `lead_events` audit table + `lead_event_actor` enum. The lib primitives (money/lang-detect/routing/geocoding/price-guard) are pure functions — unit-testable without testcontainers. llm-client.ts wraps `client.beta.messages.toolRunner` and implements the LlmProvider interface this plan locked in. After Plan 02-01: flip MATCH-03/04/05 + LOGIC-02 todos to real assertions.
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. All 11 Phase 1 plans complete (see `.planning/phases/01-database-backend-skeleton/01-{00..10}-SUMMARY.md`). Phase 1 status: COMPLETE / awaiting verifier. Pending real-human verification: HUMAN-UAT.md UAT-01 (10-min walkthrough). Unit suite final: 20 passed / 0 todo (DB-01..10 + API-01/02/16 + DEPLOY-01..04 all real assertions). Integration suite: 13 cases across health/swagger/seed (needs testcontainers PostGIS 17-3.5). Full-stack smoke: 3 cases gated on AI_LOGIST_FULL_STACK_SMOKE=1. Docker daemon was unreachable on Claude's runner across all 11 plans (consistent posture documented in 10 prior summaries); live verification deferred to Docker-equipped verifier or developer machine. Next: `/gsd:verify-work` → `/gsd:transition` → Phase 2 planning.
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Phase 1 (11/11 plans) complete; Phase 2 plan 02-00 (Wave 0 test infra) complete; Plans 02-01..05 ahead. Wave 0 ships LlmProvider interface + MockAnthropicClient + runScript harness + FIXED_NOW preset + DETERMINISTIC_UUIDS + 18 test.todo placeholders. Wave 1 (Plan 02-01) ships migration 0002 + lib primitives + llm-client wrapper. Wave 2 (Plan 02-02 + 02-03) ships LLM tools + FSMs. Wave 3 (Plan 02-03b + 02-04a/b) ships stub-flips + pipeline/intake.ts (which the Wave 0 dialog-harness imports dynamically with @ts-expect-error — Wave 3 MUST remove the directive). Wave 4 (Plan 02-05) ships routes API-07 un-stub. Docker daemon remains unreachable on Claude's runner; live testcontainers integration tests deferred to verifier/developer machine. Next: `/gsd:execute-plan 02-01-PLAN.md` or continue chained auto-mode.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*

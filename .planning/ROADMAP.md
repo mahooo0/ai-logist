@@ -53,13 +53,15 @@
   3. PostGIS KNN returns correct top-3 trucks via CTE re-rank pattern (overfetch 20 by `<->`, re-rank by spheroid `ST_Distance`); EXPLAIN ANALYZE shows GiST `Index Scan`; filters by `capacity_t` and `body_type` are applied INSIDE the CTE.
   4. Concurrency test fires two simultaneous transitions on the same lead — exactly one succeeds, the other reports illegal-transition via version mismatch; FSM audit log records actor (ai/manager/system) and payload.
   5. Sticky language detect: a client sending "ок" followed by "Київ-Львів 18т" lands in `clients.lang='ua'` once (≥20-char rule), and all subsequent replies stay UA even if the client later sends RU text.
-**Plans**: 6 plans
-  - [ ] 02-00-test-infra-PLAN.md — Wave 0: dialog-harness + MockAnthropicClient + fixtures + 18 stub todos
-  - [ ] 02-01-migration-lib-llm-client-PLAN.md — Migration 0002 + lib/* primitives + Anthropic SDK wrapper
-  - [ ] 02-02-llm-tools-PLAN.md — 6 LLM tools (extractRequest, nearestTruck, calcPrice, createOrder, discount, detectLanguage)
-  - [ ] 02-03-fsm-PLAN.md — Lead + Order FSM with FOR UPDATE + version CAS + audit log (parallel with 02-02)
-  - [ ] 02-04-pipeline-intake-PLAN.md — handleInboundMessage orchestrator + sticky lang + price-lock + token budget + follow-up scheduler
-  - [ ] 02-05-routes-api-PLAN.md — Un-stub POST /api/leads/:id/{match,quote} (API-07) + final stub-flip
+**Plans**: 8 plans
+  - [x] 02-00-test-infra-PLAN.md — Wave 0: dialog-harness + MockAnthropicClient + fixtures + 18 stub todos
+  - [ ] 02-01-migration-lib-llm-client-PLAN.md — Wave 1: Migration 0002 + lib/* primitives + Anthropic SDK wrapper
+  - [ ] 02-02-llm-tools-PLAN.md — Wave 2: 6 LLM tools (extractRequest, nearestTruck, calcPrice, createOrder, discount, detectLanguage)
+  - [ ] 02-03-fsm-PLAN.md — Wave 2: Lead + Order FSM with FOR UPDATE + version CAS + audit log (parallel with 02-02)
+  - [ ] 02-03b-stub-flips-PLAN.md — Wave 3: atomic stub-flip for 9 Wave-2 todos (LOGIC-01/05 + MATCH-01/03/05 + FSM-01/02/03/05) — eliminates phase-2-stubs.test.ts file overlap between 02-02 and 02-03
+  - [ ] 02-04a-pipeline-intake-first-half-PLAN.md — Wave 4: intake.ts skeleton (advisory lock + sticky lang + extract + clarify + city resolve) + sticky-lang RU-after-UA test
+  - [ ] 02-04b-pipeline-intake-second-half-PLAN.md — Wave 5: intake.ts extends (match + price-lock + confirm + create-order chain) + follow-up scheduler with FAKE TIMERS
+  - [ ] 02-05-routes-api-PLAN.md — Wave 6: Un-stub POST /api/leads/:id/{match,quote} (API-07) + final stub-flip
 
 ---
 
