@@ -2,15 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 11
-status: verifying
-last_updated: "2026-06-09T06:52:24.095Z"
+current_plan: Not started
+status: planning
+last_updated: "2026-06-09T07:03:42.596Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 11
   completed_plans: 11
-  percent: 100
 ---
 
 # State: AI-Логист
@@ -28,11 +27,11 @@ progress:
 ## Current Position
 
 Phase: 01 (database-backend-skeleton) — COMPLETE (awaiting verifier)
-Current Plan: 11 (all complete)
+Current Plan: Not started
 Total Plans in Phase: 11
-**Phase:** 1 of 6 (Database + Backend Skeleton)
+**Phase:** 2 of 6 (llm pipeline + deterministic core ⚠️ high risk)
 **Plan:** 01-00..01-10 complete. Phase 1 ships: monorepo skeleton, docker-compose topology (postgres + redis + api + web + caddy), Drizzle 0.45.2 + Postgres 17 + PostGIS 3.5 schema (13 tables + 7 pgEnums + customType geographyPoint), idempotent seed with canonical KNN smoke, Fastify v5 buildApp() with /api/health + Swagger UI + 16 501-stubs, README ≤10-min setup, full-stack smoke test (gated on AI_LOGIST_FULL_STACK_SMOKE=1).
-**Status:** Phase 1 COMPLETE — ready for `/gsd:verify-work` then Phase 2 planning.
+**Status:** Ready to plan
 
 **Progress:**
 
