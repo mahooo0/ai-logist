@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2
+current_plan: 3
 status: executing
-last_updated: "2026-06-09T08:51:14.597Z"
+last_updated: "2026-06-09T11:29:59.534Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 19
-  completed_plans: 12
-  percent: 63
+  completed_plans: 14
+  percent: 74
 ---
 
 # State: AI-Логист
@@ -28,16 +28,16 @@ progress:
 ## Current Position
 
 Phase: 02 (llm-pipeline-deterministic-core) — EXECUTING
-Plan: 2 of 8
-Current Plan: 2
+Plan: 4 of 8
+Current Plan: 4
 Total Plans in Phase: 8
 **Phase:** 2 of 6 (llm pipeline + deterministic core ⚠️ high risk)
-**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plan 02-00 (Wave 0 test infrastructure) complete: LlmProvider interface + MockAnthropicClient + runScript dialog harness + FIXED_NOW fake-timers + DETERMINISTIC_UUIDS + 20 canonical inputs + 5 cities-extra + 5 injection-attempts + 18 test.todo markers + PHASE-2.md harness doc. Unit suite: 38 tests (20 passed + 18 todo). Plan 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper) is next.
+**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plans 02-00 (Wave 0 test infra), 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper), and 02-03 (Wave 2b: lead-fsm + order-fsm + errors + concurrency/audit integration tests) complete. Plan 02-02 (Wave 2a LLM tools) is running in parallel; Plan 02-03b (FSM-01/02/03/05 todo flips in phase-2-stubs.test.ts) is the next serial step.
 **Status:** Ready to execute
 
 **Progress:**
 
-[██████░░░░] 63%
+[███████░░░] 74%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -65,6 +65,7 @@ Total Plans in Phase: 8
 | Phase 01-database-backend-skeleton P09 | 3m 50s | 2 tasks | 9 files |
 | Phase 01-database-backend-skeleton P10 | 3m 33s | 2 tasks | 5 files |
 | Phase 02-llm-pipeline-deterministic-core-high-risk P00 | 6min | 2 tasks | 12 files |
+| Phase 02-llm-pipeline-deterministic-core-high-risk P03 | 10min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,8 @@ Total Plans in Phase: 8
 - **Plan 02-00:** Dynamic-import + `@ts-expect-error` pattern reused from Phase 1 Plans 01-01/01-03: `dialog-harness.ts` imports `src/pipeline/intake.js` dynamically with the directive so the Wave 0 helper compiles before Wave 3 ships `intake.ts`. Wave 3 plan 02-04a/b MUST remove the directive once `intake.ts` lands — failure to remove will produce a TS2578 "Unused @ts-expect-error directive" error.
 - **Plan 02-00:** Added `typecheck` script to `apps/api/package.json` — Phase 1 never added it (only documented in 02-VALIDATION.md "Auxiliary commands"); subsequent plans had no way to run `pnpm typecheck`. Now `pnpm --filter @ai-logist/api typecheck` executes `tsc --noEmit -p tsconfig.json` exit 0. Reusable across Waves 1-4.
 - **Plan 02-00:** Biome `apps/api/tests/...` paths only resolve when run from monorepo root (not from `apps/api/` cwd). Documented in the SUMMARY's "Issues Encountered" — Wave 1-4 plans must run biome from project root, not the package cwd.
+- **Plan 02-03:** transitionLead/transitionOrder ship as hand-rolled, table-driven FSMs (D-28 lock) with three-layer concurrency defense: pessimistic SELECT FOR UPDATE row lock + optimistic version+1 compare-and-set + Wave 3 per-client pg_advisory_xact_lock. order_events audit uses ON CONFLICT (order_id, type) DO NOTHING to preserve Phase 5 geofence idempotency. transitionOrder returns audit_row_inserted boolean so the geofence handler can detect ON CONFLICT suppression.
+- **Plan 02-03:** STATUS_TO_EVENT bridges uppercase order_status → lowercase order_event_type with CLOSED→null instead of omitted (keeps `Record<OrderStatus,…>` shape complete — guards against forgetting to add new statuses). Integration tests apply migrations 0000+0001+0002 inline via raw `pg.Client` (PLAN's `seed(db)` call was unworkable — actual `seed()` is parameterless and runs `printNearestTrucksSmoke` side-effect).
 
 ### TODOs
 
@@ -158,7 +161,7 @@ Total Plans in Phase: 8
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 02-00-PLAN.md — Wave 0 test infrastructure for Phase 2. Plan 02-01 (Wave 1: mini-migration `0002_phase2_fsm_and_tokens.sql` + lib primitives `money/lang-detect/routing/geocoding/price-guard` + `llm-client.ts` wrapper) is next.
+**Last session stopped at:** Completed 02-03-fsm-PLAN.md (Wave 2b — FSM modules). transitionLead + transitionOrder shipped with three-layer concurrency defense + audit log. Plan 02-02 (LLM tools) is running in parallel; Plan 02-03b (FSM-01/02/03/05 stub flips) is the next serial step.
 
 Plan 02-00 shipped: 4 helper files in `apps/api/tests/_helpers/` (dialog-harness with `runScript(db, llm, clientId, messages)` driving scripted dialogs via dynamic import of pipeline/intake.js; mock-anthropic with LlmProvider interface that Wave 1 production llm-client.ts MUST implement; fake-timers preset at FIXED_NOW=2026-06-09T12:00:00Z registered as setupFile on unit project only; db-seed with 20 RFC 4122 v4 deterministic UUIDs + installDeterministicCrypto teardown helper), 4 JSON fixtures (canonical-inputs.json with 20 dialog scripts; llm-responses.json as `{}` placeholder; cities-extra.json with 5 cities forcing Nominatim path; injection-attempts.json with 5 Pitfall #11 corpus entries), apps/api/tests/unit/phase-2-stubs.test.ts (EXACTLY 18 `test.todo()` markers — one per Phase 2 req), apps/api/tests/PHASE-2.md harness usage doc, vitest.config.ts (added unit setupFiles + bumped integration timeout 60s → 90s), apps/api/package.json (added test:llm, test:snapshot, typecheck scripts). Unit suite: 20 passed (Phase 1) + 18 todo (Phase 2) / 0 failures. Biome + tsc --noEmit clean.
 

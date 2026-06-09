@@ -58,11 +58,11 @@
 
 ### Business Logic — FSM (FSM)
 
-- [ ] **FSM-01**: Lead funnel: `NEW → QUALIFIED → MATCHED → QUOTED → AGREED → ORDER_CREATED → IN_PROGRESS → DONE/LOST` с таблицей разрешённых переходов
-- [ ] **FSM-02**: Order lifecycle: `CREATED → DRIVER_ASSIGNED → AT_LOADING → IN_TRANSIT → AT_BORDER → DELIVERED → CLOSED` с таблицей переходов
-- [ ] **FSM-03**: Переходы FSM в транзакции `SELECT … FOR UPDATE` + колонка `version` — защита от гонок при параллельных событиях (Telegram + менеджер)
+- [x] **FSM-01**: Lead funnel: `NEW → QUALIFIED → MATCHED → QUOTED → AGREED → ORDER_CREATED → IN_PROGRESS → DONE/LOST` с таблицей разрешённых переходов
+- [x] **FSM-02**: Order lifecycle: `CREATED → DRIVER_ASSIGNED → AT_LOADING → IN_TRANSIT → AT_BORDER → DELIVERED → CLOSED` с таблицей переходов
+- [x] **FSM-03**: Переходы FSM в транзакции `SELECT … FOR UPDATE` + колонка `version` — защита от гонок при параллельных событиях (Telegram + менеджер)
 - [ ] **FSM-04**: Per-client сериализация через `pg_advisory_xact_lock(hashtext(client_id))` — порядок сообщений сохраняется
-- [ ] **FSM-05**: Каждый переход пишется в audit log (`lead_events` / `order_events`) с `actor` (ai/manager/system) и payload
+- [x] **FSM-05**: Каждый переход пишется в audit log (`lead_events` / `order_events`) с `actor` (ai/manager/system) и payload
 - [ ] **FSM-06**: Auto-follow-up при таймауте без ответа: N часов → автонотификация или → LOST
 
 ### Telegram Channel (TG)
@@ -232,11 +232,11 @@
 | MATCH-04 | Phase 2 | Pending |
 | MATCH-05 | Phase 2 | Pending |
 | MATCH-06 | Phase 2 | Pending |
-| FSM-01 | Phase 2 | Pending |
-| FSM-02 | Phase 2 | Pending |
-| FSM-03 | Phase 2 | Pending |
+| FSM-01 | Phase 2 | Complete |
+| FSM-02 | Phase 2 | Complete |
+| FSM-03 | Phase 2 | Complete |
 | FSM-04 | Phase 2 | Pending |
-| FSM-05 | Phase 2 | Pending |
+| FSM-05 | Phase 2 | Complete |
 | FSM-06 | Phase 2 | Pending |
 | TG-01 | Phase 3 | Pending |
 | TG-02 | Phase 3 | Pending |
