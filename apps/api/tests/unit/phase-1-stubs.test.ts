@@ -1,4 +1,4 @@
-import { describe, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 /**
  * Phase 1 acceptance criteria stubs.
@@ -7,7 +7,11 @@ import { describe, test } from 'vitest';
  */
 
 describe('Phase 1: Database & Schema (DB-*)', () => {
-  test.todo('DB-01: postgis extension loaded in first migration (0000_postgis_extension.sql)');
+  test('DB-01: postgis extension loaded in first migration (0000_postgis_extension.sql)', async () => {
+    const fs = await import('node:fs/promises');
+    const sql = await fs.readFile('drizzle/0000_postgis_extension.sql', 'utf-8');
+    expect(sql).toMatch(/CREATE EXTENSION IF NOT EXISTS postgis/i);
+  });
   test.todo('DB-02: clients table has lang/tax_id/tax_id_country columns');
   test.todo('DB-03: cities table has name_ru/name_ua + geography(Point, 4326)');
   test.todo('DB-04: trucks table has geography(Point, 4326) + GiST index + CHECK SRID=4326');

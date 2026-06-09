@@ -1,2 +1,8 @@
-// Stub barrel — Task 2 of Plan 01-03 replaces this with real exports.
-export {};
+// Schema barrel
+// Wave 3a (Plan 01-03): enums + customType
+// Wave 3b (Plan 01-04): clients, cities, trucks, truck_positions
+// Wave 3c (Plan 01-05): leads, orders, order_events, pod_artifacts
+// Wave 3d (Plan 01-06): calls, messages, bourse_cache, webhook_updates, pricing_config
+
+export * from './_columns.js';
+export * from './_enums.js';
