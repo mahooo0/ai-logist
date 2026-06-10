@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 6
-status: verifying
-last_updated: "2026-06-10T06:59:26.555Z"
+current_plan: Not started
+status: planning
+last_updated: "2026-06-10T07:08:07.714Z"
 progress:
   total_phases: 6
   completed_phases: 3
@@ -29,11 +29,11 @@ progress:
 
 Phase: 03 (telegram-channel) — COMPLETE
 Plan: 6 of 6
-Current Plan: 6
+Current Plan: Not started
 Total Plans in Phase: 6
-**Phase:** 3 of 6 (telegram channel) — COMPLETE
+**Phase:** 03.1 of 6 (voice channel elevenlabs twilio)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 ALL PLANS complete: 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook route: two-stage handler, ON CONFLICT idempotency, secret_token auth, /voice flipped 501→200) + 03-03 (Wave 3 adapter+keyboards+outbound: TG-03 + TG-04) + 03-04 (Wave 4 notifications+driver-FSM-hook: TG-05 + TG-07; ORDER_TRANSITIONS gains DRIVER_ASSIGNED→CLOSED edge; transitionOrder onSuccess post-commit hook; adapter-driven tryAdvanceOrderAfterCreation helper) + 03-05 (Wave 5 manager intercept routes + setupWebhook + README + final stub flip TG-06 + HUMAN-UAT-03). 9/9 Phase 3 reqs covered; 0 stub todos; 157 unit tests passing.
-**Status:** Phase 3 complete — ready for verification. Next milestone step: Phase 4 (admin web).
+**Status:** Ready to plan
 
 **Progress:**
 
