@@ -19,6 +19,26 @@ vi.mock('swr', () => ({
   }),
 }));
 
+// Mock useT — the real implementation imports usePreferencesStore which
+// transitively pulls in geist/font/pixel; geist's directory-style export
+// doesn't resolve under Node ESM. The smoke tests don't exercise language
+// switching, so a thin identity stub is fine.
+vi.mock('@/lib/i18n/use-t', () => ({
+  useT: () => (key: string) => {
+    const ru: Record<string, string> = {
+      'chat.intercept': 'Перехватить',
+      'chat.release': 'Вернуть боту',
+      'chat.managerMessagePlaceholder': 'Сообщение от менеджера',
+      'calls.filter.outcome': 'Исход',
+      'calls.filter.outcome.completed': 'Завершён',
+      'calls.filter.outcome.abandoned': 'Брошен',
+      'calls.filter.outcome.escalated': 'Передан менеджеру',
+      'calls.filter.outcome.error': 'Ошибка',
+    };
+    return ru[key] ?? key;
+  },
+}));
+
 describe('Phase 4 page-render smoke (all 6 pages)', () => {
   // Plan 04-04 — /dashboard/chat smoke. SWR mock returns fallbackData, so the
   // initial messages prop renders directly into the thread view.
