@@ -122,8 +122,8 @@
 
 ### Voice Channel (VOICE) — **promoted to v1 on 2026-06-09 per user pivot to voice focus**
 
-- [ ] **VOICE-01**: ElevenLabs Conversational AI Agent (Turbo tier, $0.10/мин) с RU+UA голосами, подключёный к Twilio SIP-trunk
-- [ ] **VOICE-02**: Twilio account + один номер (RU или UA, ~$3/мес), webhook → Fastify `/webhook/voice`
+- [x] **VOICE-01**: ElevenLabs Conversational AI Agent (Turbo tier, $0.10/мин) с RU+UA голосами, подключёный к Twilio SIP-trunk
+- [x] **VOICE-02**: Twilio account + один номер (RU или UA, ~$3/мес), webhook → Fastify `/webhook/voice`
 - [x] **VOICE-03**: ElevenLabs Agent tools = тот же registry что и Phase 2 (extractRequest, nearestTruck, calcPrice, createOrder, discount) — общая бизнес-логика
 - [x] **VOICE-04**: Conversation FSM: `GREETING → COLLECT_REQUEST → MATCH → QUOTE → NEGOTIATE → CONFIRM → CREATE_ORDER → GOODBYE` (§5.2 спеки)
 - [x] **VOICE-05**: Только входящие звонки в v1 (клиент звонит → AI отвечает). Исходящие (driver confirmation by call) → v2
