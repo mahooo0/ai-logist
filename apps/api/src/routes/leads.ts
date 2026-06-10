@@ -26,6 +26,7 @@ import {
   LeadPatchBodySchema,
   LeadQuoteResponseSchema,
   LeadReleaseResponseSchema,
+  LeadSchema,
   ManagerMessageBodySchema,
   ManagerMessageResponseSchema,
 } from '@ai-logist/shared-types/api/leads';
@@ -47,32 +48,125 @@ const NotImpl = z.object({
   message: z.string(),
 });
 
+// Phase 4 API-03 — typed serialiser for a Lead row (handler returns Lead-shaped
+// objects). Coerces legacy 'call' channel → 'voice' (Open Question #4),
+// stringifies bigint kopecks (budget/declaredValue/quotedPrice), and
+// normalises priceOverrides + timestamps.
+type LeadResponse = z.infer<typeof LeadSchema>;
+function serializeLeadRow(raw: unknown): LeadResponse {
+  const r = raw as Record<string, unknown>;
+  const channelRaw = r.channel as string;
+  return {
+    id: r.id as string,
+    clientId: r.clientId as string,
+    channel: (channelRaw === 'call' ? 'voice' : channelRaw) as LeadResponse['channel'],
+    stage: r.stage as LeadResponse['stage'],
+    fromCityId: (r.fromCityId as string | null) ?? null,
+    toCityId: (r.toCityId as string | null) ?? null,
+    tons: r.tons != null ? String(r.tons) : null,
+    bodyType: (r.bodyType as LeadResponse['bodyType']) ?? null,
+    budget: r.budget != null ? String(r.budget) : null,
+    volumeM3: r.volumeM3 != null ? String(r.volumeM3) : null,
+    dimensionsLxwxh: (r.dimensionsLxwxh as string | null) ?? null,
+    packaging: (r.packaging as string | null) ?? null,
+    adrClass: (r.adrClass as string | null) ?? null,
+    declaredValue: r.declaredValue != null ? String(r.declaredValue) : null,
+    matchedTruckId: (r.matchedTruckId as string | null) ?? null,
+    quotedPrice: r.quotedPrice != null ? String(r.quotedPrice) : null,
+    orderId: (r.orderId as string | null) ?? null,
+    priceOverrides: Array.isArray(r.priceOverrides) ? r.priceOverrides : [],
+    version: Number(r.version ?? 0),
+    createdAt: new Date(r.createdAt as string | Date).toISOString(),
+    updatedAt: new Date(r.updatedAt as string | Date).toISOString(),
+  };
+}
+
 const leadsRoutes: FastifyPluginAsyncZod = async (app) => {
+  // Phase 4 API-03 — list leads filtered by stage + channel (D-60).
+  // - channel='voice' matches both 'voice' and legacy 'call' rows; the
+  //   response coerces 'call' → 'voice' so admin only sees 2 stable values.
+  // - Sorted createdAt DESC; pagination via limit/offset query.
   app.get(
     '/leads',
     {
       schema: {
         tags: ['leads'],
-        summary: 'List leads (Phase 4)',
+        summary: 'List leads (Phase 4 API-03)',
         querystring: LeadListQuerySchema,
-        response: { 501: NotImpl },
+        response: { 200: z.array(LeadSchema), 400: NotImpl },
       },
     },
-    async (_req, reply) => reply.notImplemented('Phase 4 — admin web')
+    async (req) => {
+      const { stage, clientId, channel, limit, offset } = req.query;
+      const conds: ReturnType<typeof sql>[] = [];
+      if (stage) conds.push(sql`stage = ${stage}`);
+      if (clientId) conds.push(sql`client_id = ${clientId}::uuid`);
+      if (channel) {
+        if (channel === 'voice') {
+          conds.push(sql`channel IN ('voice','call')`);
+        } else {
+          conds.push(sql`channel = ${channel}`);
+        }
+      }
+      const whereClause = conds.length ? sql`WHERE ${sql.join(conds, sql` AND `)}` : sql``;
+      const rows = await app.db.execute(sql`
+        SELECT id, client_id AS "clientId", channel, stage,
+               from_city_id AS "fromCityId", to_city_id AS "toCityId",
+               tons, body_type AS "bodyType", budget,
+               volume_m3 AS "volumeM3", dimensions_lxwxh AS "dimensionsLxwxh",
+               packaging, adr_class AS "adrClass", declared_value AS "declaredValue",
+               matched_truck_id AS "matchedTruckId", quoted_price AS "quotedPrice",
+               order_id AS "orderId",
+               COALESCE(price_overrides, '{}'::jsonb[]) AS "priceOverrides",
+               version, created_at AS "createdAt", updated_at AS "updatedAt"
+        FROM leads
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+      return rows.rows.map((raw) => serializeLeadRow(raw));
+    }
   );
 
+  // Phase 4 API-03 (supporting ADMIN-NEW-02) — manager edits lead.stage.
+  // Bare-minimum: optimistic version check + UPDATE; full Kanban DnD UX is v2.
+  // 404 if missing; 409 on version mismatch.
   app.patch(
     '/leads/:id',
     {
       schema: {
         tags: ['leads'],
-        summary: 'Update lead stage (Phase 4)',
+        summary: 'Update lead stage (Phase 4 API-03)',
         params: z.object({ id: z.string().uuid() }),
         body: LeadPatchBodySchema,
-        response: { 501: NotImpl },
+        response: { 200: LeadSchema, 404: NotImpl, 409: NotImpl, 400: NotImpl },
       },
     },
-    async (_req, reply) => reply.notImplemented('Phase 4 — admin web')
+    async (req, reply) => {
+      const { id } = req.params;
+      const { stage, version } = req.body;
+      if (!stage) return reply.badRequest('stage is required (Phase 4 PATCH minimum)');
+      const result = await app.db.execute(sql`
+        UPDATE leads
+        SET stage = ${stage}, version = version + 1, updated_at = NOW()
+        WHERE id = ${id}::uuid AND version = ${version}
+        RETURNING id, client_id AS "clientId", channel, stage,
+                  from_city_id AS "fromCityId", to_city_id AS "toCityId",
+                  tons, body_type AS "bodyType", budget,
+                  volume_m3 AS "volumeM3", dimensions_lxwxh AS "dimensionsLxwxh",
+                  packaging, adr_class AS "adrClass", declared_value AS "declaredValue",
+                  matched_truck_id AS "matchedTruckId", quoted_price AS "quotedPrice",
+                  order_id AS "orderId",
+                  COALESCE(price_overrides, '{}'::jsonb[]) AS "priceOverrides",
+                  version, created_at AS "createdAt", updated_at AS "updatedAt"
+      `);
+      if (result.rows.length === 0) {
+        const exists = await app.db.execute(sql`SELECT 1 FROM leads WHERE id = ${id}::uuid`);
+        if (exists.rows.length === 0) return reply.notFound(`lead ${id} not found`);
+        return reply.conflict('version mismatch');
+      }
+      return serializeLeadRow(result.rows[0]);
+    }
   );
 
   // POST /api/leads/:id/match — Phase 2 API-07.

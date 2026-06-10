@@ -15,6 +15,7 @@ import { redisPlugin } from './plugins/redis.js';
 import { telegramPlugin } from './plugins/telegram.js';
 import { voicePlugin } from './plugins/voice.js';
 import analyticsRoutes from './routes/analytics.js';
+import callsRoutes from './routes/calls.js';
 import clientsRoutes from './routes/clients.js';
 import healthRoutes from './routes/health.js';
 import leadsRoutes from './routes/leads.js';
@@ -88,6 +89,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(trucksRoutes, { prefix: '/api' });
   await app.register(clientsRoutes, { prefix: '/api' });
   await app.register(analyticsRoutes, { prefix: '/api' });
+  // Phase 4 Plan 04-03 — NEW endpoint family /api/calls (ADMIN-NEW-08).
+  await app.register(callsRoutes, { prefix: '/api' });
   // Phase 3 Plan 03-02 — webhooks-telegram MUST register BEFORE webhooksRoutes
   // under /webhook prefix to claim the /telegram path before the generic stub plugin.
   await app.register(webhooksTelegramRoutes, { prefix: '/webhook' });

@@ -230,15 +230,20 @@ describe('Phase 1: Backend API & Infrastructure (API-*)', () => {
     expect(valid.success).toBe(true);
   });
 
-  test('API-16: 6 stub route files exist + register in app.ts', async () => {
+  test('API-16: route files exist + register in app.ts', async () => {
     const fs = await import('node:fs/promises');
-    for (const f of ['leads', 'orders', 'trucks', 'clients', 'analytics', 'webhooks']) {
+    // Phase 1 baseline: every route was a 501 stub. Phase 2 (02-05) flipped
+    // /leads/:id/match + /quote; Phase 4 (04-03) flipped GET/PATCH /leads,
+    // GET /orders + /:id, GET /trucks, GET /analytics/kpi, AND added a new
+    // routes/calls.ts. So the historical "every route still has notImplemented"
+    // assertion is no longer accurate. The structural assertion we keep:
+    // every route file still imports a shared-types schema (the DTO contract).
+    for (const f of ['leads', 'orders', 'trucks', 'clients', 'analytics', 'webhooks', 'calls']) {
       const src = await fs.readFile(`src/routes/${f}.ts`, 'utf-8');
-      expect(src).toMatch(/reply\.notImplemented/);
       expect(src).toMatch(/@ai-logist\/shared-types\/api\//);
     }
     const appSrc = await fs.readFile('src/app.ts', 'utf-8');
-    // Match all 7 register lines: health + 5 api stubs + webhooks
+    // Match all register lines: health + 6 api routes (5 original + calls) + webhooks
     const matches = appSrc.match(/app\.register\([a-zA-Z]+Routes/g) ?? [];
     expect(matches.length).toBeGreaterThanOrEqual(7);
   });
