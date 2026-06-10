@@ -1,7 +1,8 @@
 # Phase 4: Admin Web (REDUCED scope — chat + calls + orders + KPI) — Context
 
 **Gathered:** 2026-06-10 (auto mode, recommended defaults)
-**Status:** Ready for planning
+**Refreshed:** 2026-06-11 (auto mode — no decision changes; all 67 decisions preserved)
+**Status:** Ready for planning (7 plans already written, ready for execution)
 **Risk profile:** MEDIUM (Next.js 16 + Tailwind v4 + shadcn template integration — Pitfall #13)
 
 <domain>
@@ -409,4 +410,4 @@ Demo-supporting web admin that **shows what voice + Telegram channels produced**
 ---
 
 *Phase: 04-admin-web-reduced-scope-chat-calls-orders-kpi*
-*Context gathered: 2026-06-10 (auto mode, 67 locked decisions)*
+*Context gathered: 2026-06-10 · refreshed 2026-06-11 (auto mode, 67 locked decisions preserved)*
