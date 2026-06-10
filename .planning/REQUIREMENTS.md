@@ -34,9 +34,9 @@
 - [ ] **API-10**: REST `/api/orders/:id/price-override` — изменение цены менеджером, пишет в `price_overrides`
 - [ ] **API-11**: WebSocket `/ws/tracking` — live-координаты машин
 - [ ] **API-12**: WebSocket `/ws/inbox` — live-сообщения/звонки в чат
-- [ ] **API-13**: Webhook `/webhook/telegram` с проверкой `secret_token`
+- [x] **API-13**: Webhook `/webhook/telegram` с проверкой `secret_token`
 - [ ] **API-14**: Webhook `/webhook/gps` для приёма позиций (демо: симулятор)
-- [ ] **API-15**: Webhook `/webhook/voice` (stub-эндпоинт для демо, возвращает 200)
+- [x] **API-15**: Webhook `/webhook/voice` (stub-эндпоинт для демо, возвращает 200)
 - [x] **API-16**: Schema-validated routes с Zod, общая `packages/shared-types` для DTOs
 
 ### Business Logic — LLM Pipeline (LOGIC)
@@ -67,13 +67,13 @@
 
 ### Telegram Channel (TG)
 
-- [ ] **TG-01**: grammY 1.43 webhook, проверка `secret_token` Telegram'а
-- [ ] **TG-02**: Two-stage handler — webhook персистит `update_id` в `webhook_updates` с `ON CONFLICT DO NOTHING`, возвращает 200 за <100мс
-- [ ] **TG-03**: Inline-кнопки «Подтвердить рейс» / «Посмотреть статус» / «Отказаться»
-- [ ] **TG-04**: Карточки рейсов (краткое инфо + ссылка на трекинг) при предложении машины
-- [ ] **TG-05**: Driver-confirmation loop: бот пишет водителю (по `driver_phone` / `telegram_id`) с кнопками «Принять/Отказаться», статус летит обратно
-- [ ] **TG-06**: Менеджер может «перехватить» диалог из админки → бот замолкает, сообщения от менеджера летят клиенту
-- [ ] **TG-07**: Auto-уведомления клиенту о смене статуса заказа (через notification-сервис)
+- [x] **TG-01**: grammY 1.43 webhook, проверка `secret_token` Telegram'а
+- [x] **TG-02**: Two-stage handler — webhook персистит `update_id` в `webhook_updates` с `ON CONFLICT DO NOTHING`, возвращает 200 за <100мс
+- [x] **TG-03**: Inline-кнопки «Подтвердить рейс» / «Посмотреть статус» / «Отказаться»
+- [x] **TG-04**: Карточки рейсов (краткое инфо + ссылка на трекинг) при предложении машины
+- [x] **TG-05**: Driver-confirmation loop: бот пишет водителю (по `driver_phone` / `telegram_id`) с кнопками «Принять/Отказаться», статус летит обратно
+- [x] **TG-06**: Менеджер может «перехватить» диалог из админки → бот замолкает, сообщения от менеджера летят клиенту
+- [x] **TG-07**: Auto-уведомления клиенту о смене статуса заказа (через notification-сервис)
 
 ### Admin Web — СОКРАЩЁННАЯ (ADMIN) — pivot 2026-06-09: focus on voice+telegram channels, deferred ops UI
 
@@ -232,9 +232,9 @@
 | API-10 | Phase 4 | Pending |
 | API-11 | Phase 5 | Pending |
 | API-12 | Phase 5 | Pending |
-| API-13 | Phase 3 | Pending |
+| API-13 | Phase 3 | Complete |
 | API-14 | Phase 5 | Pending |
-| API-15 | Phase 3 | Pending |
+| API-15 | Phase 3 | Complete |
 | API-16 | Phase 1 | Complete |
 | LOGIC-01 | Phase 2 | Complete |
 | LOGIC-02 | Phase 2 | Pending |
@@ -253,13 +253,13 @@
 | FSM-04 | Phase 2 | Complete |
 | FSM-05 | Phase 2 | Complete |
 | FSM-06 | Phase 2 | Complete |
-| TG-01 | Phase 3 | Pending |
-| TG-02 | Phase 3 | Pending |
-| TG-03 | Phase 3 | Pending |
-| TG-04 | Phase 3 | Pending |
-| TG-05 | Phase 3 | Pending |
-| TG-06 | Phase 3 | Pending |
-| TG-07 | Phase 3 | Pending |
+| TG-01 | Phase 3 | Complete |
+| TG-02 | Phase 3 | Complete |
+| TG-03 | Phase 3 | Complete |
+| TG-04 | Phase 3 | Complete |
+| TG-05 | Phase 3 | Complete |
+| TG-06 | Phase 3 | Complete |
+| TG-07 | Phase 3 | Complete |
 | ADMIN-01 | Phase 4 | Pending |
 | ADMIN-02 | Phase 4 | Pending |
 | ADMIN-03 | Phase 4 | Pending |

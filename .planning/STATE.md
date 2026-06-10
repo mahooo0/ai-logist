@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: planning
-last_updated: "2026-06-09T12:59:42.183Z"
+current_plan: 2
+status: executing
+last_updated: "2026-06-10T05:41:26.473Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_plans: 25
+  completed_plans: 20
+  percent: 80
 ---
 
 # State: AI-Логист
@@ -21,23 +21,23 @@ progress:
 
 **Core value:** Диалог ведёт LLM, но решения по деньгам и подбору принимает детерминированный код — цена и подбор должны быть предсказуемыми, тестируемыми, воспроизводимыми.
 
-**Current focus:** Phase 02 — llm-pipeline-deterministic-core
+**Current focus:** Phase 03 — telegram-channel
 
 **Stack (locked):** Node 22 LTS + TypeScript 5.7 strict + Fastify 5 + Drizzle ORM 0.45.2 + PostgreSQL 17 + PostGIS 3.5 + Redis 7.4 + grammY 1.43 + Anthropic SDK 0.102 (betaZodTool) + Next.js 16 / React 19 / Tailwind v4 / shadcn/ui (Zenith Admin template) + Leaflet + OSM. Monorepo via pnpm workspaces. Deploy: docker-compose + Caddy on single VM.
 
 ## Current Position
 
-Phase: 02 (llm-pipeline-deterministic-core) — EXECUTING
-Plan: 8 of 8
-Current Plan: Not started
-Total Plans in Phase: 8
+Phase: 03 (telegram-channel) — EXECUTING
+Plan: 2 of 6
+Current Plan: 2
+Total Plans in Phase: 6
 **Phase:** 3 of 6 (telegram channel)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 Plans 02-00 (Wave 0 test infra), 02-01 (Wave 1: migration 0002 + lib primitives + llm-client wrapper), 02-02 (Wave 2a: 6 LLM tools via betaZodTool), 02-03 (Wave 2b: lead-fsm + order-fsm + errors + concurrency/audit integration tests), 02-03b (Wave 2 atomic todo-flip: 9 phase-2-stubs.test.ts placeholders flipped to real it() assertions), 02-04a (Wave 3 intake first half: handleInboundMessage Steps 0+A+B+C+D+E+F — advisory lock + sticky lang + token budget + extract → clarify → city; LOGIC-03 + LOGIC-04 flipped), and 02-04b (Wave 3 intake second half: Steps D-pre + G + H + I + J — confirmation shortcut + match + price-lock + templated reply + create-order chain; follow-up-scheduler.ts; FSM-04 + FSM-06 flipped) complete. Next serial step is Plan 02-05 (routes API-07).
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 **Progress:**
 
-[██████████] 100%
+[████████░░] 80%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -72,6 +72,8 @@ Total Plans in Phase: 8
 | Phase 02-llm-pipeline-deterministic-core-high-risk P04a | 13min | 2 tasks | 9 files |
 | Phase 02-llm-pipeline-deterministic-core-high-risk P04b | 25min | 3 tasks | 7 files |
 | Phase 02-llm-pipeline-deterministic-core-high-risk P05 | 15min | 2 tasks | 8 files |
+| Phase 03-telegram-channel P00 | 5min | 2 tasks | 14 files |
+| Phase 03-telegram-channel P00 | 5min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -157,6 +159,11 @@ Total Plans in Phase: 8
 - **Plan 02-04b:** follow-up-scheduler.ts ships per RESEARCH.md §14 — POLL_INTERVAL_MS=60s, QUIET=4h, STALE=24h. registerFollowUpScheduler(app) skips when NODE_ENV='test' (via dual lookup `app.config?.NODE_ENV ?? importedConfig.NODE_ENV`); production wires setInterval + onClose-driven clearInterval (SIGTERM safety). followUpTick(app) exported separately for testability. Fake-timer test uses `vi.useFakeTimers({shouldAdvanceTime:true, now: FROZEN_NOW})` + `vi.setSystemTime(FROZEN_NOW + 25h)` + `vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)` — exercises FULL setInterval lifecycle including clearInterval-on-close (insert second stale lead, advance time again → must STAY QUOTED because interval was cleared). The `shouldAdvanceTime:true` knob is critical: lets `await db.execute(...)` inside the tick callback resolve under frozen-clock testing.
 - **Plan 02-04b:** Advisory-lock test (FSM-04) fires 10 parallel handleInboundMessage calls for same client_id → exactly 1 lead row converged via `pg_advisory_xact_lock(hashtext(${clientId}))`. Uses < 20-char texts with NULL client.lang so Step B short-text path returns early without LLM fixtures.
 - **Plan 02-04b deviations:** (1) [Rule 1 - Bug] verify gate `! grep -q "INTERVAL '25 hours'"` failed because the test header comment said "NOT `INTERVAL '25 hours'` SQL trick" as documentation of what NOT to do — literal grep doesn't distinguish positive vs. negative usage. Reworded the documenting comment to "NOT `NOW() - 25h` SQL-side trick" — same intent, no literal. Reusable lesson (Phase 1 + Plan 02-03b + 02-04a have similar stories): verifier-gates that use literal grep require careful comment hygiene. (2) Advisory-lock test uses short texts (< 20 chars) + NULL client.lang to avoid needing LLM fixtures for 10 parallel turns. The advisory-lock proof (10 → 1 lead) is unchanged. (3) Scheduler reads NODE_ENV via dual lookup (`app.config?.NODE_ENV ?? importedConfig.NODE_ENV`) — accommodates both test-injected config decorator AND production buildApp() path without forcing the latter to decorate config.
+- **Plan 03-00:** MockTelegramBot extends RESEARCH Code Block 13 verbatim mock with `callbackQueries[]` recorder — Phase 3 callback flow (D-15) calls `ctx.answerCallbackQuery()` BEFORE answering the user; Wave 3 tests need to assert this call happened (200ms TG-03 requirement). Adding `callbackQueries[]` is the minimum extension. Structural mock (no grammy import) lets Wave 0 ship before Wave 1's package install; mock `sendMessage` return shape mirrors real Telegram Message API (`{ message_id, chat, text, date }`) so production handlers chaining `.then()` on sends don't need test rewrites when Wave 3 lands.
+- **Plan 03-00:** webhook-driver returns `{ res, elapsedMs }` via `process.hrtime.bigint() / 1_000_000` — sub-ms precision makes the TG-02 `expect(elapsedMs < 100)` assertion immune to `Date.now()` ms granularity. Pattern reusable for any future latency-sensitive integration test (voice ack budget Phase 3.1, GPS positioning ack Phase 5).
+- **Plan 03-00:** phase-3-stubs.test.ts header docstring intentionally avoids the literal marker substring (Phase 1 + Plan 02-03b + 02-04a + 02-04b all burned this — total of 4 prior incidents). PHASE-3.md flip schedule table is the spec for downstream waves; `grep -c "test.todo"` gate decreases monotonically: 9 → 5 (03-02) → 3 (03-03) → 1 (03-04) → 0 (03-05). Biome 2.4 wraps long arg strings onto multi-line `test.todo(...)` shapes but never splits the function-name identifier, so grep gates are biome-safe.
+- **Plan 03-00:** webhook-voice-stub.test.ts ships as the 9th integration scaffold — API-15 was the orphan VALIDATION.md called out 8 named files. Coupling /webhook/voice (501 → 200) with /webhook/telegram in Wave 2 makes sense: both routes live in the same module and share secret_token + sensible default patterns. Wave 2 flips API-13 + API-15 + TG-01 + TG-02 atomically.
+- **Plan 03-00:** Local `dockerAvailable = process.env.AI_LOGIST_NO_DOCKER !== '1'` per integration scaffold (matches Phase 1+2 convention) — no shared export from test-db.ts. Each integration file is a single `describe.skipIf(!dockerAvailable)` block with one `test.todo()` placeholder; flip waves only have to add `it()` calls without restructuring the file.
 
 ### TODOs
 
@@ -178,17 +185,19 @@ Total Plans in Phase: 8
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 02-04b-pipeline-intake-second-half-PLAN.md (Wave 3 second half — Phase 2 plan 7 of 8). Three commits: `ad97096` (Task 1 — intake.ts Steps G+H+I + STEP D-pre confirmation shortcut: match via nearestTruck + price-lock via leadsRepo.update({quotedPrice}) BEFORE templated reply + priceGuard defensive guard + transitionLead chain NEW→QUALIFIED→MATCHED→QUOTED + confirm shortcut QUOTED→AGREED→createOrderHandler→ORDER_CREATED with /track/<token> reply), `1520af0` (Task 2 — pipeline-canonical.test.ts E2E: 'Киев-Львов 18 тонн тент' + 'да' → ORDER_CREATED; asserts orders.price === leads.quoted_price AND QUOTED lead_event.created_at ≤ last assistant message.created_at = audit-log price-lock proof = ROADMAP success criterion #1), `8a47859` (Task 3 — follow-up-scheduler.ts with POLL_INTERVAL_MS=60s/QUIET=4h/STALE=24h + onClose-driven clearInterval; app.ts wires registerFollowUpScheduler; follow-up-scheduler.test.ts uses vi.useFakeTimers + setSystemTime + advanceTimersByTimeAsync to exercise FULL setInterval lifecycle including clearInterval-on-close proof; advisory-lock.test.ts fires 10 parallel handleInboundMessage → 1 lead converged via pg_advisory_xact_lock; flips FSM-04 + FSM-06 todos in phase-2-stubs.test.ts). Post-flip: 147 passed | 1 todo (API-07 remains for Plan 02-05). tsc + biome clean. Pitfall #1 (LLM in money path) now closed at 3 layers: schema strict, DB re-read inside createOrderHandler, and price-lock at intake (write quoted_price BEFORE render). Pitfall #6 (FSM races) closed at 3 layers: SELECT FOR UPDATE + version CAS + advisory lock. Next serial step is Plan 02-05 (routes API-07).
+**Last session stopped at:** Completed 03-00-test-infra-PLAN.md (Wave 0 — Phase 3 plan 1 of 6). Two commits: `32a5025` (Task 1 — MockTelegramBot factory in apps/api/tests/_helpers/telegram-mock.ts implementing structural grammY 1.43 surface with NO grammy import; createMockBot() returns { bot, sent, callbackQueries }; recorded sends + callback responses; webhook-driver.ts shipping postTelegramWebhook(app, payload, opts) using process.hrtime.bigint() for sub-ms latency precision; telegram-updates.json with 11 canonical Update fixtures keyed by behavior — textKyivLviv/textConfirm/textShortOk/callbackConfirm/callbackReject/callbackChange/callbackDriverAccept/callbackDriverDecline/commandStart/commandHelp/sticker, all callback_query.data follow D-13 `<action>:<id>` format; PHASE-3.md harness usage doc with flip schedule + grep-count protocol), `2c6279f` (Task 2 — phase-3-stubs.test.ts EXACTLY 9 test.todo placeholders covering API-13, API-15, TG-01..07; header docstring intentionally avoids the literal marker substring to keep `grep -c` gate clean; 9 integration scaffolds under apps/api/tests/integration/ each with describe.skipIf(!dockerAvailable) wrapping + 1 test.todo placeholder — webhook-idempotency/latency/auth/voice-stub + telegram-adapter/keyboards + driver-confirmation/client-notifications/manager-intercept). Unit project: 148 passed | 9 todo / 0 failures (148 from Phases 1+2 preserved, 9 new Phase 3 stubs). tsc + biome clean across all 14 new files.
 
-**Previous session stopped at:** Completed 02-04a-pipeline-intake-first-half-PLAN.md (Wave 3 first half). Two commits: `171907d` (Task 1 — intake.ts skeleton with Steps 0+A+B+C + dialog-harness static import + 3 integration tests: token-budget, pipeline-sticky-lang [3 assertions including RU-after-UA stickiness], pipeline-injection [5 fixtures]) + `09f18dd` (Task 2 — intake.ts Steps D+E+F: extract → clarify → city resolve + flip LOGIC-03 + LOGIC-04 todos in phase-2-stubs.test.ts). intake.ts now ships `handleInboundMessage(args)` inside one db.transaction with pg_advisory_xact_lock(hashtext(client_id)) (FSM-04), sticky lang detection (closes Pitfall #7), token budget guard (closes Pitfall #12), anti-injection wrap (closes Pitfall #11), 2-round clarification budget, two-stage city normalization. Whole unit project: 145 passed | 3 todo | 0 failures.
+**Previous session stopped at:** Completed 02-04b-pipeline-intake-second-half-PLAN.md (Wave 3 second half — Phase 2 plan 7 of 8). Three commits: `ad97096` (Task 1 — intake.ts Steps G+H+I + STEP D-pre confirmation shortcut: match via nearestTruck + price-lock via leadsRepo.update({quotedPrice}) BEFORE templated reply + priceGuard defensive guard + transitionLead chain NEW→QUALIFIED→MATCHED→QUOTED + confirm shortcut QUOTED→AGREED→createOrderHandler→ORDER_CREATED with /track/<token> reply), `1520af0` (Task 2 — pipeline-canonical.test.ts E2E: 'Киев-Львов 18 тонн тент' + 'да' → ORDER_CREATED; asserts orders.price === leads.quoted_price AND QUOTED lead_event.created_at ≤ last assistant message.created_at = audit-log price-lock proof = ROADMAP success criterion #1), `8a47859` (Task 3 — follow-up-scheduler.ts with POLL_INTERVAL_MS=60s/QUIET=4h/STALE=24h + onClose-driven clearInterval; app.ts wires registerFollowUpScheduler; follow-up-scheduler.test.ts uses vi.useFakeTimers + setSystemTime + advanceTimersByTimeAsync to exercise FULL setInterval lifecycle including clearInterval-on-close proof; advisory-lock.test.ts fires 10 parallel handleInboundMessage → 1 lead converged via pg_advisory_xact_lock; flips FSM-04 + FSM-06 todos in phase-2-stubs.test.ts). Post-flip: 147 passed | 1 todo (API-07 remains for Plan 02-05). tsc + biome clean. Pitfall #1 (LLM in money path) now closed at 3 layers: schema strict, DB re-read inside createOrderHandler, and price-lock at intake (write quoted_price BEFORE render). Pitfall #6 (FSM races) closed at 3 layers: SELECT FOR UPDATE + version CAS + advisory lock. Next serial step is Plan 02-05 (routes API-07).
 
-Plan 02-00 shipped: 4 helper files in `apps/api/tests/_helpers/` (dialog-harness with `runScript(db, llm, clientId, messages)` driving scripted dialogs via dynamic import of pipeline/intake.js; mock-anthropic with LlmProvider interface that Wave 1 production llm-client.ts MUST implement; fake-timers preset at FIXED_NOW=2026-06-09T12:00:00Z registered as setupFile on unit project only; db-seed with 20 RFC 4122 v4 deterministic UUIDs + installDeterministicCrypto teardown helper), 4 JSON fixtures (canonical-inputs.json with 20 dialog scripts; llm-responses.json as `{}` placeholder; cities-extra.json with 5 cities forcing Nominatim path; injection-attempts.json with 5 Pitfall #11 corpus entries), apps/api/tests/unit/phase-2-stubs.test.ts (EXACTLY 18 `test.todo()` markers — one per Phase 2 req), apps/api/tests/PHASE-2.md harness usage doc, vitest.config.ts (added unit setupFiles + bumped integration timeout 60s → 90s), apps/api/package.json (added test:llm, test:snapshot, typecheck scripts). Unit suite: 20 passed (Phase 1) + 18 todo (Phase 2) / 0 failures. Biome + tsc --noEmit clean.
+Plan 03-00 shipped: 14 files — apps/api/tests/_helpers/{telegram-mock.ts, webhook-driver.ts}; apps/api/tests/fixtures/telegram-updates.json (11 canonical Update payloads); apps/api/tests/PHASE-3.md harness doc; apps/api/tests/unit/phase-3-stubs.test.ts (EXACTLY 9 test.todo markers — API-13, API-15, TG-01..07); 9 integration scaffolds at apps/api/tests/integration/{webhook-idempotency, webhook-latency, webhook-auth, webhook-voice-stub, telegram-adapter, telegram-keyboards, driver-confirmation, client-notifications, manager-intercept}.test.ts. MockTelegramBot factory has NO grammy import (Wave 1 owns the install) — implements grammY 1.43 structural surface (api.sendMessage / api.getMe / api.setWebhook / api.answerCallbackQuery / api.editMessageReplyMarkup / botInfo / handleUpdate / stop). webhook-driver uses process.hrtime.bigint() / 1_000_000 for sub-ms latency precision. Fixture callback_query.data follows D-13 `<action>:<id>` format (placeholder UUIDs 00000000-0000-4000-8000-000000000001 for leadId, …0000000000a1 for orderId). All 9 integration scaffolds wrap one `test.todo()` in describe.skipIf(!dockerAvailable) — flip waves only add `it()` calls without restructuring.
 
-**Phase 2 status:** Plan 7 of 8 complete. 02-00 (Wave 0 harness), 02-01 (Wave 1 lib primitives + llm-client), 02-02 (Wave 2a LLM tools), 02-03 (Wave 2b FSMs), 02-03b (Wave 2 atomic flip), 02-04a (Wave 3 first half), 02-04b (Wave 3 second half — THIS PLAN) all done. Remaining: 02-05 (Wave 4 routes). Per VALIDATION.md, the test harness Wave 0 locked in is now fully consumed by intake.ts; every snapshot test uses FIXED_NOW + installDeterministicCrypto, every LLM-dependent test uses MockAnthropicClient.
+**Phase 2 status:** COMPLETE — all 8 plans (02-00, 02-01, 02-02, 02-03, 02-03b, 02-04a, 02-04b, 02-05) shipped. Plan 02-05 closed Phase 2 with API-07 routes un-stubbed.
 
-**Next action:** Execute Plan 02-05 (Wave 4 routes API-07) — un-stubs `POST /api/leads/:id/match` and `POST /api/leads/:id/quote`. The route handlers reuse the same `transitionLead` + `nearestTruck` + `calcPrice` primitives that intake.ts wires up internally; this gives the Phase 4 admin UI a manual override path (manager can re-match a lead or re-quote with a different `direction='back_haul'` parameter). Flips API-07 → 0 todos remaining → Phase 2 complete (18/18 reqs covered).
+**Phase 3 status:** Plan 1 of 6 complete. 03-00 (Wave 0 test infra — THIS PLAN). Remaining: 03-01 (Wave 1 foundation — config env + migration 0003 + grammy 1.43 install + Fastify telegram plugin), 03-02 (Wave 2 webhook-telegram + webhook-voice 200 ack), 03-03 (Wave 3 OutboundChannel/Registry + telegram adapter + handlers + keyboards), 03-04 (Wave 4 notifyDriver + notifyClient + order-fsm onSuccess hook + driver-callback decline path → CLOSED + lead LOST), 03-05 (Wave 5 3 manager endpoints + /api/health.checks.telegram + telegram:setup script + README + final stub flip + checkpoint:human-verify).
 
-**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Phase 1 (11/11 plans) complete; Phase 2 plan 02-00 (Wave 0 test infra) complete; Plans 02-01..05 ahead. Wave 0 ships LlmProvider interface + MockAnthropicClient + runScript harness + FIXED_NOW preset + DETERMINISTIC_UUIDS + 18 test.todo placeholders. Wave 1 (Plan 02-01) ships migration 0002 + lib primitives + llm-client wrapper. Wave 2 (Plan 02-02 + 02-03) ships LLM tools + FSMs. Wave 3 (Plan 02-03b + 02-04a/b) ships stub-flips + pipeline/intake.ts (which the Wave 0 dialog-harness imports dynamically with @ts-expect-error — Wave 3 MUST remove the directive). Wave 4 (Plan 02-05) ships routes API-07 un-stub. Docker daemon remains unreachable on Claude's runner; live testcontainers integration tests deferred to verifier/developer machine. Next: `/gsd:execute-plan 02-01-PLAN.md` or continue chained auto-mode.
+**Next action:** Execute Plan 03-01 (Wave 1 foundation — config env + migration 0003 + grammy install + Fastify plugin) — ships `requireTelegramConfig()` helper, `0003_phase3_telegram.sql` (leads.manager_active + trucks_driver_tg_idx partial index), `grammy 1.43.0` package install, `apps/api/src/plugins/telegram.ts` Fastify plugin decorating `app.bot`. Tests use the Wave 0 MockTelegramBot to assert plugin decoration without network calls.
+
+**To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Phase 1 (11/11 plans) complete; Phase 2 (8/8 plans) complete; Phase 3 plan 03-00 (Wave 0 test infra) complete; Plans 03-01..05 ahead. Wave 0 ships MockTelegramBot + webhook-driver + 11 fixtures + 9 test.todo placeholders + 9 integration scaffolds + PHASE-3.md harness doc. Wave 1 (Plan 03-01) ships foundation (env + migration 0003 + grammy + plugin). Wave 2 (Plan 03-02) ships webhook routes (two-stage handler + secret_token verify + 200 ack <100ms + setImmediate worker). Wave 3 (Plan 03-03) ships adapter + keyboards + OutboundChannel. Wave 4 (Plan 03-04) ships notifications + driver-fsm hook. Wave 5 (Plan 03-05) ships manager intercept + README + final stub flip (0 todos). Docker daemon remains unreachable on Claude's runner; live testcontainers integration tests deferred to verifier/developer machine. Next: `/gsd:execute-plan 03-01-PLAN.md` or continue chained auto-mode.
 
 ---
 *State initialized: 2026-06-08 after roadmap creation*
