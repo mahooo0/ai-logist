@@ -19,7 +19,8 @@
     "db:migrate": "node --env-file=../../.env.local --import tsx ./node_modules/.bin/drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:migrate:check": "drizzle-kit check",
-    "seed": "tsx --env-file=../../.env.local src/seed/run.ts"
+    "seed": "tsx --env-file=../../.env.local src/seed/run.ts",
+    "telegram:setup": "tsx --env-file=../../.env.local scripts/telegram-setup.ts"
   },
   "dependencies": {
     "@ai-logist/shared-types": "workspace:*",

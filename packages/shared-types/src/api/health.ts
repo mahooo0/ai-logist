@@ -18,6 +18,12 @@ export const HealthResponseSchema = z.object({
     // Anthropic ping; for Phase 2 we keep it cheap to avoid rate-limit risk on
     // /health probes.
     llm: z.enum(['ok', 'not_configured']),
+    // Phase 3 Plan 03-05 — Telegram subcheck. 'not_configured' when token
+    // missing; 'ok' after bot.api.getMe() succeeds; 'error' on failure. Cached
+    // 60s in-process to avoid Telegram rate-limit risk on /health probes.
+    // Optional so existing clients (Phase 2 fixtures, admin web stub) don't
+    // break when the field is absent.
+    telegram: z.enum(['ok', 'not_configured', 'error']).optional(),
   }),
 });
 

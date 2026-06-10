@@ -1,9 +1,40 @@
 import { HealthResponseSchema } from '@ai-logist/shared-types/api/health';
 import { sql } from 'drizzle-orm';
+import type { FastifyInstance } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { config } from '../config.js';
 
 const startedAt = Date.now();
+
+// Phase 3 Plan 03-05 — Telegram health subcheck per RESEARCH Code Block 12.
+// 60s TTL cache prevents Telegram rate-limit hits on /health probes. Module-
+// level state survives across requests because Fastify reuses the route
+// handler closure.
+type TelegramHealth = 'ok' | 'not_configured' | 'error';
+const telegramCache: { result: TelegramHealth; expiresAt: number } = {
+  result: 'not_configured',
+  expiresAt: 0,
+};
+
+async function checkTelegram(app: FastifyInstance): Promise<TelegramHealth> {
+  const now = Date.now();
+  if (telegramCache.expiresAt > now) return telegramCache.result;
+  const bot = (app as FastifyInstance & { bot?: { api: { getMe: () => Promise<unknown> } } }).bot;
+  if (!config.TELEGRAM_BOT_TOKEN || !bot) {
+    telegramCache.result = 'not_configured';
+    telegramCache.expiresAt = now + 60_000;
+    return 'not_configured';
+  }
+  try {
+    await bot.api.getMe();
+    telegramCache.result = 'ok';
+  } catch (err) {
+    app.log.warn({ err }, 'telegram health check failed');
+    telegramCache.result = 'error';
+  }
+  telegramCache.expiresAt = now + 60_000;
+  return telegramCache.result;
+}
 
 /**
  * GET /api/health — D-16 health JSON shape.
@@ -33,6 +64,9 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
         // here — rate-limit-safe for /health probes. POLISH-06 (Phase 6) will
         // extend this to a real ping behind a circuit breaker.
         llm: (config.ANTHROPIC_API_KEY ? 'ok' : 'not_configured') as 'ok' | 'not_configured',
+        // Phase 3 Plan 03-05 — Telegram subcheck. See checkTelegram() above
+        // for cache semantics.
+        telegram: await checkTelegram(app),
       };
 
       try {

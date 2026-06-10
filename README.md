@@ -72,6 +72,98 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 Caddy automatically acquires a TLS cert via Let's Encrypt for the configured domain. No further config.
 
+## Telegram Dev Setup
+
+Wire a real Telegram bot to your local API in ~5 minutes via ngrok. Phase 3 ships
+the full webhook pipeline (idempotency, secret_token auth, two-stage handler,
+manager intercept, driver/client notifications); this section walks through
+running it against the live Telegram Bot API.
+
+1. **Create the bot.** Message [@BotFather](https://t.me/BotFather) on Telegram,
+   send `/newbot`, follow the prompts (name + username, must end in `bot`). Save:
+   - the bot **TOKEN** (e.g. `123456:ABC-DEF...`)
+   - the bot **username** (e.g. `ai_logist_demo_bot`)
+
+2. **Generate a webhook secret.** Telegram echoes this back in the
+   `x-telegram-bot-api-secret-token` header on every update — the route rejects
+   any update that doesn't match.
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+3. **Update `.env.local`** at the repo root with the values from steps 1 and 2:
+
+   ```bash
+   TELEGRAM_BOT_TOKEN=<token from BotFather>
+   TELEGRAM_WEBHOOK_SECRET=<openssl output>
+   TELEGRAM_BOT_USERNAME=<bot username without @>
+   ```
+
+4. **Start ngrok** in a separate terminal. The free tier gives you an HTTPS URL
+   that proxies to localhost:3000:
+
+   ```bash
+   ngrok http 3000
+   # Forwarding  https://abcd1234.ngrok.io -> http://localhost:3000
+   ```
+
+   Add the HTTPS URL to `.env.local`:
+
+   ```bash
+   TELEGRAM_PUBLIC_URL=https://abcd1234.ngrok.io
+   ```
+
+5. **Boot the API:**
+
+   ```bash
+   docker compose up -d postgres redis
+   pnpm install
+   pnpm --filter @ai-logist/api db:migrate
+   pnpm --filter @ai-logist/api seed
+   pnpm --filter @ai-logist/api dev
+   ```
+
+6. **Register the webhook with Telegram:**
+
+   ```bash
+   pnpm --filter @ai-logist/api telegram:setup
+   # → { "ok": true, "url": "https://abcd1234.ngrok.io/webhook/telegram" }
+   ```
+
+   Verify:
+
+   ```bash
+   curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo" | jq
+   # → url matches, last_error_message: null, pending_update_count: 0
+   ```
+
+7. **Test from your real Telegram account.** Open your bot, send `/start`
+   (expect Russian greeting), then a realistic order:
+   `Киев-Львов, 18 тонн, тент`. The bot should reply with a quote card + three
+   inline buttons (Подтвердить рейс ✅ / Отказаться / Изменить). Tap
+   **Подтвердить** to create the order; the next reply contains the order
+   number + tracking link `/track/<token>`. The bot also pushes a
+   "Машина назначена" notification when the driver is auto-assigned.
+
+8. **Tear down** when finished:
+
+   ```bash
+   curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
+   ```
+
+### Phase 3 health probe
+
+```bash
+curl http://localhost:3000/api/health | jq .checks.telegram
+# → "ok" when the bot is configured and Telegram is reachable,
+#   "not_configured" when TELEGRAM_BOT_TOKEN is unset,
+#   "error" when Telegram refuses the bot.api.getMe() call.
+```
+
+The Telegram subcheck is cached in-process for 60s to avoid Telegram rate-limit
+risk on `/health` scrape loops.
+
 ## Project layout
 
 ```

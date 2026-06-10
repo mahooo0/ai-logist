@@ -92,5 +92,29 @@ export async function buildApp(): Promise<FastifyInstance> {
   // production wires setInterval + onClose-driven clearInterval lifecycle.
   registerFollowUpScheduler(app);
 
+  // Phase 3 Plan 03-05 D-08 — optional auto-register webhook at boot.
+  // Skipped in test env (no bot decorator) and when the flag is off. The
+  // standalone `pnpm telegram:setup` script remains the canonical entry; this
+  // is a convenience for production VPS boots where the public URL is stable.
+  if (
+    config.TELEGRAM_SET_WEBHOOK_ON_BOOT &&
+    config.TELEGRAM_PUBLIC_URL &&
+    config.TELEGRAM_WEBHOOK_SECRET
+  ) {
+    const bot = (app as typeof app & { bot?: import('grammy').Bot }).bot;
+    if (bot) {
+      const { setupWebhook } = await import('./channels/telegram/setup.js');
+      await setupWebhook({
+        bot,
+        publicUrl: config.TELEGRAM_PUBLIC_URL,
+        secretToken: config.TELEGRAM_WEBHOOK_SECRET,
+      });
+      app.log.info(
+        { publicUrl: config.TELEGRAM_PUBLIC_URL },
+        'telegram: webhook registered at boot'
+      );
+    }
+  }
+
   return app;
 }
