@@ -85,7 +85,7 @@
   - [x] 03-02-webhook-route-PLAN.md — Wave 2: routes/webhooks-telegram.ts two-stage handler (secret_token verify + ON CONFLICT DO NOTHING + 200 ack <100ms + setImmediate worker); /webhook/voice flipped 501 → 200 (API-15)
   - [x] 03-03-adapter-keyboards-outbound-PLAN.md — Wave 3: OutboundChannel/Registry + Telegram keyboards (quote/driver + i18n RU/UA) + TelegramOutbound + real processTelegramUpdate adapter + handlers (start/help + 3 client callbacks) + minimal intake.ts outbound thread (≤30 lines added)
   - [x] 03-04-notifications-driver-fsm-hook-PLAN.md — Wave 4: notifyDriver + notifyClient + i18n templates (3 transitions × 2 langs) + order-fsm onSuccess post-commit hook + ORDER_TRANSITIONS adds DRIVER_ASSIGNED→CLOSED (driver_decline path) + adapter tryAdvanceOrderAfterCreation helper + driver callback handlers
-  - [ ] 03-05-manager-intercept-readme-PLAN.md — Wave 5: 3 manager endpoints (intercept/manager-message/release) + shared-types schemas + /api/health.checks.telegram (60s cache) + pnpm telegram:setup script + README "Telegram Dev Setup" section + final stub flip (0 todos) + checkpoint:human-verify (HUMAN-UAT-03)
+  - [x] 03-05-manager-intercept-readme-PLAN.md — Wave 5: 3 manager endpoints (intercept/manager-message/release) + shared-types schemas + /api/health.checks.telegram (60s cache) + pnpm telegram:setup script + README "Telegram Dev Setup" section + final stub flip (0 todos) + checkpoint:human-verify (HUMAN-UAT-03)
 
 ---
 
