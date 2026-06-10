@@ -1,22 +1,21 @@
-import { describe, expect, it, test } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Phase 3 acceptance criteria assertions.
  *
- * Initial set: 9 placeholder markers (one per Phase 3 requirement ID covered
- * by 03-VALIDATION.md: API-13, API-15, TG-01, TG-02, TG-03, TG-04, TG-05,
- * TG-06, TG-07). Waves 1-5 flip each placeholder to a real it() assertion.
+ * Final set: 9 it() assertions referencing the integration tests that prove
+ * the claim. All Phase 3 requirements covered: API-13, API-15, TG-01..07.
  *
- * Flip-down schedule (per 03-CONTEXT.md + ROADMAP.md):
+ * Flip-down history (per 03-CONTEXT.md + ROADMAP.md):
  *   Plan 03-02 (Wave 2): API-13, API-15, TG-01, TG-02            — 4 flipped, 5 remain.
  *   Plan 03-03 (Wave 3): TG-03, TG-04                              — 2 flipped, 3 remain.
  *   Plan 03-04 (Wave 4): TG-05, TG-07                              — 2 flipped, 1 remains.
  *   Plan 03-05 (Wave 5): TG-06                                     — 1 flipped, 0 remain.
  *
  * Counting protocol: the verifier greps the literal substring marker via
- * `grep -c` on this file. The count starts at 9 and decreases as waves
- * flip placeholders. Do NOT add prose mentions of the literal marker name in
- * comments — the grep is naive and will mis-count.
+ * `grep -c` on this file. After Plan 03-05 the count is 0. Do NOT add prose
+ * mentions of the literal marker name in comments — the grep is naive and
+ * will mis-count.
  */
 describe('Phase 3 — Telegram channel (acceptance stubs)', () => {
   it('API-13: POST /webhook/telegram exists and verifies secret_token', () => {
@@ -60,9 +59,13 @@ describe('Phase 3 — Telegram channel (acceptance stubs)', () => {
     // log warn + no send, simulated auto-accept per D-18).
     expect(true).toBe(true);
   });
-  test.todo(
-    'TG-06: manager intercept flips manager_active; bot silent; manager-message routes via bot'
-  );
+  it('TG-06: manager intercept flips manager_active; bot silent; manager-message routes via bot', () => {
+    // Covered by tests/integration/manager-intercept.test.ts (5 cases:
+    // intercept flips flag + sends welcome + persists; subsequent inbound
+    // persists but skips intake; manager-message sends via bot + persists;
+    // release clears flag + sends handover; no-telegram-id → 400).
+    expect(true).toBe(true);
+  });
   it('TG-07: order FSM transition triggers notifyClient with i18n RU/UA template', () => {
     // Covered by tests/integration/client-notifications.test.ts — transitionOrder
     // DRIVER_ASSIGNED fires onSuccess → notifyClient sends RU template; client

@@ -81,3 +81,31 @@ export const LeadQuoteResponseSchema = z.object({
   stage: z.string(),
 });
 export type LeadQuoteResponse = z.infer<typeof LeadQuoteResponseSchema>;
+
+// Phase 3 Plan 03-05 — TG-06 manager intercept endpoints DTOs.
+// POST /api/leads/:id/intercept response — flag flipped to true.
+export const LeadInterceptResponseSchema = z.object({
+  lead_id: z.string().uuid(),
+  manager_active: z.literal(true),
+});
+export type LeadInterceptResponse = z.infer<typeof LeadInterceptResponseSchema>;
+
+// POST /api/leads/:id/release response — flag flipped back to false.
+export const LeadReleaseResponseSchema = z.object({
+  lead_id: z.string().uuid(),
+  manager_active: z.literal(false),
+});
+export type LeadReleaseResponse = z.infer<typeof LeadReleaseResponseSchema>;
+
+// POST /api/leads/:id/manager-message body — manager-side outbound text.
+// Limit 4000 chars to leave headroom under Telegram's 4096-char hard limit.
+export const ManagerMessageBodySchema = z.object({
+  text: z.string().min(1).max(4000),
+});
+export type ManagerMessageBody = z.infer<typeof ManagerMessageBodySchema>;
+
+// POST /api/leads/:id/manager-message response — just the lead id echo.
+export const ManagerMessageResponseSchema = z.object({
+  lead_id: z.string().uuid(),
+});
+export type ManagerMessageResponse = z.infer<typeof ManagerMessageResponseSchema>;

@@ -20,16 +20,20 @@
 //     idempotent from the caller's perspective.
 
 import {
+  LeadInterceptResponseSchema,
   LeadListQuerySchema,
   LeadMatchResponseSchema,
   LeadPatchBodySchema,
   LeadQuoteResponseSchema,
+  LeadReleaseResponseSchema,
+  ManagerMessageBodySchema,
+  ManagerMessageResponseSchema,
 } from '@ai-logist/shared-types/api/leads';
 import { sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod/v4';
 import { routeKm } from '../lib/routing.js';
-import { leadsRepo } from '../persistence/repos/index.js';
+import { clientsRepo, leadsRepo, messagesRepo } from '../persistence/repos/index.js';
 import { IllegalTransition, VersionMismatch } from '../pipeline/lifecycle/errors.js';
 import { transitionLead } from '../pipeline/lifecycle/lead-fsm.js';
 import { calcPrice, readPricingConfig } from '../pipeline/llm-tools/calc-price.js';
@@ -278,6 +282,150 @@ const leadsRoutes: FastifyPluginAsyncZod = async (app) => {
         route_km,
         stage,
       });
+    }
+  );
+
+  // Phase 3 Plan 03-05 TG-06 — Manager takes over the conversation.
+  //
+  // Flips leads.manager_active=true; subsequent Telegram inbound from this
+  // client is persisted with role='client' but intake is bypassed (adapter
+  // gate). Best-effort delivers the localized welcome via the Telegram bot AND
+  // persists the welcome with role='manager' so the admin timeline shows it.
+  // Bot send failures are logged + swallowed — the flag flip is the contract.
+  app.post(
+    '/leads/:id/intercept',
+    {
+      schema: {
+        tags: ['leads'],
+        summary: 'Manager intercept (Phase 3 TG-06)',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: LeadInterceptResponseSchema, 404: NotImpl },
+      },
+    },
+    async (req, reply) => {
+      const lead = await leadsRepo.findById(app.db, req.params.id);
+      if (!lead) return reply.notFound(`lead ${req.params.id} not found`);
+
+      await app.db.execute(sql`
+        UPDATE leads SET manager_active = true, updated_at = NOW()
+        WHERE id = ${lead.id}
+      `);
+
+      const client = await clientsRepo.findById(app.db, lead.clientId);
+      if (client?.telegramId) {
+        const lang = (client.lang ?? 'ru') as 'ru' | 'ua';
+        const welcome =
+          lang === 'ua'
+            ? 'Доброго дня, я Іван, менеджер. Чим можу допомогти?'
+            : 'Здравствуйте, я Иван, менеджер. Чем могу помочь?';
+        // Persist BEFORE the bot send so the admin timeline carries the welcome
+        // even if Telegram is briefly unreachable.
+        await messagesRepo.create(app.db, {
+          clientId: client.id,
+          leadId: lead.id,
+          role: 'manager',
+          text: welcome,
+        });
+        const bot = (
+          app as typeof app & { bot?: { api: { sendMessage: typeof app.bot.api.sendMessage } } }
+        ).bot;
+        if (bot) {
+          await bot.api.sendMessage(client.telegramId, welcome).catch((err: unknown) => {
+            app.log.warn({ err, leadId: lead.id }, 'intercept: welcome send failed');
+          });
+        }
+      }
+      return reply.code(200).send({ lead_id: lead.id, manager_active: true as const });
+    }
+  );
+
+  // Phase 3 Plan 03-05 TG-06 — Manager sends an outbound message via the bot.
+  //
+  // Persists with role='manager' so the timeline mirrors the client's view,
+  // then forwards to Telegram. Returns 400 if the client has no telegram_id
+  // (a manager-message has nowhere to go).
+  app.post(
+    '/leads/:id/manager-message',
+    {
+      schema: {
+        tags: ['leads'],
+        summary: 'Manager outbound message via bot (Phase 3 TG-06)',
+        params: z.object({ id: z.string().uuid() }),
+        body: ManagerMessageBodySchema,
+        response: { 200: ManagerMessageResponseSchema, 400: NotImpl, 404: NotImpl },
+      },
+    },
+    async (req, reply) => {
+      const lead = await leadsRepo.findById(app.db, req.params.id);
+      if (!lead) return reply.notFound(`lead ${req.params.id} not found`);
+      const client = await clientsRepo.findById(app.db, lead.clientId);
+      if (!client) return reply.notFound('client not found');
+      if (!client.telegramId) return reply.badRequest('client has no telegram_id');
+
+      await messagesRepo.create(app.db, {
+        clientId: client.id,
+        leadId: lead.id,
+        role: 'manager',
+        text: req.body.text,
+      });
+
+      const bot = (
+        app as typeof app & { bot?: { api: { sendMessage: typeof app.bot.api.sendMessage } } }
+      ).bot;
+      if (bot) {
+        await bot.api.sendMessage(client.telegramId, req.body.text).catch((err: unknown) => {
+          app.log.error({ err, leadId: lead.id }, 'manager-message: send failed');
+        });
+      }
+      return reply.code(200).send({ lead_id: lead.id });
+    }
+  );
+
+  // Phase 3 Plan 03-05 TG-06 — Manager hands the conversation back to the bot.
+  //
+  // Flips leads.manager_active=false; subsequent inbound flows back through
+  // intake.ts. Delivers a localized handover notification + persists it. Errors
+  // on the bot send are swallowed; the flag flip is the contract.
+  app.post(
+    '/leads/:id/release',
+    {
+      schema: {
+        tags: ['leads'],
+        summary: 'Manager release (Phase 3 TG-06)',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: LeadReleaseResponseSchema, 404: NotImpl },
+      },
+    },
+    async (req, reply) => {
+      const lead = await leadsRepo.findById(app.db, req.params.id);
+      if (!lead) return reply.notFound(`lead ${req.params.id} not found`);
+      await app.db.execute(sql`
+        UPDATE leads SET manager_active = false, updated_at = NOW()
+        WHERE id = ${lead.id}
+      `);
+      const client = await clientsRepo.findById(app.db, lead.clientId);
+      if (client?.telegramId) {
+        const lang = (client.lang ?? 'ru') as 'ru' | 'ua';
+        const handover =
+          lang === 'ua'
+            ? 'Передаю назад AI-асистенту. Чим іще можу допомогти?'
+            : 'Передаю обратно AI-ассистенту. Что-то ещё?';
+        await messagesRepo.create(app.db, {
+          clientId: client.id,
+          leadId: lead.id,
+          role: 'manager',
+          text: handover,
+        });
+        const bot = (
+          app as typeof app & { bot?: { api: { sendMessage: typeof app.bot.api.sendMessage } } }
+        ).bot;
+        if (bot) {
+          await bot.api.sendMessage(client.telegramId, handover).catch(() => {
+            /* swallow — manager already saw the flag flip in the admin */
+          });
+        }
+      }
+      return reply.code(200).send({ lead_id: lead.id, manager_active: false as const });
     }
   );
 };
