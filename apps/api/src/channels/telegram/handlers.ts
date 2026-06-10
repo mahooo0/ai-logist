@@ -7,12 +7,16 @@
 // dispatch via handleInboundMessage — the same intake entry point used by
 // regular text messages. This keeps the LLM/FSM path single-rail; the keyboard
 // is sugar over text for the demo.
+import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Bot } from 'grammy';
 import { clientsRepo } from '../../persistence/repos/index.js';
 import { handleInboundMessage } from '../../pipeline/intake.js';
+import { transitionLead } from '../../pipeline/lifecycle/lead-fsm.js';
+import { transitionOrder } from '../../pipeline/lifecycle/order-fsm.js';
 import { AnthropicLlmClient, type LlmProvider } from '../../pipeline/llm-client.js';
 import { OutboundRegistry } from '../../pipeline/outbound.js';
+import { tryAdvanceOrderAfterCreation } from './adapter.js';
 import { createTelegramOutbound } from './outbound.js';
 
 const GREETING_RU =
@@ -96,6 +100,63 @@ export function registerTelegramHandlers(bot: Bot, app: FastifyInstance): void {
         }
       }
     }
+
+    // Phase 3 D-17 — if intake created an order via STEP D-pre on this callback
+    // (confirm → AGREED → ORDER_CREATED), advance order → DRIVER_ASSIGNED and
+    // fire notifyDriver + notifyClient. Runs post-tx, non-blocking from the
+    // user's perspective.
+    await tryAdvanceOrderAfterCreation(app, result.exchanges);
+  });
+
+  // Driver-side callbacks (TG-05). driver_accept / driver_decline.
+  // Accept = confirmation log (order already in DRIVER_ASSIGNED).
+  // Decline = order → CLOSED + lead → LOST per RESEARCH Pitfall #5 / D-19.
+  bot.callbackQuery(/^(driver_accept|driver_decline):(.+)$/, async (ctx) => {
+    const action = ctx.match[1] as 'driver_accept' | 'driver_decline';
+    const orderId = ctx.match[2];
+    if (!orderId) return;
+
+    await ctx.answerCallbackQuery().catch(() => {
+      /* swallow — the reply below is the user-visible side effect */
+    });
+    await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => {
+      /* msg may be too old to edit — non-fatal */
+    });
+
+    if (action === 'driver_accept') {
+      app.log.info({ orderId, driverTgId: ctx.from?.id }, 'telegram: driver accepted');
+      await ctx.reply('✅ Принято. Удачной поездки!');
+      return;
+    }
+
+    // driver_decline path. Two transitions in sequence:
+    //   1. order → CLOSED with payload { driver_declined: true, driver_tg_id }
+    //   2. lead → LOST with payload { reason: 'driver_declined', order_id }
+    // The lead lookup uses leads.order_id (the FK lives on leads, NOT orders).
+    try {
+      await transitionOrder(app.db, {
+        orderId,
+        to: 'CLOSED',
+        actor: 'system',
+        payload: { driver_declined: true, driver_tg_id: ctx.from?.id ?? null },
+      });
+
+      const leadRows = await app.db.execute(sql`
+        SELECT id::text AS id FROM leads WHERE order_id = ${orderId}
+      `);
+      const leadRow = leadRows.rows[0] as { id: string } | undefined;
+      if (leadRow?.id) {
+        await transitionLead(app.db, {
+          leadId: leadRow.id,
+          to: 'LOST',
+          actor: 'system',
+          payload: { reason: 'driver_declined', order_id: orderId },
+        });
+      }
+    } catch (err) {
+      app.log.error({ err, orderId }, 'telegram: decline transition failed');
+    }
+    await ctx.reply('Отказ зарегистрирован. Спасибо за обратную связь.');
   });
 }
 

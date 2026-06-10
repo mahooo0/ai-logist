@@ -18,7 +18,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Update } from 'grammy/types';
 import type { Db } from '../../db.js';
 import { clientsRepo, messagesRepo } from '../../persistence/repos/index.js';
-import { handleInboundMessage } from '../../pipeline/intake.js';
+import { handleInboundMessage, type InboundMessageExchange } from '../../pipeline/intake.js';
 import { AnthropicLlmClient, type LlmProvider } from '../../pipeline/llm-client.js';
 import { OutboundRegistry } from '../../pipeline/outbound.js';
 import { createTelegramOutbound } from './outbound.js';
@@ -149,6 +149,67 @@ export async function processTelegramUpdate(args: ProcessTelegramUpdateArgs): Pr
         });
       }
     }
+  }
+
+  // Phase 3 D-17 — after handleInboundMessage returns with createOrder in
+  // exchanges, schedule order → DRIVER_ASSIGNED + dual notify (driver + client).
+  await tryAdvanceOrderAfterCreation(app, result.exchanges);
+}
+
+/**
+ * Phase 3 D-17 — adapter-driven post-create driver assignment.
+ *
+ * Inspects the exchanges[] returned by handleInboundMessage for a `tool` entry
+ * with `name='createOrder'`; if found, transitions the new order to
+ * DRIVER_ASSIGNED via order-fsm with a fire-and-forget onSuccess hook that
+ * fans out notifyDriver + notifyClient.
+ *
+ * Called from BOTH `processTelegramUpdate` (text path) and the confirm/reject/
+ * change callback in handlers.ts (callback path). Errors are logged and
+ * swallowed — the order already exists in CREATED, a manager can advance it
+ * manually from admin.
+ */
+export async function tryAdvanceOrderAfterCreation(
+  app: FastifyInstance,
+  exchanges: InboundMessageExchange[]
+): Promise<void> {
+  const createOrderEx = exchanges.find(
+    (e) =>
+      e.role === 'tool' &&
+      typeof e.content === 'object' &&
+      e.content !== null &&
+      (e.content as { name?: string }).name === 'createOrder'
+  );
+  if (!createOrderEx) return;
+  const content = createOrderEx.content as { result?: { order_id?: string } };
+  const orderId = content.result?.order_id;
+  if (!orderId) return;
+
+  try {
+    const { transitionOrder } = await import('../../pipeline/lifecycle/order-fsm.js');
+    const { notifyDriver, notifyClient } = await import('./notifications.js');
+    await transitionOrder(app.db, {
+      orderId,
+      to: 'DRIVER_ASSIGNED',
+      actor: 'ai',
+      payload: { auto_assign: true },
+      onSuccess: async () => {
+        const bot = getBot(app);
+        if (!bot) return;
+        await Promise.allSettled([
+          notifyDriver({ orderId, db: app.db, bot, log: app.log }),
+          notifyClient({
+            orderId,
+            transition: 'DRIVER_ASSIGNED',
+            db: app.db,
+            bot,
+            log: app.log,
+          }),
+        ]);
+      },
+    });
+  } catch (err) {
+    app.log.warn({ err, orderId }, 'tryAdvanceOrderAfterCreation failed (non-fatal)');
   }
 }
 
