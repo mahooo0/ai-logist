@@ -81,9 +81,9 @@
 - [x] **ADMIN-01**: Форк шаблона `next-shadcn-admin-dashboard`, `pnpm install`, `pnpm dev` стартует на :3000
 - [x] **ADMIN-02**: Auth: подключена `/auth/v1/login` (для демо — login/password из конфига)
 - [ ] **ADMIN-03**: `/dashboard/chat` мульти-канальный — Telegram + Voice звонки в одном UI (`GET /api/clients/:id/messages` + `WS /ws/inbox`), audio-player для голосовых сегментов, transcript inline, кнопка «перехватить диалог» (только для Telegram — голос завершается естественно)
-- [ ] **ADMIN-05**: `/dashboard/default` + `/dashboard/analytics` — KPI (звонки vs telegram, конверсия, выручка, средняя длительность звонка)
-- [ ] **ADMIN-NEW-02**: Новая страница `/dashboard/orders` — таблица заказов с фильтрами по статусу и каналу (voice/telegram)
-- [ ] **ADMIN-NEW-03**: Новая страница `/dashboard/orders/[id]` — детальная карточка: таймлайн `order_events`, ссылка на звонок (если есть), price-display (без override modal в v1)
+- [x] **ADMIN-05**: `/dashboard/default` + `/dashboard/analytics` — KPI (звонки vs telegram, конверсия, выручка, средняя длительность звонка)
+- [x] **ADMIN-NEW-02**: Новая страница `/dashboard/orders` — таблица заказов с фильтрами по статусу и каналу (voice/telegram)
+- [x] **ADMIN-NEW-03**: Новая страница `/dashboard/orders/[id]` — детальная карточка: таймлайн `order_events`, ссылка на звонок (если есть), price-display (без override modal в v1)
 - [ ] **ADMIN-NEW-08**: Новая страница `/dashboard/calls` — таблица всех звонков с фильтрами (outcome, lang, duration), клик → audio + transcript
 
 **Перенесено в v2 (Out of Scope для демо):**
@@ -264,11 +264,11 @@
 | ADMIN-02 | Phase 4 | Complete |
 | ADMIN-03 | Phase 4 | Pending |
 | ADMIN-04 | Phase 4 | Pending |
-| ADMIN-05 | Phase 4 | Pending |
+| ADMIN-05 | Phase 4 | Complete |
 | ADMIN-06 | Phase 4 | Pending |
 | ADMIN-NEW-01 | Phase 4 | Pending |
-| ADMIN-NEW-02 | Phase 4 | Pending |
-| ADMIN-NEW-03 | Phase 4 | Pending |
+| ADMIN-NEW-02 | Phase 4 | Complete |
+| ADMIN-NEW-03 | Phase 4 | Complete |
 | ADMIN-NEW-04 | Phase 4 | Pending |
 | ADMIN-NEW-05 | Phase 4 | Pending |
 | ADMIN-NEW-06 | Phase 4 | Pending |
