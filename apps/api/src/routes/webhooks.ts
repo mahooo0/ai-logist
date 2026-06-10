@@ -1,11 +1,11 @@
 // Phase 1, Plan 01-08: 501 stubs for /webhook/*
 // Mounted with prefix `/webhook` (not `/api`) per spec §6.
-// Phase 3 (Telegram TG-01/TG-02 + voice API-15) and Phase 5 (GPS API-14)
-// swap in handlers.
+// Phase 3 (Plan 03-02) — /telegram moved to webhooks-telegram.ts (two-stage handler).
+//                       /voice flipped from 501 → 200 ack (Phase 3.1 placeholder).
+// Phase 5 (GPS API-14) swaps /gps in.
 
 import {
   GpsPushBodySchema,
-  TelegramUpdateBodySchema,
   VoiceCallbackBodySchema,
   WebhookAckResponseSchema,
 } from '@ai-logist/shared-types/api/webhooks';
@@ -20,29 +20,16 @@ const NotImpl = z.object({
 
 const webhooksRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
-    '/telegram',
-    {
-      schema: {
-        tags: ['webhooks'],
-        summary: 'Telegram webhook (Phase 3 TG-01/TG-02)',
-        body: TelegramUpdateBodySchema,
-        response: { 200: WebhookAckResponseSchema, 501: NotImpl },
-      },
-    },
-    async (_req, reply) => reply.notImplemented('Phase 3 — Telegram')
-  );
-
-  app.post(
     '/voice',
     {
       schema: {
         tags: ['webhooks'],
-        summary: 'Voice callback (Phase 3 API-15 stub returns 200)',
+        summary: 'Voice callback stub (Phase 3.1 placeholder; returns 200 ack — API-15)',
         body: VoiceCallbackBodySchema,
-        response: { 200: WebhookAckResponseSchema, 501: NotImpl },
+        response: { 200: WebhookAckResponseSchema },
       },
     },
-    async (_req, reply) => reply.notImplemented('Phase 3 — voice callback stub')
+    async (_req, reply) => reply.code(200).send({ ok: true })
   );
 
   app.post(

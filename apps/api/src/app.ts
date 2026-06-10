@@ -20,6 +20,7 @@ import leadsRoutes from './routes/leads.js';
 import ordersRoutes from './routes/orders.js';
 import trucksRoutes from './routes/trucks.js';
 import webhooksRoutes from './routes/webhooks.js';
+import webhooksTelegramRoutes from './routes/webhooks-telegram.js';
 
 /**
  * Build the Fastify v5 app with all plugins wired:
@@ -82,6 +83,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(trucksRoutes, { prefix: '/api' });
   await app.register(clientsRoutes, { prefix: '/api' });
   await app.register(analyticsRoutes, { prefix: '/api' });
+  // Phase 3 Plan 03-02 — webhooks-telegram MUST register BEFORE webhooksRoutes
+  // under /webhook prefix to claim the /telegram path before the generic stub plugin.
+  await app.register(webhooksTelegramRoutes, { prefix: '/webhook' });
   await app.register(webhooksRoutes, { prefix: '/webhook' });
 
   // Phase 2 Plan 02-04b — auto-follow-up scheduler (FSM-06). Skips in test env;
