@@ -4,6 +4,7 @@
 export const SHARED_TYPES_VERSION = '0.0.0';
 
 export * from './api/analytics.js';
+export * from './api/calls.js';
 export * from './api/clients.js';
 export * from './api/health.js';
 export * from './api/leads.js';

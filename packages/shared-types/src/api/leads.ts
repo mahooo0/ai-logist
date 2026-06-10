@@ -10,7 +10,11 @@ import { BodyType, LeadStage } from '../domain/enums.js';
 export const LeadSchema = z.object({
   id: z.string().uuid(),
   clientId: z.string().uuid(),
-  channel: z.enum(['telegram', 'call']),
+  // Phase 4 D-60 / Open Question #4: accept all 3 historic channel values for
+  // graceful handling. Phase 1 ships 'telegram' | 'call'; Phase 3.1 may have
+  // introduced 'voice'. The list handler coerces 'call' → 'voice' on the way
+  // out so the admin surface sees a stable 2-value channel.
+  channel: z.enum(['telegram', 'voice', 'call']),
   stage: LeadStage,
   fromCityId: z.string().uuid().nullable(),
   toCityId: z.string().uuid().nullable(),
@@ -36,6 +40,10 @@ export type Lead = z.infer<typeof LeadSchema>;
 export const LeadListQuerySchema = z.object({
   stage: LeadStage.optional(),
   clientId: z.string().uuid().optional(),
+  // Phase 4 API-03 — D-60 channel filter. Accepts all 3 historic values;
+  // handler maps 'voice' to `channel IN ('voice','call')` SQL so legacy rows
+  // are included.
+  channel: z.enum(['telegram', 'voice', 'call']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });

@@ -1,9 +1,15 @@
 // @ai-logist/shared-types — Phase 1, Plan 01-08
 // DTO schemas for /api/orders — covers list, detail (with event timeline),
 // create, and price override (audit-driven per ADMIN-NEW-06).
+//
+// Phase 4 (Plan 04-03) extends with OrderListItemSchema (joined denormalised
+// fields for /dashboard/orders table, D-35) and OrderDetailExtendedSchema
+// (single-shot detail response with all relations, D-39).
 
 import { z } from 'zod/v4';
-import { OrderEventType, OrderStatus } from '../domain/enums.js';
+import { ClientLang, OrderEventType, OrderStatus } from '../domain/enums.js';
+import { LeadSchema } from './leads.js';
+import { TruckSchema } from './trucks.js';
 
 export const OrderSchema = z.object({
   id: z.string().uuid(),
@@ -66,3 +72,42 @@ export const PriceOverrideBodySchema = z.object({
   version: z.number().int(), // optimistic concurrency
 });
 export type PriceOverrideBody = z.infer<typeof PriceOverrideBodySchema>;
+
+// Phase 4 D-35 — joined list response for /dashboard/orders.
+// Extends OrderSchema with denormalised city/client/channel fields so the page
+// renders without N+1 fetches. 'call' is coerced to 'voice' in the handler so
+// the admin only sees a stable 2-value channel.
+export const OrderListItemSchema = OrderSchema.extend({
+  fromCityName: z.string().nullable(),
+  toCityName: z.string().nullable(),
+  clientName: z.string().nullable(),
+  channel: z.enum(['telegram', 'voice']).nullable(),
+});
+export type OrderListItem = z.infer<typeof OrderListItemSchema>;
+
+// Phase 4 D-39 — extended detail response (avoid 4 separate fetches in
+// /dashboard/orders/[id]). Joined fields are nullable to handle missing
+// relations gracefully (truck_id, lead_id can be null on the order).
+const CityRefSchema = z.object({
+  id: z.string().uuid(),
+  nameRu: z.string(),
+  nameUa: z.string().nullable(),
+});
+
+const ClientRefSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().nullable(),
+  phone: z.string().nullable(),
+  lang: ClientLang.nullable(),
+});
+
+export const OrderDetailExtendedSchema = z.object({
+  order: OrderSchema,
+  events: z.array(OrderEventSchema),
+  client: ClientRefSchema.nullable(),
+  fromCity: CityRefSchema.nullable(),
+  toCity: CityRefSchema.nullable(),
+  truck: TruckSchema.nullable(),
+  lead: LeadSchema.nullable(), // for channel breadcrumb (D-38)
+});
+export type OrderDetailExtended = z.infer<typeof OrderDetailExtendedSchema>;
