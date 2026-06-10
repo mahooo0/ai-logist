@@ -81,7 +81,7 @@
 **Plans**: 6 plans
 
   - [x] 03-00-test-infra-PLAN.md — Wave 0: MockTelegramBot + webhook-driver helper + 11 fixtures + 8 integration scaffolds + 9 test.todo stubs
-  - [ ] 03-01-foundation-PLAN.md — Wave 1: config env (+3 vars + requireTelegramConfig) + migration 0003 (leads.manager_active + trucks_driver_tg_idx partial index) + grammy 1.43 + Fastify telegram plugin decorating app.bot
+  - [x] 03-01-foundation-PLAN.md — Wave 1: config env (+3 vars + requireTelegramConfig) + migration 0003 (leads.manager_active + trucks_driver_tg_idx partial index) + grammy 1.43 + Fastify telegram plugin decorating app.bot
   - [ ] 03-02-webhook-route-PLAN.md — Wave 2: routes/webhooks-telegram.ts two-stage handler (secret_token verify + ON CONFLICT DO NOTHING + 200 ack <100ms + setImmediate worker); /webhook/voice flipped 501 → 200 (API-15)
   - [ ] 03-03-adapter-keyboards-outbound-PLAN.md — Wave 3: OutboundChannel/Registry + Telegram keyboards (quote/driver + i18n RU/UA) + TelegramOutbound + real processTelegramUpdate adapter + handlers (start/help + 3 client callbacks) + minimal intake.ts outbound thread (≤30 lines added)
   - [ ] 03-04-notifications-driver-fsm-hook-PLAN.md — Wave 4: notifyDriver + notifyClient + i18n templates (3 transitions × 2 langs) + order-fsm onSuccess post-commit hook + ORDER_TRANSITIONS adds DRIVER_ASSIGNED→CLOSED (driver_decline path) + adapter tryAdvanceOrderAfterCreation helper + driver callback handlers
