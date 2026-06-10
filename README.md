@@ -343,6 +343,67 @@ loops don't burn ElevenLabs rate-limit budget.
 [ ] Twilio dashboard shows recent call with recording
 ```
 
+## Admin Dashboard Dev Setup
+
+The web admin (Next.js 16 + Zenith template) runs on port 3001 behind Caddy at `/`. It reads from the Fastify API at `/api/*`. Phase 4 ships 6 dashboard pages (default / analytics / chat / calls / orders / orders/[id]); kanban / fleet / calendar / tracking are deferred to v2 per the 2026-06-09 pivot.
+
+1. **Install deps** — already done if you ran `pnpm install` at repo root.
+2. **Generate an admin password hash:**
+
+   ```bash
+   pnpm --filter @ai-logist/web gen:admin-password
+   # → prints ADMIN_PASSWORD_HASH=$2b$12$...
+   # Copy the printed value into apps/web/.env.local
+   ```
+
+3. **Generate an auth cookie secret:**
+
+   ```bash
+   openssl rand -hex 32
+   # Copy the output into AUTH_COOKIE_SECRET in apps/web/.env.local
+   ```
+
+4. **Set env vars** (in `apps/web/.env.local`):
+
+   ```bash
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD_HASH=<output from step 2>
+   AUTH_COOKIE_SECRET=<output from step 3>
+   API_INTERNAL_URL=http://api:3000   # or http://localhost:3000 outside docker
+   ```
+
+5. **Start the dev server:**
+
+   ```bash
+   pnpm --filter @ai-logist/web dev
+   # http://localhost:3001 → redirects to /auth/v1/login
+   ```
+
+6. **Log in** with `admin` + your password → lands on `/dashboard/default`.
+
+7. **Reachable pages (v1):** `/dashboard/default`, `/dashboard/analytics`, `/dashboard/chat`, `/dashboard/calls`, `/dashboard/orders`, `/dashboard/orders/[id]`. NOT in v1: `/dashboard/kanban`, `/dashboard/fleet`, `/dashboard/calendar`, `/dashboard/tracking` (deferred to v2 per 2026-06-09 pivot).
+
+**Details:** see `apps/web/README.md`.
+**UAT protocol:** see `.planning/phases/04-admin-web-reduced-scope-chat-calls-orders-kpi/HUMAN-UAT-05.md`.
+
+### Pre-flight checklist
+
+- [ ] `pnpm --filter @ai-logist/web build` exits 0
+- [ ] `pnpm --filter @ai-logist/web exec tsc --noEmit` exits 0
+- [ ] `pnpm exec biome check` exits 0
+- [ ] Login form rejects bad password (401)
+- [ ] Customize-panel language toggle flips RU↔UA on chat header
+
+### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Redirect loop on `/dashboard/*` | `AUTH_COOKIE_SECRET` empty or rotated | Re-generate + re-login |
+| `/api/*` returns 502 | API container not up | `docker compose ps`, `docker compose logs api` |
+| Recharts crashes on `/analytics` | Stale `analytics-app.tsx` cache | `rm -rf apps/web/.next` and retry |
+| Russian shows as `??????` | Missing dictionary key | grep `lib/i18n/dict.ts` for missing entry |
+| Border colors look wrong | Tailwind v4 default change (Pitfall #13) | Replace bare `border` with `border-border` |
+
 ## Project layout
 
 ```
