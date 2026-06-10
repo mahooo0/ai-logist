@@ -2,13 +2,13 @@
 // Mounted with prefix `/webhook` (not `/api`) per spec §6.
 // Phase 3 (Plan 03-02) — /telegram moved to webhooks-telegram.ts (two-stage handler).
 //                       /voice flipped from 501 → 200 ack (Phase 3.1 placeholder).
+// Phase 3.1 (Plan 03.1-02) — /voice* moved to webhooks-voice.ts (real handlers
+//                            under /webhook/voice/tool/*, /webhook/voice/call-start,
+//                            /webhook/voice/call-end, /webhook/voice/lang-detected).
+//                            The 200-ack placeholder is REMOVED from this file.
 // Phase 5 (GPS API-14) swaps /gps in.
 
-import {
-  GpsPushBodySchema,
-  VoiceCallbackBodySchema,
-  WebhookAckResponseSchema,
-} from '@ai-logist/shared-types/api/webhooks';
+import { GpsPushBodySchema, WebhookAckResponseSchema } from '@ai-logist/shared-types/api/webhooks';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod/v4';
 
@@ -19,19 +19,6 @@ const NotImpl = z.object({
 });
 
 const webhooksRoutes: FastifyPluginAsyncZod = async (app) => {
-  app.post(
-    '/voice',
-    {
-      schema: {
-        tags: ['webhooks'],
-        summary: 'Voice callback stub (Phase 3.1 placeholder; returns 200 ack — API-15)',
-        body: VoiceCallbackBodySchema,
-        response: { 200: WebhookAckResponseSchema },
-      },
-    },
-    async (_req, reply) => reply.code(200).send({ ok: true })
-  );
-
   app.post(
     '/gps',
     {

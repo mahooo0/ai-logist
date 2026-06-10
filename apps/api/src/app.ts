@@ -13,6 +13,7 @@ import { registerFollowUpScheduler } from './pipeline/follow-up-scheduler.js';
 import { dbPlugin } from './plugins/db.js';
 import { redisPlugin } from './plugins/redis.js';
 import { telegramPlugin } from './plugins/telegram.js';
+import { voicePlugin } from './plugins/voice.js';
 import analyticsRoutes from './routes/analytics.js';
 import clientsRoutes from './routes/clients.js';
 import healthRoutes from './routes/health.js';
@@ -21,6 +22,7 @@ import ordersRoutes from './routes/orders.js';
 import trucksRoutes from './routes/trucks.js';
 import webhooksRoutes from './routes/webhooks.js';
 import webhooksTelegramRoutes from './routes/webhooks-telegram.js';
+import webhooksVoiceRoutes from './routes/webhooks-voice.js';
 
 /**
  * Build the Fastify v5 app with all plugins wired:
@@ -59,6 +61,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(redisPlugin);
   // Phase 3 — must run BEFORE routes that touch app.bot.
   await app.register(telegramPlugin);
+  // Phase 3.1 — decorates app.voiceOutbound (no-op channel). Independent of voice
+  // env vars (the outbound is a logging-only no-op even without ElevenLabs).
+  await app.register(voicePlugin);
 
   // OpenAPI
   await app.register(swagger, {
@@ -86,6 +91,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Phase 3 Plan 03-02 — webhooks-telegram MUST register BEFORE webhooksRoutes
   // under /webhook prefix to claim the /telegram path before the generic stub plugin.
   await app.register(webhooksTelegramRoutes, { prefix: '/webhook' });
+  // Phase 3.1 Plan 03.1-02 — webhooks-voice claims /webhook/voice/* (5 tool
+  // routes + 3 lifecycle routes) BEFORE the generic webhooks plugin sees them.
+  await app.register(webhooksVoiceRoutes, { prefix: '/webhook' });
   await app.register(webhooksRoutes, { prefix: '/webhook' });
 
   // Phase 2 Plan 02-04b — auto-follow-up scheduler (FSM-06). Skips in test env;
