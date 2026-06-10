@@ -92,21 +92,155 @@ describe('Phase 4 — Admin Web acceptance criteria', () => {
     expect(loginSrc).toMatch(/bcrypt|comparePassword/);
     expect(loginSrc).toMatch(/al_session|COOKIE_NAME/);
   });
-  it.todo(
-    'ADMIN-03: /dashboard/chat unifies Telegram + voice transcript turns with audio playback + intercept controls (TG-only)'
-  );
-  it.todo(
-    'ADMIN-05: /dashboard/default + /dashboard/analytics show KPI tiles + charts from /api/analytics/kpi'
-  );
-  it.todo(
-    'ADMIN-NEW-02: /dashboard/orders table with status + channel filters + URL search params bookmarkable'
-  );
-  it.todo(
-    'ADMIN-NEW-03: /dashboard/orders/[id] renders order detail + events timeline + channel breadcrumb'
-  );
-  it.todo(
-    'ADMIN-NEW-08: /dashboard/calls table + filters + modal with audio player + transcript turn seek'
-  );
+  it('ADMIN-03: /dashboard/chat unifies Telegram + voice transcript turns with audio playback + intercept controls (TG-only)', () => {
+    const cwd = process.cwd();
+    const pagePath = `${cwd}/../web/src/app/(main)/dashboard/chat/page.tsx`;
+    expect(existsSync(pagePath)).toBe(true);
+    const page = readFileSync(pagePath, 'utf8');
+    // Server Component — directive must NOT be present at line start.
+    expect(page).not.toMatch(/^'use client'/m);
+    expect(page).not.toMatch(/^"use client"/m);
+    expect(page).not.toMatch(/^'use cache'/m);
+    expect(page).toMatch(/apiGet/);
+    expect(page).toMatch(/UnifiedMessage/);
+    expect(page).toMatch(/await searchParams/);
+
+    const chatApp = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/chat/_components/chat-app.tsx`,
+      'utf8'
+    );
+    expect(chatApp).toMatch(/'use client'/);
+    expect(chatApp).toMatch(/useSWR/);
+    expect(chatApp).toMatch(/refreshInterval:\s*5000/);
+    expect(chatApp).toMatch(/isPaused/);
+
+    const threadView = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/chat/_components/thread-view.tsx`,
+      'utf8'
+    );
+    // Manager intercept POSTs to all 3 endpoints.
+    expect(threadView).toMatch(/intercept/);
+    expect(threadView).toMatch(/manager-message/);
+    expect(threadView).toMatch(/release/);
+    // D-47 — voice channel threads MUST NOT show intercept controls.
+    expect(threadView).toMatch(/channel\s*!==\s*['"]voice['"]/);
+
+    // VoiceTurn implements the audio seek per D-26.
+    const voiceTurn = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/chat/_components/voice-turn.tsx`,
+      'utf8'
+    );
+    expect(voiceTurn).toMatch(/audio\.currentTime/);
+    expect(voiceTurn).toMatch(/timestampMs/);
+    expect(voiceTurn).toMatch(/preload="metadata"/);
+
+    // Telegram bubble carries the green TG badge per D-20.
+    const tg = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/chat/_components/telegram-message.tsx`,
+      'utf8'
+    );
+    expect(tg).toMatch(/TG/);
+  });
+  it('ADMIN-05: /dashboard/default + /dashboard/analytics render KPI from /api/analytics/kpi with window selector', () => {
+    const cwd = process.cwd();
+    const defPath = `${cwd}/../web/src/app/(main)/dashboard/default/page.tsx`;
+    const anPath = `${cwd}/../web/src/app/(main)/dashboard/analytics/page.tsx`;
+    expect(existsSync(defPath)).toBe(true);
+    expect(existsSync(anPath)).toBe(true);
+    const def = readFileSync(defPath, 'utf8');
+    expect(def).toMatch(/KpiResponseSchema/);
+    const an = readFileSync(anPath, 'utf8');
+    expect(an).toMatch(/await searchParams/);
+    expect(an).toMatch(/KpiResponseSchema/);
+    const anApp = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/analytics/_components/analytics-app.tsx`,
+      'utf8'
+    );
+    expect(anApp).toMatch(/'use client'/);
+    const ws = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/analytics/_components/window-selector.tsx`,
+      'utf8'
+    );
+    expect(ws).toMatch(/router\.push.*window=/);
+  });
+  it('ADMIN-NEW-02: /dashboard/orders renders table with 7 columns including channel + city names + price', () => {
+    const cwd = process.cwd();
+    const pagePath = `${cwd}/../web/src/app/(main)/dashboard/orders/page.tsx`;
+    expect(existsSync(pagePath)).toBe(true);
+    const page = readFileSync(pagePath, 'utf8');
+    expect(page).not.toMatch(/^'use client'/m);
+    expect(page).toMatch(/OrderListItemSchema/);
+    const table = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/orders/_components/orders-table.tsx`,
+      'utf8'
+    );
+    expect(table).toMatch(/useReactTable|getCoreRowModel/);
+    expect(table).toMatch(/formatMoney/);
+    expect(table).toMatch(/channel/);
+  });
+  it('ADMIN-NEW-03: /dashboard/orders/[id] renders read-only detail with channel breadcrumb + timeline', () => {
+    const cwd = process.cwd();
+    const pagePath = `${cwd}/../web/src/app/(main)/dashboard/orders/[id]/page.tsx`;
+    expect(existsSync(pagePath)).toBe(true);
+    const page = readFileSync(pagePath, 'utf8');
+    expect(page).toMatch(/await params/);
+    expect(page).toMatch(/OrderDetailExtendedSchema/);
+    const app = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/orders/[id]/_components/order-detail-app.tsx`,
+      'utf8'
+    );
+    expect(app).toMatch(/Прослушать|Открыть/);
+    const timeline = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/orders/[id]/_components/order-timeline.tsx`,
+      'utf8'
+    );
+    expect(timeline).toMatch(/actor|order_events|events/);
+  });
+  it('ADMIN-NEW-08: /dashboard/calls table + filters + modal with audio player + transcript turn seek', () => {
+    const cwd = process.cwd();
+    const pagePath = `${cwd}/../web/src/app/(main)/dashboard/calls/page.tsx`;
+    expect(existsSync(pagePath)).toBe(true);
+    const page = readFileSync(pagePath, 'utf8');
+    // Server Component — no client/cache directives at line start.
+    expect(page).not.toMatch(/^'use client'/m);
+    expect(page).not.toMatch(/^"use client"/m);
+    expect(page).not.toMatch(/^'use cache'/m);
+    expect(page).toMatch(/CallSchema/);
+    expect(page).toMatch(/CallListQuerySchema/);
+    expect(page).toMatch(/await searchParams/);
+
+    const app = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/calls/_components/calls-app.tsx`,
+      'utf8'
+    );
+    expect(app).toMatch(/'use client'/);
+    expect(app).toMatch(/useSWR/);
+    expect(app).toMatch(/refreshInterval:\s*30_?000/);
+    expect(app).toMatch(/useRouter/);
+
+    const table = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/calls/_components/calls-table.tsx`,
+      'utf8'
+    );
+    expect(table).toMatch(/useReactTable|getCoreRowModel/);
+
+    const modal = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/calls/_components/call-detail-modal.tsx`,
+      'utf8'
+    );
+    expect(modal).toMatch(/audio\.currentTime/);
+    expect(modal).toMatch(/transcript/);
+    expect(modal).toMatch(/preload="metadata"/);
+    // Linked-lead / linked-order quick links per D-30.
+    expect(modal).toMatch(/Открыть/);
+
+    const filters = readFileSync(
+      `${cwd}/../web/src/app/(main)/dashboard/calls/_components/calls-filters.tsx`,
+      'utf8'
+    );
+    expect(filters).toMatch(/outcome/);
+    expect(filters).toMatch(/lang/);
+  });
   it('I18N-02: Customize-panel RU/UA toggle + dictionary in lib/i18n/dict.ts wired via useT() hook', () => {
     const cwd = process.cwd();
     expect(existsSync(`${cwd}/../web/src/lib/i18n/dict.ts`)).toBe(true);
