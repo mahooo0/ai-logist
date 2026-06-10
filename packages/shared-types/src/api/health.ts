@@ -5,6 +5,15 @@
 
 import { z } from 'zod/v4';
 
+// Phase 3.1 Plan 03.1-03 — voice channel health subcheck per CONTEXT D-28.
+// 'not_configured' = required env vars missing; 'ok' = ElevenLabs + Twilio
+// API pings succeed; 'error' = at least one ping failed (`detail` carries
+// the error message). Cached 60s in /api/health handler.
+export const VoiceHealthSchema = z.object({
+  status: z.enum(['ok', 'error', 'not_configured']),
+  detail: z.string().optional(),
+});
+
 export const HealthResponseSchema = z.object({
   status: z.enum(['ok', 'degraded']),
   version: z.string(),
@@ -24,6 +33,14 @@ export const HealthResponseSchema = z.object({
     // Optional so existing clients (Phase 2 fixtures, admin web stub) don't
     // break when the field is absent.
     telegram: z.enum(['ok', 'not_configured', 'error']).optional(),
+    // Phase 3.1 Plan 03.1-03 — Voice subcheck (ElevenLabs Agent + Twilio
+    // number reachability). 'not_configured' when any voice env var is unset;
+    // 'ok' after ElevenLabsClient.conversationalAi.agents.get() AND
+    // twilio.api.accounts(sid).fetch() both succeed; 'error' on failure.
+    // Cached 60s in-process to avoid ElevenLabs/Twilio rate-limit risk on
+    // /health probes (mirrors telegram subcheck semantics). Optional for
+    // Phase 2/3 fixture compatibility.
+    voice: VoiceHealthSchema.optional(),
   }),
 });
 

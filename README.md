@@ -164,6 +164,185 @@ curl http://localhost:3000/api/health | jq .checks.telegram
 The Telegram subcheck is cached in-process for 60s to avoid Telegram rate-limit
 risk on `/health` scrape loops.
 
+## Voice Channel Dev Setup
+
+Wire a real ElevenLabs Conversational AI Agent + Twilio number to your local
+API in ~10 minutes (excluding regulatory KYC). Phase 3.1 ships the full voice
+webhook pipeline (HMAC signature verification, idempotency via
+`webhook_updates`, per-conversation advisory locks, price-lock,
+anti-injection, sticky lang); this section walks through one-time bootstrap
+against the live ElevenLabs + Twilio APIs.
+
+### Prerequisites
+
+- **ElevenLabs account** → API key (Starter $6/mo tier is the minimum that
+  unlocks Agents)
+- **Twilio account** → Account SID + Auth Token + 1 phone number
+  (~$3/mo + per-minute)
+- **ngrok** or equivalent (public HTTPS URL for ElevenLabs Agent + Twilio
+  webhooks) — the Telegram setup already needs this; reuse the same tunnel.
+- `apps/api` Phase 1 / 2 / 3 already running locally
+
+### Step 1 — Provision phone number
+
+1. Twilio Console → Phone Numbers → Buy a number.
+2. Search by region: RU `+7`, UA `+380`, or US `+1` (US works for local dev
+   and doesn't require regulatory KYC).
+3. Note the number in E.164 format — you'll need it in `.env.local`.
+4. **WARNING:** RU/UA regulatory KYC can take 24–48h (sometimes longer).
+   Provision the number 3+ days before any demo or buyer evaluation. If
+   the number is still in `pending` state at demo time, the fallback video
+   (POLISH-03) covers the gap.
+
+### Step 2 — Get API keys
+
+```bash
+# Generate the ElevenLabs webhook secret used for HMAC verification:
+openssl rand -hex 32
+```
+
+- ElevenLabs Dashboard → Profile → API Keys → copy the key.
+- Twilio Console → top of dashboard → copy Account SID + Auth Token.
+- Save the `openssl` output above as your `ELEVENLABS_WEBHOOK_SECRET`.
+
+### Step 3 — Configure environment
+
+Add to `.env.local` at the repo root:
+
+```bash
+ELEVENLABS_API_KEY=sk_...
+ELEVENLABS_WEBHOOK_SECRET=<openssl-rand-hex-32-output>
+# ELEVENLABS_AGENT_ID=  # leave blank on first run; voice:setup creates and
+                       # prints the id you should paste back here
+
+TWILIO_ACCOUNT_SID=AC...
+TWILIO_AUTH_TOKEN=...
+TWILIO_PHONE_NUMBER=+15555550100         # E.164 format
+TWILIO_WEBHOOK_SIGNATURE_SECRET=         # = TWILIO_AUTH_TOKEN (Twilio signs
+                                         #   with the auth token by default)
+
+VOICE_PUBLIC_URL=https://abcd1234.ngrok.io   # falls back to TELEGRAM_PUBLIC_URL
+```
+
+### Step 4 — Start ngrok
+
+If you already have an ngrok tunnel from the Telegram setup, reuse it (set
+`VOICE_PUBLIC_URL` to the same value as `TELEGRAM_PUBLIC_URL` — the voice
+handler scopes its routes to `/webhook/voice/*` so they don't collide).
+
+```bash
+ngrok http 3000
+# Copy the https URL → set as VOICE_PUBLIC_URL in .env.local
+```
+
+### Step 5 — Run migrations + bootstrap
+
+```bash
+pnpm --filter @ai-logist/api db:migrate   # idempotent; ok if already applied
+pnpm --filter @ai-logist/api voice:setup
+# →
+# === Voice Channel Bootstrap (Phase 3.1) ===
+# ✓ ELEVENLABS_API_KEY
+# ✓ ELEVENLABS_WEBHOOK_SECRET
+# ✓ TWILIO_ACCOUNT_SID
+# ✓ TWILIO_AUTH_TOKEN
+# ✓ TWILIO_PHONE_NUMBER
+# ✓ VOICE_PUBLIC_URL (or TELEGRAM_PUBLIC_URL)
+#
+# --- ElevenLabs Agent ---
+# ✓ Loaded system prompt from elevenlabs-agent-config.md (... chars)
+# ✓ Agent created: agent_xxxxx
+#   → ADD TO .env.local: ELEVENLABS_AGENT_ID=agent_xxxxx
+#
+# --- Twilio Number ---
+# ✓ Twilio number +15555550100 configured (sid: PN...)
+#   voiceUrl       = https://abcd1234.ngrok.io/webhook/voice/twilio/twiml
+#   statusCallback = https://abcd1234.ngrok.io/webhook/voice/twilio/status
+#
+# --- Manual Steps Required ---
+# [ ] ... (checklist for SIP integration + test call + DB verification)
+```
+
+After the first run, add the printed `ELEVENLABS_AGENT_ID` to `.env.local`,
+then re-run `pnpm voice:setup` — the second invocation PATCHes the existing
+agent instead of creating a new one (idempotent).
+
+### Step 6 — Manual SIP integration (one-time)
+
+`voice:setup` cannot click through the UI on your behalf. Complete these
+manual steps from the script's checklist:
+
+1. In **ElevenLabs Dashboard → Agent → SIP integration** → enable SIP
+   trunking. ElevenLabs displays your agent's SIP URI:
+   `sip:<agent_id>@sip.elevenlabs.io`.
+2. In **Twilio Console → Phone Numbers → your number → Voice** → confirm
+   the webhook URL = `<VOICE_PUBLIC_URL>/webhook/voice/twilio/twiml`
+   (already set by `voice:setup`; this step is a sanity check).
+3. Optional but recommended: configure ElevenLabs Agent first-message
+   templates per language in the dashboard (RU + UA) to match the prompts
+   in `apps/api/src/channels/voice/elevenlabs-agent-config.md`.
+
+### Step 7 — Test from a real phone
+
+1. Dial `TWILIO_PHONE_NUMBER` from your mobile.
+2. Speak: «Здравствуйте! Киев-Львов, 18 тонн, тент.»
+3. Listen for: greeting → price quote → «Подтверждаете?» → say «да».
+4. Verify in psql:
+   ```bash
+   psql -c "SELECT id, elevenlabs_conversation_id, outcome, lang, duration_s
+            FROM calls ORDER BY created_at DESC LIMIT 1;"
+   # → row with outcome='completed', lang='ru', duration_s > 0
+
+   psql -c "SELECT id, price_kopecks, status
+            FROM orders ORDER BY created_at DESC LIMIT 1;"
+   # → order with price_kopecks matching the quote you heard
+   ```
+
+### Phase 3.1 health probe
+
+```bash
+curl http://localhost:3000/api/health | jq .checks.voice
+# → { "status": "ok" }                       # ElevenLabs + Twilio both reachable
+# → { "status": "not_configured" }           # any voice env var missing
+# → { "status": "error", "detail": "..." }   # ElevenLabs or Twilio refused
+```
+
+Cached in-process for 60s (mirrors the Telegram subcheck) so `/health` scrape
+loops don't burn ElevenLabs rate-limit budget.
+
+### Cost guards
+
+- **ElevenLabs Turbo:** $0.10/min — a 10-minute call = $1.
+- **Twilio minutes:** ~$0.02/min outbound, ~$0.013/min inbound — negligible.
+- **Hard cap:** the Agent body sent by `voice:setup` sets
+  `conversation_config.conversation.max_duration_seconds = 600` (10 min);
+  ElevenLabs hangs up automatically at the cap.
+- **Demo budget:** ~$15 total (one-time ElevenLabs Starter $6 + one-time
+  Twilio number $3 + ~$5 in minutes for UAT + demo dry run).
+
+### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| All `/webhook/voice/*` callbacks return 401 | HMAC signature header drift (Pitfall #5) | Inspect ngrok request inspector → confirm header name; update `signature.ts` if the SDK shipped a different casing. |
+| Caller hears silence | Twilio TwiML not returning `<Dial><Sip>` | Confirm `voiceUrl` in Twilio Console = `<VOICE_PUBLIC_URL>/webhook/voice/twilio/twiml` (re-run `pnpm voice:setup`). |
+| Tool callbacks time out | Tool handler >5s; Agent gives up | Check `voice.tool.latency_ms` in pino logs; `calc-price` should be <500ms (PostGIS hot), `extract-request` <1500ms (Anthropic call). |
+| Audio recording missing | TwiML `record` attribute not set on `<Dial>` | Re-run `voice:setup`; the TwiML endpoint always emits `record='record-from-answer-dual'`. |
+| `voice:setup` exits with `Twilio number ... not found` | Number not yet bought, or wrong account SID | Twilio Console → Phone Numbers → confirm the number is listed under the account whose SID you're using. |
+| ElevenLabs returns 402/429 | Free-tier limit hit or Agent not on Starter | ElevenLabs Dashboard → upgrade to Starter $6/mo. |
+
+### Pre-flight checklist (before demo)
+
+```bash
+[ ] pnpm --filter @ai-logist/api voice:setup        # exits 0
+[ ] curl -s $VOICE_PUBLIC_URL/api/health | jq .checks.voice.status  # = "ok"
+[ ] Test call from a real phone completes successfully
+[ ] psql -c "SELECT audio_url, transcript, outcome FROM calls
+             ORDER BY created_at DESC LIMIT 1;"      # all populated
+[ ] ElevenLabs dashboard shows recent conversation
+[ ] Twilio dashboard shows recent call with recording
+```
+
 ## Project layout
 
 ```
