@@ -20,7 +20,9 @@ describe('order-fsm — ORDER_TRANSITIONS table', () => {
 
   it.each<[OrderStatus, OrderStatus[]]>([
     ['CREATED', ['DRIVER_ASSIGNED']],
-    ['DRIVER_ASSIGNED', ['AT_LOADING']],
+    // Phase 3 D-19 — DRIVER_ASSIGNED → CLOSED edge added for driver-decline
+    // shortcut path. Standard happy-path still goes via AT_LOADING.
+    ['DRIVER_ASSIGNED', ['AT_LOADING', 'CLOSED']],
     ['AT_LOADING', ['IN_TRANSIT']],
     ['IN_TRANSIT', ['AT_BORDER', 'DELIVERED']],
     ['AT_BORDER', ['IN_TRANSIT']],

@@ -36,7 +36,12 @@ export type OrderStatus =
  */
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CREATED: ['DRIVER_ASSIGNED'],
-  DRIVER_ASSIGNED: ['AT_LOADING'],
+  // CLOSED edge added 2026-06-10 (Phase 3) for driver_decline path —
+  // RESEARCH Pitfall #5 simplification per CONTEXT D-19. Skips the
+  // AT_LOADING → IN_TRANSIT → DELIVERED → CLOSED full lifecycle when the
+  // driver explicitly refuses the assignment; lead is independently
+  // transitioned to LOST by the callback handler.
+  DRIVER_ASSIGNED: ['AT_LOADING', 'CLOSED'],
   AT_LOADING: ['IN_TRANSIT'],
   IN_TRANSIT: ['AT_BORDER', 'DELIVERED'],
   AT_BORDER: ['IN_TRANSIT'],
@@ -79,6 +84,13 @@ export interface TransitionOrderArgs {
    * Format: 'POINT(lon lat)' — the SRID=4326 prefix is added internally.
    */
   geomWkt?: string;
+  /**
+   * Phase 3 D-25: optional callback fired AFTER db.transaction commits.
+   * Used by Telegram to notify the client (and driver) on DRIVER_ASSIGNED /
+   * IN_TRANSIT / DELIVERED transitions. Errors are caught and logged — they
+   * MUST NOT roll back the FSM transition (RESEARCH Pitfall #3).
+   */
+  onSuccess?: (result: TransitionOrderResult) => Promise<void> | void;
 }
 
 export interface TransitionOrderResult {
@@ -110,7 +122,12 @@ export async function transitionOrder(
   db: Db,
   args: TransitionOrderArgs
 ): Promise<TransitionOrderResult> {
-  return await db.transaction(async (tx) => {
+  // Phase 3 D-25 refactor — wrap the existing transaction body byte-identically
+  // and add a post-commit onSuccess hook AFTER the tx returns. The body inside
+  // `db.transaction` is UNCHANGED; only the outer return is split so the hook
+  // can fire after COMMIT (RESEARCH Pitfall #3 — never run notifications inside
+  // the FSM transaction).
+  const result = await db.transaction(async (tx) => {
     // 1. Pessimistic row lock.
     const lockResult = await tx.execute(sql`
       SELECT id, status, version
@@ -188,4 +205,14 @@ export async function transitionOrder(
       audit_row_inserted: auditRowInserted,
     };
   });
+
+  // Post-commit hook (D-25). Fire-and-forget — failures MUST NOT roll back the
+  // already-committed transition. The caller is responsible for logging at
+  // call-site; we fall back to console.error if onSuccess throws synchronously.
+  if (args.onSuccess) {
+    Promise.resolve(args.onSuccess(result)).catch((err) => {
+      console.error('transitionOrder.onSuccess failed', err);
+    });
+  }
+  return result;
 }
