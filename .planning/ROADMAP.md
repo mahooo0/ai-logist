@@ -108,7 +108,7 @@ Plans:
 - [x] 03.1-01-foundation-PLAN.md — Wave 1: migration 0004 (calls extension + call_outcome enum) + 8 env vars + signature.ts (HMAC) + state.ts (Redis) + setup.ts (requireVoiceConfig) + SDK install
 - [x] 03.1-02-handlers-PLAN.md — Wave 2: 5 voice tool handlers wrapping Phase 2 + call-lifecycle + Fastify router + VoiceOutbound no-op + flip 9 VOICE-* todos
 - [x] 03.1-03-bootstrap-integration-PLAN.md — Wave 3: voice-setup.ts CLI + elevenlabs-agent-config.md (system prompt + ANTI_INJECTION_PREFIX + RU/UA) + /api/health.checks.voice + README + flip VOICE-01 + VOICE-02
-- [ ] 03.1-04-uat-gate-PLAN.md — Wave 4: voice-phase4-boundary.test.ts (VOICE-12 schema contract) + flip VOICE-12 + checkpoint:human-verify for UAT-04 + PHASE-SUMMARY
+- [x] 03.1-04-uat-gate-PLAN.md — Wave 4: voice-phase4-boundary.test.ts (VOICE-12 schema contract) + flip VOICE-12 + checkpoint:human-verify for UAT-04 + PHASE-SUMMARY
 
 ### Phase 4: Admin Web (REDUCED scope — chat + calls + orders + KPI)
 **Goal**: Demo-supporting admin showing what voice + Telegram channels produced — a multi-channel chat (Telegram threads alongside voice call transcripts with audio playback), a calls table with filters and audio/transcript drill-down, an orders table + detail page, and KPI dashboards (calls vs telegram conversion, revenue, avg call duration). NO Kanban, fleet CRUD, calendar, tracking page, search, PDF, or price-override — all deferred to v2.

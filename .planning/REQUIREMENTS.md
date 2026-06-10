@@ -133,7 +133,7 @@
 - [x] **VOICE-09**: Same price-lock протокол что и в Phase 2 — quoted_price пишется в БД ДО озвучивания, regex-guard на TTS-input
 - [x] **VOICE-10**: Same anti-injection защита что и в Phase 2 — system prompt с ANTI_INJECTION_PREFIX, tools-as-security-boundary
 - [x] **VOICE-11**: Same FSM-race защита что и в Phase 2 — SELECT FOR UPDATE + version + advisory lock per client_phone
-- [ ] **VOICE-12**: `/dashboard/chat` админки (Phase 4) показывает звонки как отдельный канал с audio-player и transcript
+- [x] **VOICE-12**: `/dashboard/chat` админки (Phase 4) показывает звонки как отдельный канал с audio-player и transcript
 
 ### Demo Polish (POLISH)
 
