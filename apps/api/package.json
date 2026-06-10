@@ -25,6 +25,7 @@
   "dependencies": {
     "@ai-logist/shared-types": "workspace:*",
     "@anthropic-ai/sdk": "^0.102.0",
+    "@elevenlabs/elevenlabs-js": "^2.30.0",
     "@fastify/sensible": "^6.0",
     "@fastify/swagger": "^9.7",
     "@fastify/swagger-ui": "^5.2",
@@ -37,6 +38,7 @@
     "nanoid": "^5",
     "pg": "^8.21.0",
     "pino": "^10.3",
+    "twilio": "^6.0.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

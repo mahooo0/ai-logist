@@ -29,6 +29,13 @@
       "when": 1781070491329,
       "tag": "0003_phase3_telegram",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781089314000,
+      "tag": "0004_phase31_voice_calls",
+      "breakpoints": true
     }
   ]
 }

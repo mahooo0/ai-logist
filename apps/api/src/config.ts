@@ -29,6 +29,18 @@ const ConfigSchema = z.object({
   NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
   NOMINATIM_CONTACT_EMAIL: z.string().email().default('demo@ai-logist.local'),
 
+  // Phase 3.1 — voice channel config (D-26). All optional at schema level so
+  // Phase 2 unit tests + Phase 3 boot without voice config. requireVoiceConfig()
+  // throws at the voice plugin/route boundary (same pattern as requireTelegramConfig).
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(),
+  TWILIO_WEBHOOK_SIGNATURE_SECRET: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
+  ELEVENLABS_AGENT_ID: z.string().optional(),
+  ELEVENLABS_WEBHOOK_SECRET: z.string().optional(),
+  VOICE_PUBLIC_URL: z.string().url().optional(),
+
   // Build info (passed at docker build time)
   VERSION: z.string().default('dev'),
 });

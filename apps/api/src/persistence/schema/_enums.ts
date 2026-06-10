@@ -41,3 +41,11 @@ export const webhookSourceEnum = pgEnum('webhook_source', ['telegram', 'voice', 
 
 // Phase 2 Plan 02-01 — FSM-05 audit-log actor enum. D-29.
 export const leadEventActorEnum = pgEnum('lead_event_actor', ['ai', 'manager', 'system']);
+
+// Phase 3.1 Plan 03.1-01 — voice channel call outcome enum (D-13).
+export const callOutcomeEnum = pgEnum('call_outcome', [
+  'completed',
+  'abandoned',
+  'escalated',
+  'error',
+]);
