@@ -89,7 +89,7 @@
 
 ---
 
-### Phase 03.1: Voice Channel (ElevenLabs + Twilio) ⚠️ HIGH RISK (INSERTED)
+### Phase 3.1: Voice Channel (ElevenLabs + Twilio) ⚠️ HIGH RISK (INSERTED)
 **Goal**: A real customer dials a Twilio number, an ElevenLabs Conversational AI Agent answers in the right language (RU or UA), drives the canonical dispatch dialog using the SAME tool registry from Phase 2 (extractRequest, nearestTruck, calcPrice, createOrder, discount), creates a real order in `orders` table with price-lock honored, and the full recording + transcript lands in `calls` — all without any human in the loop.
 **Depends on**: Phase 2 (tool registry + FSMs + intake) — Phase 3 (Telegram) NOT required, voice can ship before or after Telegram
 **Requirements** (12): VOICE-01, VOICE-02, VOICE-03, VOICE-04, VOICE-05, VOICE-06, VOICE-07, VOICE-08, VOICE-09, VOICE-10, VOICE-11, VOICE-12
