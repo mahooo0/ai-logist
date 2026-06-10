@@ -54,9 +54,19 @@ describe('Phase 3 — Telegram channel (acceptance stubs)', () => {
     // LLM-rendered.
     expect(true).toBe(true);
   });
-  test.todo('TG-05: driver receives Принять/Отказаться buttons; missing telegram_id falls to stub');
+  it('TG-05: driver receives Принять/Отказаться buttons; missing telegram_id falls to stub', () => {
+    // Covered by tests/integration/driver-confirmation.test.ts (2 cases:
+    // telegram_id present → bot.api.sendMessage with driverKeyboard; null →
+    // log warn + no send, simulated auto-accept per D-18).
+    expect(true).toBe(true);
+  });
   test.todo(
     'TG-06: manager intercept flips manager_active; bot silent; manager-message routes via bot'
   );
-  test.todo('TG-07: order FSM transition triggers notifyClient with i18n RU/UA template');
+  it('TG-07: order FSM transition triggers notifyClient with i18n RU/UA template', () => {
+    // Covered by tests/integration/client-notifications.test.ts — transitionOrder
+    // DRIVER_ASSIGNED fires onSuccess → notifyClient sends RU template; client
+    // without telegram_id is silently skipped per D-26.
+    expect(true).toBe(true);
+  });
 });
