@@ -78,7 +78,7 @@
 ### Admin Web — СОКРАЩЁННАЯ (ADMIN) — pivot 2026-06-09: focus on voice+telegram channels, deferred ops UI
 
 **Оставлено в v1:**
-- [ ] **ADMIN-01**: Форк шаблона `next-shadcn-admin-dashboard`, `pnpm install`, `pnpm dev` стартует на :3000
+- [x] **ADMIN-01**: Форк шаблона `next-shadcn-admin-dashboard`, `pnpm install`, `pnpm dev` стартует на :3000
 - [ ] **ADMIN-02**: Auth: подключена `/auth/v1/login` (для демо — login/password из конфига)
 - [ ] **ADMIN-03**: `/dashboard/chat` мульти-канальный — Telegram + Voice звонки в одном UI (`GET /api/clients/:id/messages` + `WS /ws/inbox`), audio-player для голосовых сегментов, transcript inline, кнопка «перехватить диалог» (только для Telegram — голос завершается естественно)
 - [ ] **ADMIN-05**: `/dashboard/default` + `/dashboard/analytics` — KPI (звонки vs telegram, конверсия, выручка, средняя длительность звонка)
@@ -260,7 +260,7 @@
 | TG-05 | Phase 3 | Complete |
 | TG-06 | Phase 3 | Complete |
 | TG-07 | Phase 3 | Complete |
-| ADMIN-01 | Phase 4 | Pending |
+| ADMIN-01 | Phase 4 | Complete |
 | ADMIN-02 | Phase 4 | Pending |
 | ADMIN-03 | Phase 4 | Pending |
 | ADMIN-04 | Phase 4 | Pending |
