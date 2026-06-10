@@ -106,7 +106,7 @@
 Plans:
 - [x] 03.1-00-test-infra-PLAN.md — Wave 0: voice-mock (Mock ElevenLabs + Twilio clients) + 5 scenarios + voice-driver + 12 stub markers + 11 test scaffolds
 - [x] 03.1-01-foundation-PLAN.md — Wave 1: migration 0004 (calls extension + call_outcome enum) + 8 env vars + signature.ts (HMAC) + state.ts (Redis) + setup.ts (requireVoiceConfig) + SDK install
-- [ ] 03.1-02-handlers-PLAN.md — Wave 2: 5 voice tool handlers wrapping Phase 2 + call-lifecycle + Fastify router + VoiceOutbound no-op + flip 9 VOICE-* todos
+- [x] 03.1-02-handlers-PLAN.md — Wave 2: 5 voice tool handlers wrapping Phase 2 + call-lifecycle + Fastify router + VoiceOutbound no-op + flip 9 VOICE-* todos
 - [ ] 03.1-03-bootstrap-integration-PLAN.md — Wave 3: voice-setup.ts CLI + elevenlabs-agent-config.md (system prompt + ANTI_INJECTION_PREFIX + RU/UA) + /api/health.checks.voice + README + flip VOICE-01 + VOICE-02
 - [ ] 03.1-04-uat-gate-PLAN.md — Wave 4: voice-phase4-boundary.test.ts (VOICE-12 schema contract) + flip VOICE-12 + checkpoint:human-verify for UAT-04 + PHASE-SUMMARY
 

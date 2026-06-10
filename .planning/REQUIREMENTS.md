@@ -124,10 +124,10 @@
 
 - [ ] **VOICE-01**: ElevenLabs Conversational AI Agent (Turbo tier, $0.10/мин) с RU+UA голосами, подключёный к Twilio SIP-trunk
 - [ ] **VOICE-02**: Twilio account + один номер (RU или UA, ~$3/мес), webhook → Fastify `/webhook/voice`
-- [ ] **VOICE-03**: ElevenLabs Agent tools = тот же registry что и Phase 2 (extractRequest, nearestTruck, calcPrice, createOrder, discount) — общая бизнес-логика
-- [ ] **VOICE-04**: Conversation FSM: `GREETING → COLLECT_REQUEST → MATCH → QUOTE → NEGOTIATE → CONFIRM → CREATE_ORDER → GOODBYE` (§5.2 спеки)
-- [ ] **VOICE-05**: Только входящие звонки в v1 (клиент звонит → AI отвечает). Исходящие (driver confirmation by call) → v2
-- [ ] **VOICE-06**: Автоопределение языка в первой фразе клиента (RU/UA), переключение голоса агента
+- [x] **VOICE-03**: ElevenLabs Agent tools = тот же registry что и Phase 2 (extractRequest, nearestTruck, calcPrice, createOrder, discount) — общая бизнес-логика
+- [x] **VOICE-04**: Conversation FSM: `GREETING → COLLECT_REQUEST → MATCH → QUOTE → NEGOTIATE → CONFIRM → CREATE_ORDER → GOODBYE` (§5.2 спеки)
+- [x] **VOICE-05**: Только входящие звонки в v1 (клиент звонит → AI отвечает). Исходящие (driver confirmation by call) → v2
+- [x] **VOICE-06**: Автоопределение языка в первой фразе клиента (RU/UA), переключение голоса агента
 - [x] **VOICE-07**: Запись звонка (audio URL) + расшифровка (transcript JSON) → `calls` таблица (уже есть из Phase 1)
 - [x] **VOICE-08**: `calls.outcome` enum (`completed | abandoned | escalated | error`) + linking to `leads.id` если заказ создан
 - [x] **VOICE-09**: Same price-lock протокол что и в Phase 2 — quoted_price пишется в БД ДО озвучивания, regex-guard на TTS-input
