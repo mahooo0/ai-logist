@@ -12,6 +12,7 @@ import { config } from './config.js';
 import { registerFollowUpScheduler } from './pipeline/follow-up-scheduler.js';
 import { dbPlugin } from './plugins/db.js';
 import { redisPlugin } from './plugins/redis.js';
+import { telegramPlugin } from './plugins/telegram.js';
 import analyticsRoutes from './routes/analytics.js';
 import clientsRoutes from './routes/clients.js';
 import healthRoutes from './routes/health.js';
@@ -55,6 +56,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(sensible);
   await app.register(dbPlugin);
   await app.register(redisPlugin);
+  // Phase 3 — must run BEFORE routes that touch app.bot.
+  await app.register(telegramPlugin);
 
   // OpenAPI
   await app.register(swagger, {
