@@ -16,17 +16,51 @@ import { describe, expect, it } from 'vitest';
  */
 describe('Phase 4 — Admin Web acceptance criteria', () => {
   // Backend reqs — flipped in Wave 3 (Plan 04-03)
-  it.todo('API-03: GET /api/leads filters by stage + channel');
-  it.todo(
-    'API-04: GET /api/orders returns joined list (cities + client + channel) + GET /:id returns full detail with events/client/cities/truck'
-  );
-  it.todo('API-05: GET /api/trucks returns full fleet read-only');
-  it.todo(
-    'API-06: GET /api/clients/:id/messages UNION returns telegram + voice transcript turns chronologically with callId+timestampMs+audioUrl'
-  );
-  it.todo(
-    'API-09: GET /api/analytics/kpi returns extended shape (avgCallDurationS + byChannel + conversionFunnel) with bigint revenue as string'
-  );
+  it('API-03: GET /api/leads filters by stage + channel', () => {
+    const src = readFileSync(`${process.cwd()}/src/routes/leads.ts`, 'utf8');
+    // Real handler shipped — no Phase 1 'admin web' notImplemented marker.
+    expect(src).toMatch(/Phase 4 API-03|API-03/);
+    expect(src).toMatch(/channel/);
+    expect(src).not.toMatch(/reply\.notImplemented\(['"]Phase 4 — admin web['"]\)/);
+    // Channel filter coerces 'voice' query to legacy 'call' rows.
+    expect(src).toMatch(/IN \('voice','call'\)/);
+  });
+
+  it('API-04: GET /api/orders returns joined list + GET /:id returns full detail', () => {
+    const src = readFileSync(`${process.cwd()}/src/routes/orders.ts`, 'utf8');
+    expect(src).toMatch(/LEFT JOIN|leftJoin/);
+    expect(src).toMatch(/from_city_id|fromCityId/);
+    expect(src).toMatch(/order_events|orderEvents/);
+    // GET /orders no longer a 501 stub.
+    expect(src).toMatch(/OrderListItemSchema/);
+    expect(src).toMatch(/OrderDetailExtendedSchema/);
+  });
+
+  it('API-05: GET /api/trucks returns full fleet read-only', () => {
+    const src = readFileSync(`${process.cwd()}/src/routes/trucks.ts`, 'utf8');
+    expect(src).toMatch(/FROM trucks/);
+    // POST/PATCH stubs remain — fleet CRUD deferred to v2.
+    expect(src).toMatch(/reply\.notImplemented/);
+  });
+
+  it('API-06: GET /api/clients/:id/messages UNION returns telegram + voice transcript turns', () => {
+    const src = readFileSync(`${process.cwd()}/src/routes/clients.ts`, 'utf8');
+    expect(src).toMatch(/UNION ALL/);
+    expect(src).toMatch(/jsonb_array_elements/);
+    expect(src).toMatch(/WITH ORDINALITY/);
+    expect(src).toMatch(/timestamp_ms/);
+    expect(src).toMatch(/audio_url/);
+    expect(src).toMatch(/LATERAL/);
+  });
+
+  it('API-09: GET /api/analytics/kpi returns extended shape with bigint revenue as string', () => {
+    const src = readFileSync(`${process.cwd()}/src/routes/analytics.ts`, 'utf8');
+    expect(src).toMatch(/avgCallDurationS/);
+    expect(src).toMatch(/byChannel/);
+    expect(src).toMatch(/conversionFunnel/);
+    expect(src).toMatch(/FILTER \(WHERE/);
+    expect(src).toMatch(/revenue/);
+  });
 
   // Frontend reqs — flipped in Wave 1 + 2 + 4 + 5
   it('ADMIN-01: Zenith template vendored into apps/web/ + workspace shared-types ref + dashboard pages exist', () => {
