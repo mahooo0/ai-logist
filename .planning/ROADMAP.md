@@ -82,7 +82,7 @@
 
   - [x] 03-00-test-infra-PLAN.md — Wave 0: MockTelegramBot + webhook-driver helper + 11 fixtures + 8 integration scaffolds + 9 test.todo stubs
   - [x] 03-01-foundation-PLAN.md — Wave 1: config env (+3 vars + requireTelegramConfig) + migration 0003 (leads.manager_active + trucks_driver_tg_idx partial index) + grammy 1.43 + Fastify telegram plugin decorating app.bot
-  - [ ] 03-02-webhook-route-PLAN.md — Wave 2: routes/webhooks-telegram.ts two-stage handler (secret_token verify + ON CONFLICT DO NOTHING + 200 ack <100ms + setImmediate worker); /webhook/voice flipped 501 → 200 (API-15)
+  - [x] 03-02-webhook-route-PLAN.md — Wave 2: routes/webhooks-telegram.ts two-stage handler (secret_token verify + ON CONFLICT DO NOTHING + 200 ack <100ms + setImmediate worker); /webhook/voice flipped 501 → 200 (API-15)
   - [ ] 03-03-adapter-keyboards-outbound-PLAN.md — Wave 3: OutboundChannel/Registry + Telegram keyboards (quote/driver + i18n RU/UA) + TelegramOutbound + real processTelegramUpdate adapter + handlers (start/help + 3 client callbacks) + minimal intake.ts outbound thread (≤30 lines added)
   - [ ] 03-04-notifications-driver-fsm-hook-PLAN.md — Wave 4: notifyDriver + notifyClient + i18n templates (3 transitions × 2 langs) + order-fsm onSuccess post-commit hook + ORDER_TRANSITIONS adds DRIVER_ASSIGNED→CLOSED (driver_decline path) + adapter tryAdvanceOrderAfterCreation helper + driver callback handlers
   - [ ] 03-05-manager-intercept-readme-PLAN.md — Wave 5: 3 manager endpoints (intercept/manager-message/release) + shared-types schemas + /api/health.checks.telegram (60s cache) + pnpm telegram:setup script + README "Telegram Dev Setup" section + final stub flip (0 todos) + checkpoint:human-verify (HUMAN-UAT-03)
@@ -178,7 +178,7 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 |-------|----------------|--------|-----------|
 | 1. Database + Backend Skeleton | 11/11 | ✓ Complete | 2026-06-09 |
 | 2. LLM Pipeline + Deterministic Core | 8/8 | ✓ Complete | 2026-06-09 |
-| 3. Telegram Channel | 0/0 | Not started | - |
+| 3. Telegram Channel | 3/6 | In Progress | - |
 | 3.1. Voice Channel (ElevenLabs + Twilio) | 0/0 | Not started | - |
 | 4. Admin Web (REDUCED) | 0/0 | Not started | - |
 | 5. Demo Polish + Notifications + i18n | 0/0 | Not started | - |

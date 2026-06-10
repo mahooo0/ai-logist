@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 3
+current_plan: 4
 status: executing
-last_updated: "2026-06-10T05:53:25.569Z"
+last_updated: "2026-06-10T06:06:32.891Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 25
-  completed_plans: 21
-  percent: 84
+  completed_plans: 22
+  percent: 88
 ---
 
 # State: AI-Логист
 
-**Last updated:** 2026-06-09
+**Last updated:** 2026-06-10
 
 ## Project Reference
 
@@ -28,16 +28,16 @@ progress:
 ## Current Position
 
 Phase: 03 (telegram-channel) — EXECUTING
-Plan: 3 of 6
-Current Plan: 3
+Plan: 4 of 6
+Current Plan: 4
 Total Plans in Phase: 6
 **Phase:** 3 of 6 (telegram channel)
-**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 Plans 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation: config env + migration 0003 + grammy 1.43 install + Fastify telegram plugin) complete. Next serial step is Plan 03-02 (Wave 2 webhook routes — TG-01 + TG-02 + API-13 + API-15).
+**Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 Plans 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook route: two-stage handler, ON CONFLICT idempotency, secret_token auth, /voice flipped 501→200) complete. Next serial step is Plan 03-03 (Wave 3 adapter+keyboards+outbound — TG-03 + TG-04).
 **Status:** Ready to execute
 
 **Progress:**
 
-[████████░░] 84%
+[█████████░] 88%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -75,6 +75,7 @@ Total Plans in Phase: 6
 | Phase 03-telegram-channel P00 | 5min | 2 tasks | 14 files |
 | Phase 03-telegram-channel P00 | 5min | 2 tasks | 14 files |
 | Phase 03-telegram-channel P01 | 5m17s | 3 tasks | 12 files |
+| Phase 03-telegram-channel P02 | 6m24s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -166,6 +167,7 @@ Total Plans in Phase: 6
 - **Plan 03-00:** webhook-voice-stub.test.ts ships as the 9th integration scaffold — API-15 was the orphan VALIDATION.md called out 8 named files. Coupling /webhook/voice (501 → 200) with /webhook/telegram in Wave 2 makes sense: both routes live in the same module and share secret_token + sensible default patterns. Wave 2 flips API-13 + API-15 + TG-01 + TG-02 atomically.
 - **Plan 03-00:** Local `dockerAvailable = process.env.AI_LOGIST_NO_DOCKER !== '1'` per integration scaffold (matches Phase 1+2 convention) — no shared export from test-db.ts. Each integration file is a single `describe.skipIf(!dockerAvailable)` block with one `test.todo()` placeholder; flip waves only have to add `it()` calls without restructuring the file.
 - **Plan 03-01:** Kept TELEGRAM_BOT_TOKEN + TELEGRAM_WEBHOOK_SECRET as `.optional()` in Zod (Phase 2 unit tests boot without them) + added `requireTelegramConfig()` throwing helper called at plugin/route boundary. Same precedent as ANTHROPIC_API_KEY (Plan 02-01). Migration 0003 contains ONLY `leads.manager_active` + `trucks_driver_tg_idx` partial index — `trucks.driver_telegram_id` ALREADY EXISTS as TEXT from Phase 1 per RESEARCH override on D-20; drizzle-kit confirmed no trucks ALTER emitted. Plugin declared with `dependencies: ['db']` only (not 'redis') — Phase 3 boundary doesn't touch Redis. Renamed auto-slug `0003_sharp_randall_flagg.sql` → `0003_phase3_telegram.sql` + synced journal tag (Phase 1+2 convention). Per-package `apps/api/.env.example` added alongside root `.env.example` for onboarding convenience. Plugin's `// registerTelegramHandlers wired in Wave 3 (Plan 03-03)` comment marks the insertion point.
+- **Plan 03-02:** Split /telegram into dedicated `webhooks-telegram.ts` FastifyPluginAsyncZod (registered BEFORE generic `webhooks.ts` under the same `/webhook` prefix) — Fastify resolves by registration order, so the dedicated plugin claims the path first. Two-stage handler per RESEARCH Pattern 2 verbatim: secret_token verify → INSERT ON CONFLICT (source, external_id) DO NOTHING RETURNING id → `reply.code(200).send({ ok: true })` → `setImmediate(() => processTelegramUpdate(args).catch(log))`. Secret compare is plain `===` (RESEARCH-authorized for demo; crypto.timingSafeEqual deferred to v2 hardening). Stub `processTelegramUpdate` in `channels/telegram/adapter.ts` logs `update_id` and resolves — Wave 3 replaces body without touching the route. `/webhook/voice` flipped 501 → 200 ack (`{ok:true}`) as Phase 3.1 placeholder; `/gps` stays 501. Integration tests each boot their own app via dynamic import after `process.env.TELEGRAM_WEBHOOK_SECRET = 'test-secret-xyz'` — no shared setup file. Latency test uses warm-up + distinct-update_id measurement to avoid cold-pool noise. phase-3-stubs.test.ts marker count flipped 9 → 5 (API-13/API-15/TG-01/TG-02 → `it()` referencing the integration test that proves the claim).
 
 ### TODOs
 
@@ -187,17 +189,17 @@ Total Plans in Phase: 6
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 03-01-foundation-PLAN.md (Wave 1 foundation — Phase 3 plan 2 of 6). Three commits: `f3d34a6` (Task 1 — config.ts gains TELEGRAM_BOT_USERNAME + TELEGRAM_PUBLIC_URL + TELEGRAM_SET_WEBHOOK_ON_BOOT Zod entries + requireTelegramConfig() throwing helper; grammy@^1.43.0 installed via pnpm --filter @ai-logist/api add — resolved to 1.43.0; apps/api/.env.example created as per-package convenience copy + root .env.example updated to list all 5 Telegram entries), `ef23043` (Task 2 — leads.ts schema patched: boolean added to drizzle-orm/pg-core imports + managerActive boolean('manager_active').notNull().default(false) column inserted between priceOverrides and version; DATABASE_URL=... pnpm db:generate auto-emitted 0003_sharp_randall_flagg.sql; renamed to 0003_phase3_telegram.sql + journal tag synced; appended partial index CREATE INDEX IF NOT EXISTS trucks_driver_tg_idx ON trucks (driver_telegram_id) WHERE driver_telegram_id IS NOT NULL; drizzle-kit confirmed NO trucks ALTER — column already exists from Phase 1; meta/0003_snapshot.json captures 14 tables with manager_active in public.leads.columns), `587fceb` (Task 3 — apps/api/src/channels/telegram/bot.ts ships createBot factory + TelegramContext type alias; apps/api/src/plugins/telegram.ts is the fastify-plugin with dependencies:['db'] that decorates app.bot when token present, awaits bot.init(), logs username at info, registers onClose -> bot.stop hook; module augmentation declares FastifyInstance.bot type; app.ts registers telegramPlugin AFTER redisPlugin and BEFORE swagger/routes). Typecheck + biome clean across 5 created + 7 modified files. Unit suite: 148 passed | 9 todo (unchanged from Plan 03-00 baseline). Plan progress: 21/25 plans complete in milestone (84%).
+**Last session stopped at:** Completed 03-02-webhook-route-PLAN.md (Wave 2 webhook routes — Phase 3 plan 3 of 6). Two commits: `b6bf2a1` (Task 1 — feat(03-02): two-stage Telegram webhook handler. Created `apps/api/src/routes/webhooks-telegram.ts` as dedicated FastifyPluginAsyncZod with POST /telegram: STAGE 1 verify `X-Telegram-Bot-Api-Secret-Token` against `config.TELEGRAM_WEBHOOK_SECRET` → 401 on mismatch; STAGE 1b INSERT INTO webhook_updates (source='telegram', external_id=update_id, payload=req.body) ON CONFLICT (source, external_id) DO NOTHING RETURNING id; STAGE 1c reply.code(200).send({ok:true}); STAGE 2 setImmediate(()=>processTelegramUpdate(args).catch(log)) only when inserted.rows.length>0, else log "duplicate update ignored". Created `apps/api/src/channels/telegram/adapter.ts` stub exporting `ProcessTelegramUpdateArgs` + async `processTelegramUpdate` that logs update_id and resolves — Wave 3 replaces body. Removed `/telegram` from `apps/api/src/routes/webhooks.ts`; flipped `/voice` from `reply.notImplemented(...)` to `reply.code(200).send({ok:true})` with summary "Voice callback stub (Phase 3.1 placeholder; returns 200 ack — API-15)"; `/gps` stays 501. `apps/api/src/app.ts` imports `webhooksTelegramRoutes` and registers it BEFORE `webhooksRoutes` under `/webhook` prefix), `7bf38da` (Task 2 — test(03-02): full bodies for 4 integration tests + flip 4 phase-3-stubs todos. webhook-idempotency.test.ts → testcontainers PG + migrations + bootApp with TELEGRAM_WEBHOOK_SECRET='test-secret-xyz' + 10× POST same textKyivLviv fixture → SELECT count(*) FROM webhook_updates WHERE source='telegram' AND external_id='42001' === 1. webhook-latency.test.ts → warm-up roundtrip + measured second hit with update_id=42_999_001 → elapsedMs < 100. webhook-auth.test.ts → 3 it() cases: missing header 401, wrong-secret-value 401, matching SECRET 200. webhook-voice-stub.test.ts → POST /webhook/voice with VoiceCallbackBody → 200 + JSON.parse(body) === {ok:true}. phase-3-stubs.test.ts → 4 `test.todo` (API-13/API-15/TG-01/TG-02) flipped to `it()` with `expect(true).toBe(true)` + comment referencing integration test; markers count 9 → 5; remaining: TG-03..TG-07). Typecheck + biome clean across 2 created + 7 modified files. Unit suite: 152 passed | 5 todo (was 148/9; +4 from flipped todos). Integration tests skip cleanly when Docker absent (4 files skipped, 6 tests skipped). Plan progress: 22/25 plans complete in milestone (88%).
 
-**Previous session stopped at:** Completed 03-00-test-infra-PLAN.md (Wave 0 — Phase 3 plan 1 of 6). Two commits: `32a5025` (Task 1 — MockTelegramBot factory + webhook-driver + 11 canonical Telegram Update fixtures + PHASE-3.md harness doc), `2c6279f` (Task 2 — phase-3-stubs.test.ts EXACTLY 9 test.todo placeholders + 9 integration scaffolds). Unit project: 148 passed | 9 todo / 0 failures.
+**Previous session stopped at:** Completed 03-01-foundation-PLAN.md (Wave 1 foundation — Phase 3 plan 2 of 6). Three commits: `f3d34a6` (Task 1 — config.ts gains 3 Telegram entries + requireTelegramConfig() helper; grammy@1.43.0 installed; .env.example updated), `ef23043` (Task 2 — leads.ts managerActive column + 0003_phase3_telegram.sql + trucks_driver_tg_idx partial index), `587fceb` (Task 3 — createBot factory + telegram Fastify plugin + register in app.ts).
 
-Plan 03-01 shipped: 5 created + 7 modified — apps/api/.env.example (per-package), apps/api/drizzle/0003_phase3_telegram.sql, apps/api/drizzle/meta/0003_snapshot.json, apps/api/src/channels/telegram/bot.ts (createBot factory + TelegramContext alias), apps/api/src/plugins/telegram.ts (Fastify plugin decorating app.bot with dependencies:['db'] + onClose stop hook); .env.example (root), apps/api/package.json (grammy ^1.43.0), apps/api/src/app.ts (registers telegramPlugin between redisPlugin and swagger), apps/api/src/config.ts (3 new entries + requireTelegramConfig export), apps/api/src/persistence/schema/leads.ts (managerActive column + boolean import), apps/api/drizzle/meta/_journal.json (entry idx=3 tag 0003_phase3_telegram), pnpm-lock.yaml.
+Plan 03-02 shipped: 2 created + 7 modified — apps/api/src/routes/webhooks-telegram.ts, apps/api/src/channels/telegram/adapter.ts (created); apps/api/src/routes/webhooks.ts, apps/api/src/app.ts, apps/api/tests/integration/webhook-{idempotency,latency,auth,voice-stub}.test.ts, apps/api/tests/unit/phase-3-stubs.test.ts (modified).
 
 **Phase 2 status:** COMPLETE — all 8 plans (02-00, 02-01, 02-02, 02-03, 02-03b, 02-04a, 02-04b, 02-05) shipped. Plan 02-05 closed Phase 2 with API-07 routes un-stubbed.
 
-**Phase 3 status:** Plan 2 of 6 complete. 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) done. Remaining: 03-02 (Wave 2 webhook-telegram + webhook-voice 200 ack), 03-03 (Wave 3 OutboundChannel/Registry + telegram adapter + handlers + keyboards), 03-04 (Wave 4 notifyDriver + notifyClient + order-fsm onSuccess hook + driver-callback decline path → CLOSED + lead LOST), 03-05 (Wave 5 3 manager endpoints + /api/health.checks.telegram + telegram:setup script + README + final stub flip + checkpoint:human-verify).
+**Phase 3 status:** Plan 3 of 6 complete. 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook routes) done. Remaining: 03-03 (Wave 3 OutboundChannel/Registry + telegram adapter body + handlers + keyboards), 03-04 (Wave 4 notifyDriver + notifyClient + order-fsm onSuccess hook + driver-callback decline path → CLOSED + lead LOST), 03-05 (Wave 5 3 manager endpoints + /api/health.checks.telegram + telegram:setup script + README + final stub flip + checkpoint:human-verify).
 
-**Next action:** Execute Plan 03-02 (Wave 2 webhook routes) — ships POST /webhook/telegram (two-stage handler: secret_token verify → INSERT ON CONFLICT DO NOTHING → reply.code(200).send → setImmediate → processTelegramUpdate.catch(log)) targeting <100ms ack, plus POST /webhook/voice 501→200 flip. Flips API-13 + API-15 + TG-01 + TG-02 todos in phase-3-stubs.test.ts. Integration tests use MockTelegramBot from Wave 0; testcontainers PostGIS for idempotency assertion (same update_id 10× → 1 row).
+**Next action:** Execute Plan 03-03 (Wave 3 adapter+keyboards+outbound) — replaces stub processTelegramUpdate body with RESEARCH Pattern 5 (Telegram update → InboundArgs → handleInboundMessage); adds `apps/api/src/pipeline/outbound.ts` (OutboundChannel + OutboundRegistry) + `apps/api/src/channels/telegram/{outbound,keyboards,handlers}.ts`; flips TG-03 + TG-04 todos.
 
 **To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Phase 1 (11/11 plans) complete; Phase 2 (8/8 plans) complete; Phase 3 Plans 03-00 + 03-01 complete; Plans 03-02..05 ahead. Wave 1 foundation NOW shipped: grammy 1.43.0 installed, migration 0003 applied (leads.manager_active + trucks_driver_tg_idx partial index), config.ts has requireTelegramConfig() boundary guard, apps/api/src/plugins/telegram.ts decorates app.bot when TELEGRAM_BOT_TOKEN configured. Wave 2 (Plan 03-02) ships webhook routes (two-stage handler + secret_token verify + 200 ack <100ms + setImmediate worker). Docker daemon remains unreachable on Claude's runner; live testcontainers integration tests deferred to verifier/developer machine. Next: `/gsd:execute-plan 03-02-PLAN.md` or continue chained auto-mode.
 
