@@ -80,11 +80,11 @@
 **Оставлено в v1:**
 - [x] **ADMIN-01**: Форк шаблона `next-shadcn-admin-dashboard`, `pnpm install`, `pnpm dev` стартует на :3000
 - [x] **ADMIN-02**: Auth: подключена `/auth/v1/login` (для демо — login/password из конфига)
-- [ ] **ADMIN-03**: `/dashboard/chat` мульти-канальный — Telegram + Voice звонки в одном UI (`GET /api/clients/:id/messages` + `WS /ws/inbox`), audio-player для голосовых сегментов, transcript inline, кнопка «перехватить диалог» (только для Telegram — голос завершается естественно)
+- [x] **ADMIN-03**: `/dashboard/chat` мульти-канальный — Telegram + Voice звонки в одном UI (`GET /api/clients/:id/messages` + `WS /ws/inbox`), audio-player для голосовых сегментов, transcript inline, кнопка «перехватить диалог» (только для Telegram — голос завершается естественно)
 - [x] **ADMIN-05**: `/dashboard/default` + `/dashboard/analytics` — KPI (звонки vs telegram, конверсия, выручка, средняя длительность звонка)
 - [x] **ADMIN-NEW-02**: Новая страница `/dashboard/orders` — таблица заказов с фильтрами по статусу и каналу (voice/telegram)
 - [x] **ADMIN-NEW-03**: Новая страница `/dashboard/orders/[id]` — детальная карточка: таймлайн `order_events`, ссылка на звонок (если есть), price-display (без override modal в v1)
-- [ ] **ADMIN-NEW-08**: Новая страница `/dashboard/calls` — таблица всех звонков с фильтрами (outcome, lang, duration), клик → audio + transcript
+- [x] **ADMIN-NEW-08**: Новая страница `/dashboard/calls` — таблица всех звонков с фильтрами (outcome, lang, duration), клик → audio + transcript
 
 **Перенесено в v2 (Out of Scope для демо):**
 - ~~ADMIN-04~~ → v2 ADMIN-KANBAN: Kanban воронка лидов с DnD
@@ -262,7 +262,7 @@
 | TG-07 | Phase 3 | Complete |
 | ADMIN-01 | Phase 4 | Complete |
 | ADMIN-02 | Phase 4 | Complete |
-| ADMIN-03 | Phase 4 | Pending |
+| ADMIN-03 | Phase 4 | Complete |
 | ADMIN-04 | Phase 4 | Pending |
 | ADMIN-05 | Phase 4 | Complete |
 | ADMIN-06 | Phase 4 | Pending |

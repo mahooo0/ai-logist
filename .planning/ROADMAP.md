@@ -184,7 +184,7 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 | 2. LLM Pipeline + Deterministic Core | 8/8 | ✓ Complete | 2026-06-09 |
 | 3. Telegram Channel | 3/6 | In Progress | - |
 | 3.1. Voice Channel (ElevenLabs + Twilio) | 0/0 | Not started | - |
-| 4. Admin Web (REDUCED) | 1/7 | In Progress | - |
+| 4. Admin Web (REDUCED) | 6/7 | In Progress | - |
 | 5. Demo Polish + Notifications + i18n | 0/0 | Not started | - |
 
 ---
