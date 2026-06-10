@@ -53,6 +53,25 @@
 - ✓ 157 unit tests passing / 0 todos; 8 integration scaffolds gated by Docker
 - ⏳ UAT-03: реальный Telegram chat smoke через BotFather + ngrok (9-step protocol в HUMAN-UAT.md)
 
+**Phase 3.1 — Voice Channel (ElevenLabs + Twilio) ⚠ HIGH RISK (2026-06-10):**
+- ✓ Voice tool handlers ОБЁРТКИ над Phase 2 tools (extract-request, nearest-truck, calc-price, create-order, discount) — НЕ дублируем, Phase 2 byte-identical
+- ✓ 5 voice tool callbacks + 3 lifecycle handlers (call-start, call-end, lang-detected) под `/webhook/voice/*` prefix
+- ✓ Price-lock через voice: calc-price пишет `quoted_price` в БД ДО return; create-order вызывает Phase 2 createOrderHandler который re-reads из БД (Pitfall #1 inheritance)
+- ✓ Anti-injection: ANTI_INJECTION_PREFIX скопирован VERBATIM из Phase 2 system-prompt.ts в elevenlabs-agent-config.md
+- ✓ Advisory lock per `conversation_id` в каждом voice tool handler (Pitfall #6)
+- ✓ Idempotency через `webhook_updates` UNIQUE(source, external_id) с source='elevenlabs'
+- ✓ HMAC signature verification: `verifyElevenLabsSignature` + `validateTwilioRequest` через Fastify preHandler
+- ✓ Migration 0004: добавляет 6 calls колонок + `call_outcome` enum + 2 UNIQUE индексы (elevenlabs_conversation_id, twilio_call_sid)
+- ✓ 8 новых env vars (TWILIO_*, ELEVENLABS_*, VOICE_PUBLIC_URL) с `requireVoiceConfig()` boundary guard
+- ✓ VoiceOutbound в OutboundRegistry — no-op для sendQuoteKeyboard (Agent сам произносит цену)
+- ✓ `/api/health.checks.voice` с 60с TTL cache (rate-limit safe)
+- ✓ Bootstrap script `pnpm voice:setup` — idempotent ElevenLabs Agent register + Twilio config check
+- ✓ ElevenLabs Agent system prompt RU+UA в `elevenlabs-agent-config.md` (versioned doc)
+- ✓ README "Voice Dev Setup" 7-step section
+- ✓ VOICE-12 boundary test (Drizzle introspection) — `/dashboard/calls` UI отложено в Phase 4
+- ✓ 187 unit tests passing / 0 todos
+- ⏳ UAT-04: реальный звонок через Twilio + ElevenLabs (10-step protocol в HUMAN-UAT.md, ~$15 cost)
+
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
@@ -167,4 +186,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 after Phase 3 completion*
+*Last updated: 2026-06-10 after Phase 3.1 completion*
