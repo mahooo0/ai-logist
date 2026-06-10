@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint",
-    "test": "echo 'Phase 1 placeholder — no tests yet' && exit 0"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "^16.0.0",
@@ -16,9 +18,13 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10",
+    "@testing-library/react": "^16",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0"
+    "happy-dom": "^15",
+    "typescript": "^5.7.0",
+    "vitest": "^4"
   }
 }
