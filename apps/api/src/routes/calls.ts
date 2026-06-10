@@ -138,6 +138,7 @@ const callsRoutes: FastifyPluginAsyncZod = async (app) => {
                    packaging, adr_class AS "adrClass", declared_value AS "declaredValue",
                    matched_truck_id AS "matchedTruckId", quoted_price AS "quotedPrice",
                    order_id AS "orderId",
+                   manager_active AS "managerActive",
                    COALESCE(price_overrides, '{}'::jsonb[]) AS "priceOverrides",
                    version, created_at AS "createdAt", updated_at AS "updatedAt"
             FROM leads WHERE id = ${leadId}::uuid
@@ -167,6 +168,7 @@ const callsRoutes: FastifyPluginAsyncZod = async (app) => {
               matchedTruckId: (l.matchedTruckId as string | null) ?? null,
               quotedPrice: l.quotedPrice != null ? String(l.quotedPrice) : null,
               orderId: (l.orderId as string | null) ?? null,
+              managerActive: Boolean(l.managerActive ?? false),
               priceOverrides: Array.isArray(l.priceOverrides) ? l.priceOverrides : [],
               version: Number(l.version ?? 0),
               createdAt: new Date(l.createdAt as string | Date).toISOString(),

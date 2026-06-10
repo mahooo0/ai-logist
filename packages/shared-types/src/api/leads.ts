@@ -30,6 +30,13 @@ export const LeadSchema = z.object({
   matchedTruckId: z.string().uuid().nullable(),
   quotedPrice: z.string().nullable(),
   orderId: z.string().uuid().nullable(),
+  // Phase 4 Plan 04-04 (Rule 2 deviation) — managerActive added to LeadSchema.
+  // The /dashboard/chat page (D-45/D-46) needs this flag to decide whether to
+  // show the "Перехватить" button (managerActive=false) or the manager-input +
+  // "Вернуть боту" controls (managerActive=true). Persisted in the schema since
+  // Phase 1 (manager_active boolean NOT NULL DEFAULT false); previously omitted
+  // from the LeadSchema response — now exposed end-to-end via /api/leads.
+  managerActive: z.boolean().default(false),
   priceOverrides: z.array(z.unknown()).default([]),
   version: z.number().default(0),
   createdAt: z.string().datetime(),

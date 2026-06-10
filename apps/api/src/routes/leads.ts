@@ -74,6 +74,8 @@ function serializeLeadRow(raw: unknown): LeadResponse {
     matchedTruckId: (r.matchedTruckId as string | null) ?? null,
     quotedPrice: r.quotedPrice != null ? String(r.quotedPrice) : null,
     orderId: (r.orderId as string | null) ?? null,
+    // Phase 4 Plan 04-04 — exposed for /dashboard/chat intercept controls.
+    managerActive: Boolean(r.managerActive ?? false),
     priceOverrides: Array.isArray(r.priceOverrides) ? r.priceOverrides : [],
     version: Number(r.version ?? 0),
     createdAt: new Date(r.createdAt as string | Date).toISOString(),
@@ -117,6 +119,7 @@ const leadsRoutes: FastifyPluginAsyncZod = async (app) => {
                packaging, adr_class AS "adrClass", declared_value AS "declaredValue",
                matched_truck_id AS "matchedTruckId", quoted_price AS "quotedPrice",
                order_id AS "orderId",
+               manager_active AS "managerActive",
                COALESCE(price_overrides, '{}'::jsonb[]) AS "priceOverrides",
                version, created_at AS "createdAt", updated_at AS "updatedAt"
         FROM leads
@@ -157,6 +160,7 @@ const leadsRoutes: FastifyPluginAsyncZod = async (app) => {
                   packaging, adr_class AS "adrClass", declared_value AS "declaredValue",
                   matched_truck_id AS "matchedTruckId", quoted_price AS "quotedPrice",
                   order_id AS "orderId",
+                  manager_active AS "managerActive",
                   COALESCE(price_overrides, '{}'::jsonb[]) AS "priceOverrides",
                   version, created_at AS "createdAt", updated_at AS "updatedAt"
       `);
