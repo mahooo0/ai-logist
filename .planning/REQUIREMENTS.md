@@ -128,11 +128,11 @@
 - [ ] **VOICE-04**: Conversation FSM: `GREETING → COLLECT_REQUEST → MATCH → QUOTE → NEGOTIATE → CONFIRM → CREATE_ORDER → GOODBYE` (§5.2 спеки)
 - [ ] **VOICE-05**: Только входящие звонки в v1 (клиент звонит → AI отвечает). Исходящие (driver confirmation by call) → v2
 - [ ] **VOICE-06**: Автоопределение языка в первой фразе клиента (RU/UA), переключение голоса агента
-- [ ] **VOICE-07**: Запись звонка (audio URL) + расшифровка (transcript JSON) → `calls` таблица (уже есть из Phase 1)
-- [ ] **VOICE-08**: `calls.outcome` enum (`completed | abandoned | escalated | error`) + linking to `leads.id` если заказ создан
-- [ ] **VOICE-09**: Same price-lock протокол что и в Phase 2 — quoted_price пишется в БД ДО озвучивания, regex-guard на TTS-input
-- [ ] **VOICE-10**: Same anti-injection защита что и в Phase 2 — system prompt с ANTI_INJECTION_PREFIX, tools-as-security-boundary
-- [ ] **VOICE-11**: Same FSM-race защита что и в Phase 2 — SELECT FOR UPDATE + version + advisory lock per client_phone
+- [x] **VOICE-07**: Запись звонка (audio URL) + расшифровка (transcript JSON) → `calls` таблица (уже есть из Phase 1)
+- [x] **VOICE-08**: `calls.outcome` enum (`completed | abandoned | escalated | error`) + linking to `leads.id` если заказ создан
+- [x] **VOICE-09**: Same price-lock протокол что и в Phase 2 — quoted_price пишется в БД ДО озвучивания, regex-guard на TTS-input
+- [x] **VOICE-10**: Same anti-injection защита что и в Phase 2 — system prompt с ANTI_INJECTION_PREFIX, tools-as-security-boundary
+- [x] **VOICE-11**: Same FSM-race защита что и в Phase 2 — SELECT FOR UPDATE + version + advisory lock per client_phone
 - [ ] **VOICE-12**: `/dashboard/chat` админки (Phase 4) показывает звонки как отдельный канал с audio-player и transcript
 
 ### Demo Polish (POLISH)
