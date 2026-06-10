@@ -79,7 +79,7 @@
 
 **Оставлено в v1:**
 - [x] **ADMIN-01**: Форк шаблона `next-shadcn-admin-dashboard`, `pnpm install`, `pnpm dev` стартует на :3000
-- [ ] **ADMIN-02**: Auth: подключена `/auth/v1/login` (для демо — login/password из конфига)
+- [x] **ADMIN-02**: Auth: подключена `/auth/v1/login` (для демо — login/password из конфига)
 - [ ] **ADMIN-03**: `/dashboard/chat` мульти-канальный — Telegram + Voice звонки в одном UI (`GET /api/clients/:id/messages` + `WS /ws/inbox`), audio-player для голосовых сегментов, transcript inline, кнопка «перехватить диалог» (только для Telegram — голос завершается естественно)
 - [ ] **ADMIN-05**: `/dashboard/default` + `/dashboard/analytics` — KPI (звонки vs telegram, конверсия, выручка, средняя длительность звонка)
 - [ ] **ADMIN-NEW-02**: Новая страница `/dashboard/orders` — таблица заказов с фильтрами по статусу и каналу (voice/telegram)
@@ -98,7 +98,7 @@
 ### Bilingual RU/UA (I18N)
 
 - [ ] **I18N-01**: Серверный словарь RU/UA (`lib/i18n.ts`) для всех Telegram-ответов и системных сообщений
-- [ ] **I18N-02**: Клиентский i18n-словарь (RU/UA) для UI админки, переключатель в Customize-панели шаблона
+- [x] **I18N-02**: Клиентский i18n-словарь (RU/UA) для UI админки, переключатель в Customize-панели шаблона
 - [ ] **I18N-03**: Декларация ICU MessageFormat для славянских множественных форм (one/few/many) в админке
 - [ ] **I18N-04**: Локаль-aware форматирование дат через `date-fns/locale` (ru, uk)
 - [ ] **I18N-05**: Шаблоны сообщений без склонений («Маршрут: {from} → {to}» вместо «Из {from} в {to}»)
@@ -261,7 +261,7 @@
 | TG-06 | Phase 3 | Complete |
 | TG-07 | Phase 3 | Complete |
 | ADMIN-01 | Phase 4 | Complete |
-| ADMIN-02 | Phase 4 | Pending |
+| ADMIN-02 | Phase 4 | Complete |
 | ADMIN-03 | Phase 4 | Pending |
 | ADMIN-04 | Phase 4 | Pending |
 | ADMIN-05 | Phase 4 | Pending |
@@ -283,7 +283,7 @@
 | PUBLIC-01 | Phase 5 | Pending |
 | PUBLIC-02 | Phase 5 | Pending |
 | I18N-01 | Phase 6 | Pending |
-| I18N-02 | Phase 4 | Pending |
+| I18N-02 | Phase 4 | Complete |
 | I18N-03 | Phase 6 | Pending |
 | I18N-04 | Phase 6 | Pending |
 | I18N-05 | Phase 6 | Pending |
