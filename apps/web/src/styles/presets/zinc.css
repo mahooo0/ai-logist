@@ -1,0 +1,24 @@
+/*
+label: Zinc
+value: zinc
+*/
+
+:root[data-theme-preset="zinc"] {
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.21 0.006 285.885);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-ring: oklch(0.21 0.006 285.885);
+  --chart-1: oklch(0.21 0.006 285.885);
+}
+
+.dark:root[data-theme-preset="zinc"] {
+  --primary: oklch(0.92 0.004 286.32);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --ring: oklch(0.92 0.004 286.32);
+  --sidebar-primary: oklch(0.92 0.004 286.32);
+  --sidebar-primary-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-ring: oklch(0.92 0.004 286.32);
+  --chart-1: oklch(0.92 0.004 286.32);
+}

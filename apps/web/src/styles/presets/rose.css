@@ -1,0 +1,24 @@
+/*
+label: Rose
+value: rose
+*/
+
+:root[data-theme-preset="rose"] {
+  --primary: oklch(0.76 0.12 15);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.76 0.12 15);
+  --sidebar-primary: oklch(0.76 0.12 15);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.76 0.12 15);
+  --chart-1: oklch(0.76 0.12 15);
+}
+
+.dark:root[data-theme-preset="rose"] {
+  --primary: oklch(0.81 0.11 15);
+  --primary-foreground: oklch(0.18 0.02 15);
+  --ring: oklch(0.81 0.11 15);
+  --sidebar-primary: oklch(0.81 0.11 15);
+  --sidebar-primary-foreground: oklch(0.18 0.02 15);
+  --sidebar-ring: oklch(0.81 0.11 15);
+  --chart-1: oklch(0.81 0.11 15);
+}

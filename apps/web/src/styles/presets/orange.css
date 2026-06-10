@@ -1,0 +1,24 @@
+/*
+label: Orange
+value: orange
+*/
+
+:root[data-theme-preset="orange"] {
+  --primary: oklch(0.78 0.12 55);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.78 0.12 55);
+  --sidebar-primary: oklch(0.78 0.12 55);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.78 0.12 55);
+  --chart-1: oklch(0.78 0.12 55);
+}
+
+.dark:root[data-theme-preset="orange"] {
+  --primary: oklch(0.82 0.11 55);
+  --primary-foreground: oklch(0.18 0.02 55);
+  --ring: oklch(0.82 0.11 55);
+  --sidebar-primary: oklch(0.82 0.11 55);
+  --sidebar-primary-foreground: oklch(0.18 0.02 55);
+  --sidebar-ring: oklch(0.82 0.11 55);
+  --chart-1: oklch(0.82 0.11 55);
+}

@@ -1,0 +1,24 @@
+/*
+label: Blue
+value: blue
+*/
+
+:root[data-theme-preset="blue"] {
+  --primary: oklch(0.72 0.11 245);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.72 0.11 245);
+  --sidebar-primary: oklch(0.72 0.11 245);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-ring: oklch(0.72 0.11 245);
+  --chart-1: oklch(0.72 0.11 245);
+}
+
+.dark:root[data-theme-preset="blue"] {
+  --primary: oklch(0.78 0.1 245);
+  --primary-foreground: oklch(0.18 0.02 245);
+  --ring: oklch(0.78 0.1 245);
+  --sidebar-primary: oklch(0.78 0.1 245);
+  --sidebar-primary-foreground: oklch(0.18 0.02 245);
+  --sidebar-ring: oklch(0.78 0.1 245);
+  --chart-1: oklch(0.78 0.1 245);
+}
