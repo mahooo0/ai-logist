@@ -36,7 +36,7 @@ must_haves:
     - "`_components/orders-app.tsx` is the SOLE 'use client' boundary; uses SWR with refreshInterval=15000 per D-56 + tab-visibility pause per D-57; filter changes update URL search params via router.push (D-33)."
     - "`_components/orders-table.tsx` renders 7 columns matching D-32: number (`#KU-...`), createdAt (Intl relative), client_name, `from → to` (joined city names), status (color Badge per FSM), price (formatMoney from lib/format), channel badge (voice/telegram derived from lead.channel)."
     - "Row click navigates to `/dashboard/orders/[id]` via Next Link/router (D-34) — NOT a modal."
-    - "`apps/web/src/app/(main)/dashboard/orders/[id]/page.tsx` is a Server Component using `await params` (Next.js 16 async params) + `apiGet('/orders/:id', ExtendedOrderDetailSchema)` (Plan 04-03 extends OrderDetailSchema with `client + fromCity + toCity + truck` — D-39)."
+    - "`apps/web/src/app/(main)/dashboard/orders/[id]/page.tsx` is a Server Component using `await params` (Next.js 16 async params) + `apiGet('/orders/:id', OrderDetailExtendedSchema)` (Plan 04-03 extends OrderDetailSchema with `client + fromCity + toCity + truck` — D-39)."
     - "`_components/order-detail-app.tsx` renders header (number + status badge + price) + 2-column layout (Left: client/route/truck/cargo cards; Right: vertical timeline of order_events per D-36). NO actions in v1 (D-37) — read-only."
     - "`_components/order-timeline.tsx` renders stacked entries with type icon (lucide-react) + actor pill (ai/manager/system) + Intl timestamp + payload `<details>`-wrapped JSON pretty-print (D-36)."
     - "Source channel breadcrumb at top of order detail (D-38): voice → 'Прослушать звонок' button linking to `/dashboard/calls?openCall=<callId>`; Telegram → 'Открыть диалог' button linking to `/dashboard/chat?clientId=<clientId>`."
@@ -138,7 +138,7 @@ Purpose:
 <interfaces>
 <!-- Backend endpoints consumed by this plan (all live after Plan 04-03): -->
 <!--   GET /api/orders?status=&channel=&from=&to=&limit=&offset= → OrderListItem[] -->
-<!--   GET /api/orders/:id → ExtendedOrderDetail = { order, events, client, fromCity, toCity, truck } -->
+<!--   GET /api/orders/:id → OrderDetailExtended = { order, events, client, fromCity, toCity, truck } -->
 <!--   GET /api/analytics/kpi?window=day|week|month → KpiResponse (extended per D-44) -->
 <!--   GET /api/calls?limit=5 → Call[] (for /default "last 5 calls" — Plan 04-04 endpoint) -->
 <!--
@@ -195,7 +195,7 @@ Purpose:
     - `<OrdersApp>` (Client): SWR with refreshInterval=15000 + tab-visibility pause; filter changes update URL via router.push.
     - `<OrdersTable>`: @tanstack/react-table with D-32 columns; row click → `router.push('/dashboard/orders/' + row.original.id)`.
     - `<OrdersFilters>`: status multi-select, channel select (voice/telegram/all), date range presets. URL search params bookmarkable.
-    - `/orders/[id]/page.tsx` (Server): awaits `params` → `apiGet('/orders/:id', ExtendedOrderDetailSchema)`; passes to `<OrderDetailApp>`.
+    - `/orders/[id]/page.tsx` (Server): awaits `params` → `apiGet('/orders/:id', OrderDetailExtendedSchema)`; passes to `<OrderDetailApp>`.
     - `<OrderDetailApp>`: header (number + status + price) + grid 2 columns; Left = `<OrderCards>` (client/route/truck/cargo); Right = `<OrderTimeline>` (vertical event list). NO actions.
     - Channel breadcrumb at top: voice lead → "Прослушать звонок" link; telegram lead → "Открыть диалог" link.
     - All strings via `useT()`; money via `formatMoney`; dates via `formatDate`.
@@ -442,7 +442,7 @@ Step 5 — Create `apps/web/src/app/(main)/dashboard/orders/[id]/page.tsx`:
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { apiGet } from '@/lib/api';
-import { ExtendedOrderDetailSchema } from '@ai-logist/shared-types/api/orders';
+import { OrderDetailExtendedSchema } from '@ai-logist/shared-types/api/orders';
 import { OrderDetailApp } from './_components/order-detail-app';
 
 export const metadata: Metadata = { title: 'Заказ' };
@@ -456,7 +456,7 @@ export default async function OrderDetailPage({
 
   let detail;
   try {
-    detail = await apiGet(`/orders/${id}`, ExtendedOrderDetailSchema);
+    detail = await apiGet(`/orders/${id}`, OrderDetailExtendedSchema);
   } catch {
     notFound();
   }
@@ -474,7 +474,7 @@ Step 6 — Create `_components/order-detail-app.tsx`:
 ```tsx
 'use client';
 import useSWR from 'swr';
-import type { ExtendedOrderDetail } from '@ai-logist/shared-types/api/orders';
+import type { OrderDetailExtended } from '@ai-logist/shared-types/api/orders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/format';
@@ -487,8 +487,8 @@ const fetcher = async <T,>(url: string): Promise<T> => {
   return r.json() as Promise<T>;
 };
 
-export function OrderDetailApp({ detail }: { detail: ExtendedOrderDetail }) {
-  const { data = detail } = useSWR<ExtendedOrderDetail>(
+export function OrderDetailApp({ detail }: { detail: OrderDetailExtended }) {
+  const { data = detail } = useSWR<OrderDetailExtended>(
     `/api/orders/${detail.order.id}`,
     fetcher,
     {
@@ -613,7 +613,7 @@ cd apps/web && pnpm exec tsc --noEmit && pnpm test -t "static-rules" 2>&1 | grep
     - `_components/orders-app.tsx` contains `'use client'` AND `useSWR` AND `refreshInterval: 15_000` AND `router.push('/dashboard/orders/'` (row click navigation per D-34)
     - `_components/orders-table.tsx` uses `useReactTable` + 7 columns matching D-32 (number, createdAt, clientName, fromCityName→toCityName, status, price, channel)
     - `_components/orders-filters.tsx` exists with status + channel + date range; calls `onChange(newParams)` on filter changes
-    - `apps/web/src/app/(main)/dashboard/orders/[id]/page.tsx` uses `await params` (Next.js 16 async params); calls `apiGet` with `ExtendedOrderDetailSchema`
+    - `apps/web/src/app/(main)/dashboard/orders/[id]/page.tsx` uses `await params` (Next.js 16 async params); calls `apiGet` with `OrderDetailExtendedSchema`
     - `_components/order-detail-app.tsx` shows header (number + status + price), channel breadcrumb ("Прослушать звонок" for voice, "Открыть диалог" for telegram), 2-column grid, NO action buttons besides the breadcrumb link
     - `_components/order-timeline.tsx` renders `order_events` with type + actor badge + timestamp + payload `<details>`
     - `_components/order-cards.tsx` renders 4 cards (client, route, truck, cargo) read-only
@@ -1005,7 +1005,7 @@ it('ADMIN-NEW-03: /dashboard/orders/[id] renders read-only detail with channel b
   expect(existsSync(pagePath)).toBe(true);
   const page = readFileSync(pagePath, 'utf8');
   expect(page).toMatch(/await params/);
-  expect(page).toMatch(/ExtendedOrderDetailSchema/);
+  expect(page).toMatch(/OrderDetailExtendedSchema/);
   const app = readFileSync(`${cwd}/../web/src/app/(main)/dashboard/orders/[id]/_components/order-detail-app.tsx`, 'utf8');
   expect(app).toMatch(/Прослушать|Открыть/);
   const timeline = readFileSync(`${cwd}/../web/src/app/(main)/dashboard/orders/[id]/_components/order-timeline.tsx`, 'utf8');
