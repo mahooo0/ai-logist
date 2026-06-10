@@ -27,7 +27,11 @@ export const telegramPlugin = fp(
     app.log.info({ username: bot.botInfo.username }, 'telegram: bot initialized');
     app.decorate('bot', bot);
 
-    // registerTelegramHandlers wired in Wave 3 (Plan 03-03)
+    // Phase 3 Plan 03-03 — wire bot.command + bot.callbackQuery handlers AFTER
+    // bot.init() so botInfo is populated when handlers fire.
+    await import('../channels/telegram/handlers.js').then(({ registerTelegramHandlers }) =>
+      registerTelegramHandlers(bot, app)
+    );
 
     app.addHook('onClose', async () => {
       await bot.stop();

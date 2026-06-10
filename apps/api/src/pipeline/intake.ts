@@ -52,6 +52,7 @@ import { type ExtractRequestOutput, ExtractRequestSchema } from './llm-tools/ext
 import { EXTRACT_REQUEST_SYSTEM_PROMPT } from './llm-tools/extract-request.prompt.js';
 import type { ToolContext } from './llm-tools/index.js';
 import { nearestTruck } from './llm-tools/nearest-truck.js';
+import type { OutboundRegistry } from './outbound.js';
 
 export interface InboundMessageArgs {
   db: Db;
@@ -60,6 +61,8 @@ export interface InboundMessageArgs {
   clientId: string;
   text: string;
   channel: string;
+  /** Phase 3 D-14 — optional channel-agnostic outbound. Called AFTER tx commits. */
+  outbound?: OutboundRegistry;
 }
 
 export interface InboundMessageExchange {
@@ -119,7 +122,11 @@ const CONFIRM_PATTERNS =
 export async function handleInboundMessage(
   args: InboundMessageArgs
 ): Promise<InboundMessageResult> {
-  return await args.db.transaction(async (txRaw) => {
+  // Phase 3 D-14 — capture post-commit outbound payload from inside the tx so
+  // the proactive quote-keyboard send fires AFTER the FSM transition commits.
+  type PostCommitQuote = { leadId: string; quotedPriceKop: bigint; lang: Lang };
+  let postCommitQuote: PostCommitQuote | null = null as PostCommitQuote | null;
+  const result = await args.db.transaction(async (txRaw) => {
     const tx = txRaw as unknown as Db;
 
     // STEP 0 — Per-client serialization (CONTEXT D-30, FSM-04).
@@ -520,8 +527,24 @@ export async function handleInboundMessage(
       content: { name: 'calcPrice', result: { default: priceOut.default.toString() } },
     });
     exchanges.push({ role: 'assistant', content: reply });
+    postCommitQuote = { leadId: lead.id, quotedPriceKop, lang };
     return { leadId: lead.id, exchanges };
   });
+
+  // Phase 3 D-14 — fire-and-forget outbound after tx commits. Failure must not
+  // bubble to the caller; the textual reply already shipped via exchanges[].
+  const payload: PostCommitQuote | null = postCommitQuote;
+  if (payload && args.outbound) {
+    const impl = args.outbound.get(args.channel);
+    if (impl) {
+      impl
+        .sendQuoteKeyboard({ clientId: args.clientId, ...payload })
+        .catch((err) =>
+          args.log?.warn({ err, leadId: payload.leadId }, 'outbound.sendQuoteKeyboard failed')
+        );
+    }
+  }
+  return result;
 }
 
 // ---------- helpers ----------
