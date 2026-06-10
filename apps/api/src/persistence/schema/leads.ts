@@ -15,6 +15,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  boolean,
   index,
   integer,
   jsonb,
@@ -58,6 +59,10 @@ export const leads = pgTable(
 
     // CONTEXT D-04 — price override audit log
     priceOverrides: jsonb('price_overrides').array().notNull().default(sql`'{}'::jsonb[]`),
+
+    // Phase 3 D-21 — manager intercept gate. False = bot drives the conversation;
+    // true = manager has taken over and bot is silent for this lead.
+    managerActive: boolean('manager_active').notNull().default(false),
 
     // CONTEXT FSM-03 — optimistic concurrency (Phase 2)
     version: bigint('version', { mode: 'number' }).notNull().default(0),
