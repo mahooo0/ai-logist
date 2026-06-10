@@ -43,9 +43,21 @@ describe('Phase 4 — Admin Web acceptance criteria', () => {
     expect(webPkg.dependencies.bcryptjs).toMatch(/^\^?3/);
     expect(webPkg.dependencies.jose).toMatch(/^\^?6/);
   });
-  it.todo(
-    'ADMIN-02: Auth via /auth/v1/login (env-set creds + bcryptjs + jose-signed HTTP-only cookie + proxy.ts gate on /dashboard/*)'
-  );
+  it('ADMIN-02: Auth via /auth/v1/login (env-set creds + bcryptjs + jose-signed HTTP-only cookie + proxy.ts gate on /dashboard/*)', () => {
+    const cwd = process.cwd();
+    expect(existsSync(`${cwd}/../web/src/proxy.ts`)).toBe(true);
+    // Plan deviation (Rule 3): handlers live at /api/auth/* because Zenith
+    // already serves a page at /auth/v1/login (page.tsx + route.ts collision).
+    expect(existsSync(`${cwd}/../web/src/app/api/auth/login/route.ts`)).toBe(true);
+    expect(existsSync(`${cwd}/../web/src/app/api/auth/logout/route.ts`)).toBe(true);
+    expect(existsSync(`${cwd}/../web/src/lib/auth.ts`)).toBe(true);
+    const proxySrc = readFileSync(`${cwd}/../web/src/proxy.ts`, 'utf8');
+    expect(proxySrc).toMatch(/matcher.*dashboard/);
+    expect(proxySrc).toMatch(/jwtVerify|verifySession/);
+    const loginSrc = readFileSync(`${cwd}/../web/src/app/api/auth/login/route.ts`, 'utf8');
+    expect(loginSrc).toMatch(/bcrypt|comparePassword/);
+    expect(loginSrc).toMatch(/al_session|COOKIE_NAME/);
+  });
   it.todo(
     'ADMIN-03: /dashboard/chat unifies Telegram + voice transcript turns with audio playback + intercept controls (TG-only)'
   );
@@ -61,7 +73,14 @@ describe('Phase 4 — Admin Web acceptance criteria', () => {
   it.todo(
     'ADMIN-NEW-08: /dashboard/calls table + filters + modal with audio player + transcript turn seek'
   );
-  it.todo(
-    'I18N-02: Customize-panel RU/UA toggle + dictionary in lib/i18n/dict.ts wired via useT() hook'
-  );
+  it('I18N-02: Customize-panel RU/UA toggle + dictionary in lib/i18n/dict.ts wired via useT() hook', () => {
+    const cwd = process.cwd();
+    expect(existsSync(`${cwd}/../web/src/lib/i18n/dict.ts`)).toBe(true);
+    expect(existsSync(`${cwd}/../web/src/lib/i18n/use-t.ts`)).toBe(true);
+    const dictSrc = readFileSync(`${cwd}/../web/src/lib/i18n/dict.ts`, 'utf8');
+    expect(dictSrc).toMatch(/Перехватить/);
+    expect(dictSrc).toMatch(/Перехопити/);
+    expect(dictSrc).toMatch(/chat\.intercept/);
+    expect(dictSrc).toMatch(/orders\.title/);
+  });
 });
