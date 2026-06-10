@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: planning
-last_updated: "2026-06-10T07:08:07.714Z"
+current_plan: 2
+status: executing
+last_updated: "2026-06-10T10:58:21.796Z"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 25
-  completed_plans: 25
-  percent: 100
+  total_plans: 30
+  completed_plans: 26
+  percent: 87
 ---
 
 # State: AI-Логист
@@ -21,23 +21,23 @@ progress:
 
 **Core value:** Диалог ведёт LLM, но решения по деньгам и подбору принимает детерминированный код — цена и подбор должны быть предсказуемыми, тестируемыми, воспроизводимыми.
 
-**Current focus:** Phase 03 — telegram-channel
+**Current focus:** Phase 03.1 — voice-channel-elevenlabs-twilio
 
 **Stack (locked):** Node 22 LTS + TypeScript 5.7 strict + Fastify 5 + Drizzle ORM 0.45.2 + PostgreSQL 17 + PostGIS 3.5 + Redis 7.4 + grammY 1.43 + Anthropic SDK 0.102 (betaZodTool) + Next.js 16 / React 19 / Tailwind v4 / shadcn/ui (Zenith Admin template) + Leaflet + OSM. Monorepo via pnpm workspaces. Deploy: docker-compose + Caddy on single VM.
 
 ## Current Position
 
-Phase: 03 (telegram-channel) — COMPLETE
-Plan: 6 of 6
-Current Plan: Not started
-Total Plans in Phase: 6
+Phase: 03.1 (voice-channel-elevenlabs-twilio) — EXECUTING
+Plan: 2 of 5
+Current Plan: 2
+Total Plans in Phase: 5
 **Phase:** 03.1 of 6 (voice channel elevenlabs twilio)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 ALL PLANS complete: 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook route: two-stage handler, ON CONFLICT idempotency, secret_token auth, /voice flipped 501→200) + 03-03 (Wave 3 adapter+keyboards+outbound: TG-03 + TG-04) + 03-04 (Wave 4 notifications+driver-FSM-hook: TG-05 + TG-07; ORDER_TRANSITIONS gains DRIVER_ASSIGNED→CLOSED edge; transitionOrder onSuccess post-commit hook; adapter-driven tryAdvanceOrderAfterCreation helper) + 03-05 (Wave 5 manager intercept routes + setupWebhook + README + final stub flip TG-06 + HUMAN-UAT-03). 9/9 Phase 3 reqs covered; 0 stub todos; 157 unit tests passing.
-**Status:** Ready to plan
+**Status:** Ready to execute
 
 **Progress:**
 
-[██████████] 100%
+[█████████░] 87%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -79,11 +79,13 @@ Total Plans in Phase: 6
 | Phase 03-telegram-channel P03 | 7m50s | 3 tasks | 11 files |
 | Phase 03-telegram-channel P04 | 9m16s | 3 tasks | 9 files |
 | Phase 03-telegram-channel P05 | 8m58s | 3 tasks | 12 files |
+| Phase 03.1-voice-channel-elevenlabs-twilio P00 | 8min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
 ### Key Decisions
 
+- **Plan 03.1-00:** Wave 0 voice test infra landed BEFORE any production code — voice-mock.ts ships MockElevenLabsClient + MockTwilioClient + signElevenLabsBody (HMAC-SHA256) + signTwilioRequest (HMAC-SHA1) + replayVoiceScenario. voice-driver.ts mirrors Phase 3 webhook-driver.ts shape (process.hrtime.bigint() / 1_000_000 for <500ms voice tool latency budget — Pitfall #3). voice-scenarios.json copied verbatim from RESEARCH.md Block 14 with 5 keyed scenarios (ru_happy_path, ua_happy_path, injection_attempt, ambiguous_clarification, abandon_mid_call). phase-3.1-stubs.test.ts has exactly 12 pending markers (VOICE-01..VOICE-12) as verifier baseline; monotonic decrease gate: 12 (W0) → 12 (W1) → 3 (W2) → 1 (W3) → 0 (W4). 11 scaffold files (8 integration with describe.skipIf(!dockerAvailable) + 3 unit) each have exactly 1 pending marker so Wave 1-4 flips only add it() calls without restructuring. Comment hygiene rule re-burned for the 6th time: NO literal pending-token substring in any docstring (verifier uses naive grep -c). Mock class properties annotated with explicit `any` + biome-ignore to avoid TS2742 portability errors on Vitest internal type paths (same trade-off as Phase 2 mock-anthropic.ts). Phase 2 llm-tools/ verified bit-identical (git diff --stat = 0). Two commits: `7475986` (Task 1 — helpers + fixture) + `2a40f4b` (Task 2 — stubs + 11 scaffolds + PHASE-3.1.md).
 - **Stack fixed** (Node 22 + Fastify + Drizzle + PostGIS + grammY + Anthropic SDK + Next.js 16 / Zenith template) per PROJECT.md Key Decisions table — research converged unambiguously.
 - **Modular monolith** in `apps/api` with 11 internal modules; cross-module talk only through public exports.
 - **LLM tool sandwich** — every business action is a registered tool with JSON Schema + Zod sandwich; the LLM cannot mutate state except through validated tools; prices are rendered from `leads.quoted_price` via templated strings, never paraphrased.
@@ -201,7 +203,9 @@ Total Plans in Phase: 6
 
 ## Session Continuity
 
-**Last session stopped at:** Completed 03-05-manager-intercept-readme-PLAN.md (Wave 5 manager intercept + README + UAT-03 — Phase 3 plan 6 of 6 / TG-06; closes Phase 3 with 9/9 reqs covered, 0 stub todos, 157 unit tests passing). Three commits: `ea9013b` (Task 1 — feat(03-05): 3 manager intercept endpoints in apps/api/src/routes/leads.ts per RESEARCH Code Block 10: POST /api/leads/:id/intercept flips manager_active=true + sends localized welcome via bot + persists role='manager'; POST /api/leads/:id/manager-message body{text} forwards via bot + persists; POST /api/leads/:id/release flips false + sends handover. All 3 use best-effort .catch(log) bot send (Pitfall #3). 4 new Zod schemas in packages/shared-types/src/api/leads.ts. tests/integration/manager-intercept.test.ts ships 5 it() blocks. TG-06 flipped from test.todo to it() — phase-3-stubs.test.ts has 0 todos), `ed5f3e6` (Task 2 — feat(03-05): apps/api/src/channels/telegram/setup.ts setupWebhook helper (idempotent setWebhook with allowed_updates+drop_pending_updates+max_connections=40). apps/api/scripts/telegram-setup.ts CLI entry registered as `pnpm --filter @ai-logist/api telegram:setup`. apps/api/src/routes/health.ts extended with checks.telegram returning ok|not_configured|error via 60s module-level TTL cache. HealthResponseSchema.checks.telegram optional. apps/api/src/app.ts opt-in TELEGRAM_SET_WEBHOOK_ON_BOOT auto-register at boot. README.md ## Telegram Dev Setup section: 8 numbered steps + Phase 3 health probe + tear-down), `b904120` (Task 3 — docs(03-05): auto-approved checkpoint:human-verify in --auto mode; created top-level .planning/HUMAN-UAT.md cross-phase tracker with UAT-01 cross-reference + new UAT-03 9-step protocol covering BotFather + openssl + .env.local + ngrok + pnpm telegram:setup + real chat smoke + psql verify + driver leg + tear-down + manager intercept bonus curl loop. Status: ⏳ pending real-Telegram verification). Typecheck + biome clean across 12 files; unit suite: 157 passed | 0 todo. Plan progress: 25/25 plans complete in milestone (100%). **Phase 3 status: COMPLETE.**
+**Last session stopped at:** Completed 03.1-00-test-infra-PLAN.md (Wave 0 voice test infra — Phase 3.1 plan 1 of 5). Two commits: `7475986` (Task 1 — feat(03.1-00): voice test helpers + 5-scenario fixture. Created `apps/api/tests/_helpers/voice-mock.ts` (127 lines) with MockElevenLabsClient + MockTwilioClient + signElevenLabsBody (HMAC-SHA256) + signTwilioRequest (HMAC-SHA1) + replayVoiceScenario per RESEARCH.md Block 13 verbatim. Mock class properties annotated `any` + biome-ignore to avoid TS2742 Vitest internal-path portability errors. Created `apps/api/tests/_helpers/voice-driver.ts` (62 lines) with `injectVoiceWebhook` wrapper using process.hrtime.bigint() / 1_000_000 for <500ms latency budget — mirrors Phase 3 webhook-driver.ts. Created `apps/api/tests/fixtures/voice-scenarios.json` (293 lines) with 5 keyed scenarios verbatim from RESEARCH Block 14: ru_happy_path, ua_happy_path, injection_attempt, ambiguous_clarification, abandon_mid_call), `2a40f4b` (Task 2 — test(03.1-00): 12 VOICE-* stub markers + 11 test scaffolds + PHASE-3.1.md. Created `apps/api/tests/unit/phase-3.1-stubs.test.ts` (46 lines) with exactly 12 pending markers — one per VOICE-01..VOICE-12 requirement. 8 integration scaffolds (voice-tool-handlers/voice-call-lifecycle/voice-lang-detect/voice-price-lock/voice-injection/voice-fsm-concurrency/voice-system-prompt/voice-setup) each as single describe.skipIf(!dockerAvailable) block with 1 pending marker. 3 unit scaffolds (voice-signature/voice-state/health-checks-voice) each pure-unit with 1 pending marker. Created `apps/api/tests/PHASE-3.1.md` (76 lines) documenting wave-by-wave flip schedule 12 → 12 → 3 → 1 → 0 + latency budget + mock harness reference. Comment hygiene rule preserved across all 12 new test files: NO literal pending-token substring in docstrings — verifier grep -c uses naive count). Phase 2 llm-tools/ verified untouched (git diff --stat = 0). Typecheck + biome clean across 16 new files; unit suite: 157 passed + 15 todo (was 157/0 — Phase 3.1 Wave 0 added 12 stub + 3 unit-scaffold pending markers; 8 integration scaffold pending markers skipped under AI_LOGIST_NO_DOCKER=1). Plan progress: 26/30 plans complete in milestone (87%). Phase 3.1 status: Wave 0 done; 4 plans (01 foundation, 02 handlers, 03 bootstrap, 04 UAT) ahead.
+
+**Previous session stopped at:** Completed 03-05-manager-intercept-readme-PLAN.md (Wave 5 manager intercept + README + UAT-03 — Phase 3 plan 6 of 6 / TG-06; closes Phase 3 with 9/9 reqs covered, 0 stub todos, 157 unit tests passing). Three commits: `ea9013b` (Task 1 — feat(03-05): 3 manager intercept endpoints in apps/api/src/routes/leads.ts per RESEARCH Code Block 10: POST /api/leads/:id/intercept flips manager_active=true + sends localized welcome via bot + persists role='manager'; POST /api/leads/:id/manager-message body{text} forwards via bot + persists; POST /api/leads/:id/release flips false + sends handover. All 3 use best-effort .catch(log) bot send (Pitfall #3). 4 new Zod schemas in packages/shared-types/src/api/leads.ts. tests/integration/manager-intercept.test.ts ships 5 it() blocks. TG-06 flipped from test.todo to it() — phase-3-stubs.test.ts has 0 todos), `ed5f3e6` (Task 2 — feat(03-05): apps/api/src/channels/telegram/setup.ts setupWebhook helper (idempotent setWebhook with allowed_updates+drop_pending_updates+max_connections=40). apps/api/scripts/telegram-setup.ts CLI entry registered as `pnpm --filter @ai-logist/api telegram:setup`. apps/api/src/routes/health.ts extended with checks.telegram returning ok|not_configured|error via 60s module-level TTL cache. HealthResponseSchema.checks.telegram optional. apps/api/src/app.ts opt-in TELEGRAM_SET_WEBHOOK_ON_BOOT auto-register at boot. README.md ## Telegram Dev Setup section: 8 numbered steps + Phase 3 health probe + tear-down), `b904120` (Task 3 — docs(03-05): auto-approved checkpoint:human-verify in --auto mode; created top-level .planning/HUMAN-UAT.md cross-phase tracker with UAT-01 cross-reference + new UAT-03 9-step protocol covering BotFather + openssl + .env.local + ngrok + pnpm telegram:setup + real chat smoke + psql verify + driver leg + tear-down + manager intercept bonus curl loop. Status: ⏳ pending real-Telegram verification). Typecheck + biome clean across 12 files; unit suite: 157 passed | 0 todo. Plan progress: 25/25 plans complete in milestone (100%). **Phase 3 status: COMPLETE.**
 
 **Previous session stopped at:** Completed 03-04-notifications-driver-fsm-hook-PLAN.md (Wave 4 notifications + driver-FSM-hook — Phase 3 plan 5 of 6 / TG-05 + TG-07). Three commits: `abeaf9a` (Task 1 — feat(03-04): notifications.ts + i18n templates + order-fsm onSuccess hook. Created `lib/i18n.ts` with `renderNotificationTemplate(transition, row, lang)` for DRIVER_ASSIGNED/IN_TRANSIT/DELIVERED in RU+UA with em-dash fallback. Created `channels/telegram/notifications.ts` exporting `notifyDriver` (single JOIN; null driver_telegram_id → log warn 'simulated auto-accept' per D-18; else bot.api.sendMessage HTML + driverKeyboard) and `notifyClient` (single JOIN; null telegram_id → info+skip per D-26; else renders i18n template by clients.lang). order-fsm.ts: TransitionOrderArgs gains optional `onSuccess?: (result) => Promise<void> | void`; tx body BYTE-IDENTICAL inside callback — only outer wrapper changed to `const result = await db.transaction(...); if (args.onSuccess) Promise.resolve(args.onSuccess(result)).catch(console.error); return result;`. ORDER_TRANSITIONS adds DRIVER_ASSIGNED → CLOSED edge per Phase 3 D-19 simplification. tests/unit/order-fsm.test.ts updated for new edge — 15 unit assertions pass), `d91020c` (Task 2 — feat(03-04): driver callbacks + tryAdvanceOrderAfterCreation helper. adapter.ts ships `tryAdvanceOrderAfterCreation(app, exchanges)` finding `role='tool'`+`content.name='createOrder'` exchange, dynamically importing transitionOrder+notifications, firing `transitionOrder({orderId, to:'DRIVER_ASSIGNED', actor:'ai', onSuccess: () => Promise.allSettled([notifyDriver, notifyClient])})`. Helper invoked at end of text path AND end of handlers.ts confirm callback. handlers.ts adds `bot.callbackQuery(/^(driver_accept|driver_decline):(.+)$/)`: accept = log+reply; decline = transitionOrder→CLOSED + lead lookup via `SELECT id FROM leads WHERE order_id = ${orderId}` (FK direction confirmed) + transitionLead→LOST + polite reply. intake.ts UNCHANGED — verified zero diff vs Wave 3), `e17ac45` (Task 3 — test(03-04): flip TG-05/TG-07 stubs + driver-confirmation/client-notifications integration tests. driver-confirmation.test.ts: 2 it() blocks asserting bot.api.sendMessage shape + null path. client-notifications.test.ts: 2 it() blocks including test-controlled Promise barrier for fire-and-forget onSuccess hook determinism. phase-3-stubs.test.ts: TG-05 + TG-07 flipped; marker count 3 → 1 (TG-06 remains). Cities INSERT uses correct schema slug/name_ru/name_ua/country_code/geom. Unit suite: 156 passed | 1 todo). Typecheck + biome clean across 9 changed files. Plan progress: 24/25 plans complete in milestone (96%).
 
@@ -215,7 +219,7 @@ Plan 03-02 shipped: 2 created + 7 modified — apps/api/src/routes/webhooks-tele
 
 **Phase 3 status:** COMPLETE — 6/6 plans (03-00 + 03-01 + 03-02 + 03-03 + 03-04 + 03-05) shipped. 9/9 reqs covered (API-13, API-15, TG-01..TG-07). 0 stub todos remaining (grep -c "test.todo" apps/api/tests/unit/phase-3-stubs.test.ts = 0). 157 unit tests passing. ROADMAP success criterion #1 (real Telegram chat → ORDER_CREATED) provable end-to-end — gated by HUMAN-UAT-03 (deferred real-bot smoke).
 
-**Next action:** Phase 3 complete — ready for verifier. Phase 4 (admin web) is the next milestone phase. Manager intercept routes (Plan 03-05) provide the API surface for Phase 4's "Take over conversation" + "Hand back to bot" buttons. shared-types DTO schemas (4 new from Plan 03-05) ready for typed fetch from apps/web. health.checks.telegram extends the system status widget.
+**Next action:** Phase 3.1 Plan 01 (Wave 1 foundation) — migration 0004 (calls table extensions + call_outcome enum + elevenlabs_conversation_id UNIQUE + twilio_call_sid UNIQUE), 8 new env vars in config.ts + requireVoiceConfig() helper, channels/voice/signature.ts (verifyElevenLabsSignature via timingSafeEqual), channels/voice/state.ts (Redis CRUD with bigint replacer), SDK install (@elevenlabs/elevenlabs-js + twilio). Flips voice-signature.test + voice-state.test scaffolds to passing it() blocks. After Wave 1, `grep -c "test.todo" apps/api/tests/unit/phase-3.1-stubs.test.ts` MUST still report 12 (no stubs file change — Wave 1 ships foundation only, no VOICE-* req closure).
 
 **To resume after compaction:** Read `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, and this `STATE.md`. Phase 1 (11/11 plans) complete; Phase 2 (8/8 plans) complete; Phase 3 (6/6 plans) COMPLETE; Phases 4-6 ahead. Phase 3 ships: idempotent webhook (ack <100ms, secret_token auth), real grammY 1.43 bot adapter, inline keyboards (quote card + driver buttons), manager intercept (3 endpoints), driver/client notifications via post-commit FSM hook, pnpm telegram:setup CLI + ngrok dev flow, /api/health.checks.telegram (60s cache). Channel-blind business logic preserved (intake.ts unchanged across Waves 4+5). Docker daemon remains unreachable on Claude's runner; integration tests skip cleanly under AI_LOGIST_NO_DOCKER=1; HUMAN-UAT-03 logs the 9-step real-Telegram protocol for verifier/buyer-eval pass. Next: verifier pass on Phase 3, then `/gsd:execute-phase 04-admin-web` or wait for buyer-eval feedback.
 
