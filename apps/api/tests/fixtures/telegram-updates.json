@@ -1,0 +1,291 @@
+{
+  "textKyivLviv": {
+    "update_id": 42001,
+    "message": {
+      "message_id": 1,
+      "date": 1717920000,
+      "from": {
+        "id": 555000001,
+        "is_bot": false,
+        "first_name": "Demo",
+        "last_name": "User",
+        "language_code": "ru"
+      },
+      "chat": {
+        "id": 555000001,
+        "type": "private",
+        "first_name": "Demo",
+        "last_name": "User"
+      },
+      "text": "Киев-Львов, 18 тонн, тент"
+    }
+  },
+  "textConfirm": {
+    "update_id": 42002,
+    "message": {
+      "message_id": 2,
+      "date": 1717920100,
+      "from": {
+        "id": 555000001,
+        "is_bot": false,
+        "first_name": "Demo",
+        "language_code": "ru"
+      },
+      "chat": {
+        "id": 555000001,
+        "type": "private",
+        "first_name": "Demo"
+      },
+      "text": "да, подтверждаю"
+    }
+  },
+  "textShortOk": {
+    "update_id": 42003,
+    "message": {
+      "message_id": 3,
+      "date": 1717920200,
+      "from": {
+        "id": 555000002,
+        "is_bot": false,
+        "first_name": "Short",
+        "language_code": "ru"
+      },
+      "chat": {
+        "id": 555000002,
+        "type": "private",
+        "first_name": "Short"
+      },
+      "text": "ок"
+    }
+  },
+  "callbackConfirm": {
+    "update_id": 42010,
+    "callback_query": {
+      "id": "cb-001",
+      "from": {
+        "id": 555000001,
+        "is_bot": false,
+        "first_name": "Demo",
+        "language_code": "ru"
+      },
+      "chat_instance": "abc-instance-001",
+      "data": "confirm:00000000-0000-4000-8000-000000000001",
+      "message": {
+        "message_id": 11,
+        "date": 1717920300,
+        "from": {
+          "id": 999,
+          "is_bot": true,
+          "first_name": "TestBot",
+          "username": "test_bot"
+        },
+        "chat": {
+          "id": 555000001,
+          "type": "private",
+          "first_name": "Demo"
+        },
+        "text": "Цена: 22 680 ₽"
+      }
+    }
+  },
+  "callbackReject": {
+    "update_id": 42011,
+    "callback_query": {
+      "id": "cb-002",
+      "from": {
+        "id": 555000001,
+        "is_bot": false,
+        "first_name": "Demo",
+        "language_code": "ru"
+      },
+      "chat_instance": "abc-instance-001",
+      "data": "reject:00000000-0000-4000-8000-000000000001",
+      "message": {
+        "message_id": 12,
+        "date": 1717920400,
+        "from": {
+          "id": 999,
+          "is_bot": true,
+          "first_name": "TestBot",
+          "username": "test_bot"
+        },
+        "chat": {
+          "id": 555000001,
+          "type": "private",
+          "first_name": "Demo"
+        },
+        "text": "Цена: 22 680 ₽"
+      }
+    }
+  },
+  "callbackChange": {
+    "update_id": 42012,
+    "callback_query": {
+      "id": "cb-003",
+      "from": {
+        "id": 555000001,
+        "is_bot": false,
+        "first_name": "Demo",
+        "language_code": "ru"
+      },
+      "chat_instance": "abc-instance-001",
+      "data": "change:00000000-0000-4000-8000-000000000001",
+      "message": {
+        "message_id": 13,
+        "date": 1717920500,
+        "from": {
+          "id": 999,
+          "is_bot": true,
+          "first_name": "TestBot",
+          "username": "test_bot"
+        },
+        "chat": {
+          "id": 555000001,
+          "type": "private",
+          "first_name": "Demo"
+        },
+        "text": "Цена: 22 680 ₽"
+      }
+    }
+  },
+  "callbackDriverAccept": {
+    "update_id": 42020,
+    "callback_query": {
+      "id": "cb-driver-001",
+      "from": {
+        "id": 555000099,
+        "is_bot": false,
+        "first_name": "Driver",
+        "last_name": "Demo"
+      },
+      "chat_instance": "driver-instance-001",
+      "data": "driver_accept:00000000-0000-4000-8000-0000000000a1",
+      "message": {
+        "message_id": 21,
+        "date": 1717920600,
+        "from": {
+          "id": 999,
+          "is_bot": true,
+          "first_name": "TestBot",
+          "username": "test_bot"
+        },
+        "chat": {
+          "id": 555000099,
+          "type": "private",
+          "first_name": "Driver"
+        },
+        "text": "Новое назначение: Киев → Львов"
+      }
+    }
+  },
+  "callbackDriverDecline": {
+    "update_id": 42021,
+    "callback_query": {
+      "id": "cb-driver-002",
+      "from": {
+        "id": 555000099,
+        "is_bot": false,
+        "first_name": "Driver",
+        "last_name": "Demo"
+      },
+      "chat_instance": "driver-instance-001",
+      "data": "driver_decline:00000000-0000-4000-8000-0000000000a1",
+      "message": {
+        "message_id": 22,
+        "date": 1717920700,
+        "from": {
+          "id": 999,
+          "is_bot": true,
+          "first_name": "TestBot",
+          "username": "test_bot"
+        },
+        "chat": {
+          "id": 555000099,
+          "type": "private",
+          "first_name": "Driver"
+        },
+        "text": "Новое назначение: Киев → Львов"
+      }
+    }
+  },
+  "commandStart": {
+    "update_id": 42030,
+    "message": {
+      "message_id": 31,
+      "date": 1717920800,
+      "from": {
+        "id": 555000003,
+        "is_bot": false,
+        "first_name": "New",
+        "language_code": "ru"
+      },
+      "chat": {
+        "id": 555000003,
+        "type": "private",
+        "first_name": "New"
+      },
+      "text": "/start",
+      "entities": [
+        {
+          "offset": 0,
+          "length": 6,
+          "type": "bot_command"
+        }
+      ]
+    }
+  },
+  "commandHelp": {
+    "update_id": 42031,
+    "message": {
+      "message_id": 32,
+      "date": 1717920900,
+      "from": {
+        "id": 555000003,
+        "is_bot": false,
+        "first_name": "New",
+        "language_code": "uk"
+      },
+      "chat": {
+        "id": 555000003,
+        "type": "private",
+        "first_name": "New"
+      },
+      "text": "/help",
+      "entities": [
+        {
+          "offset": 0,
+          "length": 5,
+          "type": "bot_command"
+        }
+      ]
+    }
+  },
+  "sticker": {
+    "update_id": 42040,
+    "message": {
+      "message_id": 41,
+      "date": 1717921000,
+      "from": {
+        "id": 555000004,
+        "is_bot": false,
+        "first_name": "Stick",
+        "language_code": "ru"
+      },
+      "chat": {
+        "id": 555000004,
+        "type": "private",
+        "first_name": "Stick"
+      },
+      "sticker": {
+        "file_id": "CAACAgIAAxkBAAEDemo",
+        "file_unique_id": "AgADdemo",
+        "type": "regular",
+        "width": 512,
+        "height": 512,
+        "is_animated": false,
+        "is_video": false,
+        "emoji": "👍"
+      }
+    }
+  }
+}
