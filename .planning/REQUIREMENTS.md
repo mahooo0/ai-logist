@@ -24,13 +24,13 @@
 
 - [x] **API-01**: Fastify v5 + TypeScript 5.7 strict app с health-эндпоинтом `/api/health` (возвращает `PostGIS_Version()`)
 - [x] **API-02**: Drizzle ORM миграции и репозитории для всех таблиц §2
-- [ ] **API-03**: REST `/api/leads` (GET с фильтром по stage, PATCH для смены стадии вручную)
-- [ ] **API-04**: REST `/api/orders` (GET с фильтром по status), `/api/orders/:id` (заказ + order_events)
-- [ ] **API-05**: REST `/api/trucks` (GET/POST/PATCH — CRUD парка)
-- [ ] **API-06**: REST `/api/clients/:id/messages` для чата админки
+- [x] **API-03**: REST `/api/leads` (GET с фильтром по stage, PATCH для смены стадии вручную) — Phase 4
+- [x] **API-04**: REST `/api/orders` (GET с фильтром по status), `/api/orders/:id` (заказ + order_events) — Phase 4
+- [x] **API-05**: REST `/api/trucks` (GET read-only; CRUD deferred to v2) — Phase 4
+- [x] **API-06**: REST `/api/clients/:id/messages` для чата админки (UNION telegram + voice transcript turns) — Phase 4
 - [x] **API-07**: REST `/api/leads/:id/match` (пересчёт подбора) и `/api/leads/:id/quote` (пересчёт цены)
 - [ ] **API-08**: REST `/api/orders` POST (ручное создание заказа менеджером)
-- [ ] **API-09**: REST `/api/analytics/kpi` — звонки, конверсия, выручка для дашбордов
+- [x] **API-09**: REST `/api/analytics/kpi` — звонки, конверсия, выручка для дашбордов — Phase 4
 - [ ] **API-10**: REST `/api/orders/:id/price-override` — изменение цены менеджером, пишет в `price_overrides`
 - [ ] **API-11**: WebSocket `/ws/tracking` — live-координаты машин
 - [ ] **API-12**: WebSocket `/ws/inbox` — live-сообщения/звонки в чат
@@ -222,13 +222,13 @@
 | DB-10 | Phase 1 | Complete |
 | API-01 | Phase 1 | Complete |
 | API-02 | Phase 1 | Complete |
-| API-03 | Phase 4 | Pending |
-| API-04 | Phase 4 | Pending |
-| API-05 | Phase 4 | Pending |
-| API-06 | Phase 4 | Pending |
+| API-03 | Phase 4 | Complete |
+| API-04 | Phase 4 | Complete |
+| API-05 | Phase 4 | Complete |
+| API-06 | Phase 4 | Complete |
 | API-07 | Phase 2 | Complete |
 | API-08 | Phase 4 | Pending |
-| API-09 | Phase 4 | Pending |
+| API-09 | Phase 4 | Complete |
 | API-10 | Phase 4 | Pending |
 | API-11 | Phase 5 | Pending |
 | API-12 | Phase 5 | Pending |
@@ -273,6 +273,7 @@
 | ADMIN-NEW-05 | Phase 4 | Pending |
 | ADMIN-NEW-06 | Phase 4 | Pending |
 | ADMIN-NEW-07 | Phase 4 | Pending |
+| ADMIN-NEW-08 | Phase 4 | Complete |
 | TRACK-01 | Phase 5 | Pending |
 | TRACK-02 | Phase 5 | Pending |
 | TRACK-03 | Phase 5 | Pending |

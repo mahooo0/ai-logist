@@ -1,10 +1,11 @@
 ---
 phase: 4
 slug: admin-web-reduced-scope-chat-calls-orders-kpi
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-10
+approved: 2026-06-10
 ---
 
 # Phase 4 — Validation Strategy
@@ -141,4 +142,6 @@ created: 2026-06-10
 - [ ] Feedback latency < 180s
 - [ ] `nyquist_compliant: true` set in frontmatter after Wave 0 ships
 
-**Approval:** pending
+**Approval:** approved 2026-06-10
+
+All Wave 0 contracts shipped (Plan 04-00); 13 Phase 4 requirements landed and verified across Plans 04-01..04-05; static-rules guards GREEN; `phase-4-stubs.test.ts` marker count = 0; final UAT-05 protocol documented at `HUMAN-UAT-05.md` (human-driven sign-off after this plan closes).
