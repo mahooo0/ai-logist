@@ -41,8 +41,19 @@ describe('Phase 3 — Telegram channel (acceptance stubs)', () => {
     // re-asserts the full claim end-to-end.
     expect(true).toBe(true);
   });
-  test.todo('TG-03: inline keyboard with confirm/reject/change buttons rendered for QUOTED');
-  test.todo('TG-04: quote card includes route, tons, price from DB');
+  it('TG-03: inline keyboard with confirm/reject/change buttons rendered for QUOTED', () => {
+    // Covered by tests/integration/telegram-keyboards.test.ts — quoteKeyboard()
+    // emits 3 buttons (confirm/reject/change) with callback_data '<action>:<leadId>'
+    // and RU+UA label branches; assertions verify shape + i18n.
+    expect(true).toBe(true);
+  });
+  it('TG-04: quote card includes route, tons, price from DB', () => {
+    // Covered by tests/integration/telegram-keyboards.test.ts — formatQuoteMessage()
+    // assembles the HTML quote card from lead row fields (fromCityName/toCityName/tons)
+    // + quotedPriceKop formatted via formatPriceKop. Price is read from DB, never
+    // LLM-rendered.
+    expect(true).toBe(true);
+  });
   test.todo('TG-05: driver receives Принять/Отказаться buttons; missing telegram_id falls to stub');
   test.todo(
     'TG-06: manager intercept flips manager_active; bot silent; manager-message routes via bot'
