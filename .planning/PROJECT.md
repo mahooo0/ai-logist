@@ -37,6 +37,22 @@
 - ✓ 148 unit tests passing / 0 todos; snapshot byte-stable across 10× runs — Phase 2
 - ⏳ UAT-02: Docker-gated integration tests (12 файлов) — требует Docker daemon для testcontainers PostGIS
 
+**Phase 3 — Telegram Channel (2026-06-10):**
+- ✓ grammY 1.43 webhook через Fastify (`/webhook/telegram`) с two-stage handler — ack <100мс, async worker через setImmediate
+- ✓ Idempotency через `webhook_updates` UNIQUE(source, external_id) + `ON CONFLICT DO NOTHING`
+- ✓ Secret_token верификация (`X-Telegram-Bot-Api-Secret-Token` header)
+- ✓ Адаптер `Telegram update → InboundArgs` → вызывает Phase 2 `handleInboundMessage` (intake.ts surgical edit 25 строк ≤30 бюджет)
+- ✓ `OutboundChannel + OutboundRegistry` abstraction (готов к Phase 3.1 Voice)
+- ✓ Inline-кнопки на стадии QUOTED (Подтвердить / Изменить / Отказаться) RU/UA-aware
+- ✓ Callback query handler — синтетический «да/нет/изменить» → handleInboundMessage
+- ✓ Driver confirmation loop: бот пишет водителю (если `truck.driver_telegram_id`), кнопки Принять/Отказаться. Driver decline → `order→CLOSED + lead→LOST(reason='driver_declined')`
+- ✓ Manager intercept: `leads.manager_active` колонка + 3 endpoints (`POST /api/leads/:id/{intercept,manager-message,release}`)
+- ✓ Client notifications: hook на order FSM transitions (DRIVER_ASSIGNED, IN_TRANSIT, DELIVERED) — i18n RU/UA, skip если нет telegram_id
+- ✓ `/api/health.checks.telegram` с 60с TTL кэшем (rate-limit safe)
+- ✓ Migration 0003 (только `leads.manager_active` — `trucks.driver_telegram_id` УЖЕ был TEXT из Phase 1)
+- ✓ 157 unit tests passing / 0 todos; 8 integration scaffolds gated by Docker
+- ⏳ UAT-03: реальный Telegram chat smoke через BotFather + ngrok (9-step protocol в HUMAN-UAT.md)
+
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
@@ -151,4 +167,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-09 after Phase 2 completion*
+*Last updated: 2026-06-10 after Phase 3 completion*
