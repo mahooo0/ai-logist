@@ -4,6 +4,11 @@
 :80 {
     encode gzip
 
+    # Next.js owns /api/auth/* (login/logout) — must match BEFORE /api/* below.
+    handle /api/auth/* {
+        reverse_proxy ailogist-web:3001
+    }
+
     # API: /api/* — preserve prefix (Fastify routes are /api/health, /api/leads, …)
     handle /api/* {
         reverse_proxy ailogist-api:3000
