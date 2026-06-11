@@ -100,7 +100,7 @@
 - [x] **I18N-01**: Серверный словарь RU/UA (`lib/i18n.ts`) для всех Telegram-ответов и системных сообщений
 - [x] **I18N-02**: Клиентский i18n-словарь (RU/UA) для UI админки, переключатель в Customize-панели шаблона
 - [x] **I18N-03**: Декларация ICU MessageFormat для славянских множественных форм (one/few/many) в админке
-- [ ] **I18N-04**: Локаль-aware форматирование дат через `date-fns/locale` (ru, uk)
+- [x] **I18N-04**: Локаль-aware форматирование дат через `date-fns/locale` (ru, uk)
 - [x] **I18N-05**: Шаблоны сообщений без склонений («Маршрут: {from} → {to}» вместо «Из {from} в {to}»)
 
 ### Tracking & Live Map (TRACK) — **DEFERRED to v2 on 2026-06-09 per user pivot**
@@ -137,7 +137,7 @@
 
 ### Demo Polish (POLISH)
 
-- [ ] **POLISH-01**: Snapshot-тесты `extractRequest` и `calcPrice` (20 канонических входов) в CI
+- [x] **POLISH-01**: Snapshot-тесты `extractRequest` и `calcPrice` (20 канонических входов) в CI
 - [ ] **POLISH-02**: «Simulate inbound call» кнопка в админке — проигрывает заранее заготовленный транскрипт через LLM-пайплайн (резерв на случай если real-call упадёт)
 - [ ] **POLISH-03**: Pre-recorded видео реального звонка ElevenLabs для показа возможностей голоса (резерв если venue WiFi или Twilio лёг)
 - [ ] **POLISH-04**: Локально кэшированные тайлы карты на случай плохого WiFi на демо-площадке
@@ -286,7 +286,7 @@
 | I18N-01 | Phase 6 | Complete |
 | I18N-02 | Phase 4 | Complete |
 | I18N-03 | Phase 6 | Complete |
-| I18N-04 | Phase 6 | Pending |
+| I18N-04 | Phase 6 | Complete |
 | I18N-05 | Phase 6 | Complete |
 | NOTIF-01 | Phase 6 | Complete |
 | NOTIF-02 | Phase 6 | Complete |
@@ -294,7 +294,7 @@
 | DEPLOY-02 | Phase 1 | Complete |
 | DEPLOY-03 | Phase 1 | Complete |
 | DEPLOY-04 | Phase 1 | Complete |
-| POLISH-01 | Phase 6 | Pending |
+| POLISH-01 | Phase 6 | Complete |
 | POLISH-02 | Phase 6 | Pending |
 | POLISH-03 | Phase 6 | Pending |
 | POLISH-04 | Phase 6 | Pending |
