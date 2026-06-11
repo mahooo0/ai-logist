@@ -11,6 +11,62 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config.js';
 
 /**
+ * Anthropic tool definition matching ExtractRequestSchema (D-09 verbatim).
+ * Lives here — not built from the Zod schema — because the Zod schema uses
+ * z.bigint() (budget_kopecks) which has no JSON-Schema representation. We keep
+ * the JSON-Schema shape byte-faithful to the Zod schema; runtime parsing in
+ * intake.ts re-validates with ExtractRequestSchema.strict().
+ */
+type AnthropicToolDef = {
+  name: string;
+  description: string;
+  input_schema: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+};
+
+const EXTRACT_REQUEST_JSON_SCHEMA: AnthropicToolDef['input_schema'] = {
+  type: 'object',
+  properties: {
+    from_city: { type: ['string', 'null'], minLength: 2 },
+    to_city: { type: ['string', 'null'], minLength: 2 },
+    tons: { type: ['number', 'null'], exclusiveMinimum: 0 },
+    body_type: { type: ['string', 'null'], enum: ['tent', 'ref', 'iso', 'container', null] },
+    budget_kopecks: { type: ['integer', 'null'] },
+    deadline_iso: { type: ['string', 'null'] },
+    confidence: {
+      type: 'object',
+      properties: {
+        from_city: { type: 'number', minimum: 0, maximum: 1 },
+        to_city: { type: 'number', minimum: 0, maximum: 1 },
+        tons: { type: 'number', minimum: 0, maximum: 1 },
+      },
+      required: ['from_city', 'to_city', 'tons'],
+    },
+    clarifying_question_ru: { type: ['string', 'null'] },
+    clarifying_question_ua: { type: ['string', 'null'] },
+  },
+  required: [
+    'from_city',
+    'to_city',
+    'tons',
+    'body_type',
+    'budget_kopecks',
+    'deadline_iso',
+    'confidence',
+    'clarifying_question_ru',
+    'clarifying_question_ua',
+  ],
+};
+
+const TOOL_REGISTRY: Record<string, AnthropicToolDef> = {
+  extractRequest: {
+    name: 'extractRequest',
+    description:
+      'Extract a logistics request from the client message. Return strict JSON with confidence per critical field. Use null for unrecognized fields. NEVER quote prices.',
+    input_schema: EXTRACT_REQUEST_JSON_SCHEMA,
+  },
+};
+
+/**
  * Production / test contract for any module the pipeline can swap. Must stay
  * byte-identical to tests/_helpers/mock-anthropic.ts. Wave 4 may refactor both into
  * a shared types module; for Wave 1 we keep parallel definitions to avoid the
@@ -54,23 +110,48 @@ export class AnthropicLlmClient implements LlmProvider {
   async runTurn(
     args: Parameters<LlmProvider['runTurn']>[0]
   ): Promise<Awaited<ReturnType<LlmProvider['runTurn']>>> {
-    // The pipeline (Wave 3) passes tools through runToolLoop because betaZodTool
-    // schemas must be defined at the call site. This LlmProvider abstraction only
-    // exposes tool NAMES so the mock can key fixtures by name.
+    // Resolve tool names to Anthropic tool definitions via the in-process
+    // registry. Without this Claude has nothing to call and the pipeline's
+    // extractRequest path falls through to "missing_tool_call" every turn.
+    const tools = args.toolNames
+      .map((name) => TOOL_REGISTRY[name])
+      .filter((t): t is AnthropicToolDef => t !== undefined);
+
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: 1024,
       system: args.systemPrompt,
       messages: args.userMessages.map((m) => ({ role: m.role, content: m.content })),
+      ...(tools.length > 0 && { tools, tool_choice: { type: 'any' as const } }),
     });
-    // Find the first text block in the response. The SDK's ContentBlock union
-    // includes thinking + tool_use + text variants; narrowing via `type === 'text'`
-    // and a cast lets us pull `.text` without leaking the SDK's union into callers.
+
+    const toolCalls = response.content
+      .filter((b): b is Extract<typeof b, { type: 'tool_use' }> => b.type === 'tool_use')
+      .map((block) => {
+        // Zod schema treats budget_kopecks as bigint (D-09); JSON-Schema can only
+        // express it as integer. Coerce so ExtractRequestSchema.strict() accepts it.
+        let normalized: unknown = block.input;
+        if (
+          normalized !== null &&
+          typeof normalized === 'object' &&
+          'budget_kopecks' in normalized &&
+          typeof (normalized as { budget_kopecks: unknown }).budget_kopecks === 'number'
+        ) {
+          normalized = {
+            ...(normalized as Record<string, unknown>),
+            budget_kopecks: BigInt(
+              (normalized as { budget_kopecks: number }).budget_kopecks
+            ),
+          };
+        }
+        return { name: block.name, args: normalized };
+      });
+
     const textBlock = response.content.find((b) => b.type === 'text') as
       | { type: 'text'; text: string }
       | undefined;
     return {
-      toolCalls: [],
+      toolCalls,
       finalText: textBlock?.text ?? null,
       usage: {
         input_tokens: response.usage.input_tokens,
