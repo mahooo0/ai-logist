@@ -139,7 +139,7 @@
 
 - [x] **POLISH-01**: Snapshot-тесты `extractRequest` и `calcPrice` (20 канонических входов) в CI
 - [x] **POLISH-02**: «Simulate inbound call» кнопка в админке — проигрывает заранее заготовленный транскрипт через LLM-пайплайн (резерв на случай если real-call упадёт)
-- [ ] **POLISH-03**: Pre-recorded видео реального звонка ElevenLabs для показа возможностей голоса (резерв если venue WiFi или Twilio лёг)
+- [x] **POLISH-03**: Pre-recorded видео реального звонка ElevenLabs для показа возможностей голоса (резерв если venue WiFi или Twilio лёг)
 - [ ] **POLISH-04**: Локально кэшированные тайлы карты на случай плохого WiFi на демо-площадке
 - [x] **POLISH-05**: Pre-flight чек-лист (бот жив, БД сидится, симулятор стартует, обе ссылки `/track/*` работают, **тестовый звонок проходит**)
 - [x] **POLISH-06**: Опционально — failover на OpenAI SDK если Anthropic API лежит
@@ -296,7 +296,7 @@
 | DEPLOY-04 | Phase 1 | Complete |
 | POLISH-01 | Phase 6 | Complete |
 | POLISH-02 | Phase 6 | Complete |
-| POLISH-03 | Phase 6 | Pending |
+| POLISH-03 | Phase 6 | Complete |
 | POLISH-04 | Phase 6 | Pending |
 | POLISH-05 | Phase 6 | Complete |
 | POLISH-06 | Phase 6 | Complete |
