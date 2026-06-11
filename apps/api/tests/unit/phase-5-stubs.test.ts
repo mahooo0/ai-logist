@@ -26,16 +26,20 @@ describe('Phase 5 — Demo Polish + Notifications + Final i18n: monotonic verifi
   test.skip(
     'I18N-03 ICU MessageFormat plural rules render correctly for n in {0,1,2,5,21,25} (validated by icu-plural.test.ts — Plan 05-02 Wave 2)'
   );
-  test.todo('I18N-04 formatDateLocale renders RU "8 июн, ср" + UA "8 чер, ср"');
+  test.skip(
+    'I18N-04 formatDateLocale renders RU "8 июн, ср" + UA "8 чер, ср" (validated by apps/web/tests/unit/format-date-locale.test.ts — Plan 05-03 Wave 3)'
+  );
   test.skip(
     'I18N-05 declension-free templates: arrow separator "Маршрут: {from} → {to}" (validated by declension-grep.test.ts — Plan 05-02 Wave 2)'
   );
-  test.todo(
-    'NOTIF-01 each ORDER_TRANSITION (DRIVER_ASSIGNED + IN_TRANSIT + DELIVERED) fires notifyClient post-commit'
+  test.skip(
+    'NOTIF-01 each ORDER_TRANSITION (DRIVER_ASSIGNED + IN_TRANSIT + DELIVERED) fires notifyClient post-commit (validated by apps/api/tests/integration/notif-fsm-transitions.test.ts — Plan 05-01 Wave 1 audit)'
   );
-  test.todo('NOTIF-02 no /track/ link in any notification template (grep guard)');
-  test.todo(
-    'POLISH-01 snapshot tests on 20 canonical extractRequest + 10 calcPrice inputs are byte-stable across 10 runs'
+  test.skip(
+    'NOTIF-02 no /track/ link in any notification template (validated by apps/api/tests/unit/i18n-no-track-link.test.ts — Plan 05-01 Wave 1 grep guard)'
+  );
+  test.skip(
+    'POLISH-01 snapshot tests on 20 canonical extractRequest + 10 calcPrice inputs are byte-stable across 10 runs (validated by tests/snapshots/*.snap.ts + test:snapshot 10× loop — Plan 05-03 Wave 3)'
   );
   test.todo('POLISH-02 POST /api/admin/simulate-call replays 5 scenarios end-to-end');
   test.todo('POLISH-03 voice-fallback.mp4 exists, ≤15MB, valid MP4 magic bytes, WebVTT captions');
