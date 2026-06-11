@@ -111,7 +111,7 @@ const NO_TRUCKS_UA = "На жаль, вільних машин немає. Ме�
  * "так". Case-insensitive + Unicode flag for Cyrillic boundaries.
  */
 const CONFIRM_PATTERNS =
-  /\b(да|ок|подтверждаю|согласен|так|погоджуюсь|підтверджую|погоджуюся|підтверджую\s*замовлення)\b/iu;
+  /\b(да|ок|окей|ага|угу|подтверждаю|согласен|согласна|согласны|так|погоджуюсь|підтверджую|погоджуюся|оформля(й|йте|ем|ю)|оформи(те)?|давай(те)?|беру|берём|берем|готов(а|ы)?|хорошо|годиться|годится|підтверджую\s*замовлення)\b/iu;
 
 /**
  * Pipeline entry-point for an inbound client message.
@@ -331,6 +331,31 @@ export async function handleInboundMessage(
       }
     } else {
       args.log?.warn({ leadId: lead.id }, 'extractRequest.missing_tool_call');
+    }
+
+    // STEP D-post — Follow-up reply for already-quoted leads.
+    //
+    // When the lead is past NEW (QUOTED, etc.) and the user typed something
+    // that didn't match CONFIRM_PATTERNS — they're asking a follow-up question
+    // ("а почему такая цена?", "какая машина?", "а вы бот?"). The prompt tells
+    // Claude to put Артём's free-form answer into clarifying_question_ru on
+    // exactly these turns. Deliver that line and stop — re-running STEP F/G
+    // would try to transition QUOTED → QUALIFIED and throw IllegalTransition.
+    if (lead.stage !== 'NEW' && extracted) {
+      const followUp =
+        lang === 'ua'
+          ? (extracted.clarifying_question_ua ?? extracted.clarifying_question_ru)
+          : (extracted.clarifying_question_ru ?? extracted.clarifying_question_ua);
+      if (followUp) {
+        await messagesRepo.create(tx, {
+          clientId: args.clientId,
+          leadId: lead.id,
+          role: 'ai',
+          text: followUp,
+        });
+        exchanges.push({ role: 'assistant', content: followUp });
+        return { leadId: lead.id, exchanges };
+      }
     }
 
     // STEP E — Clarification budget (LOGIC-04, D-08).

@@ -29,14 +29,19 @@ export function createTelegramOutbound(deps: { db: Db; bot: Bot }): OutboundChan
       );
       const cityNames = new Map<string, string>();
       if (cityIds.length > 0) {
-        // Drizzle's sql`${array}` expands a JS array as a record `(a,b)`, which
-        // postgres rejects when cast to uuid[]. Pass as a single JSON array
-        // parameter and unnest via ARRAY constructor with ::uuid[] cast.
+        // Drizzle expands a raw JS array as a postgres record `($1, $2)` —
+        // not as an array literal — so the ::uuid[]/::text[] cast fails.
+        // Build an explicit IN-list with sql.join so each id stays its own
+        // parameter.
+        const idList = sql.join(
+          cityIds.map((id) => sql`${id}`),
+          sql`, `
+        );
         const cityRows = await deps.db.execute(sql`
           SELECT id::text AS id,
                  CASE WHEN ${lang} = 'ua' THEN name_ua ELSE name_ru END AS name
           FROM cities
-          WHERE id::text = ANY(${cityIds}::text[])
+          WHERE id::text IN (${idList})
         `);
         for (const r of cityRows.rows as Array<{ id: string; name: string }>) {
           cityNames.set(r.id, r.name);
