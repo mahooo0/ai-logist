@@ -18,7 +18,9 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startPostgisContainer, stopPostgisContainer } from '../_helpers/test-db.js';
 import { replayVoiceScenario } from '../_helpers/voice-mock.js';
-import scenarios from '../fixtures/voice-scenarios.json' with { type: 'json' };
+// Phase 5 Plan 05-04 — moved from tests/fixtures/ to src/fixtures/ so the
+// production simulate-call route can read it from the build output.
+import scenarios from '../../src/fixtures/voice-scenarios.json' with { type: 'json' };
 
 const exec = promisify(execCb);
 const dockerAvailable = process.env.AI_LOGIST_NO_DOCKER !== '1';

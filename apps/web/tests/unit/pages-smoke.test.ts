@@ -9,7 +9,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock SWR — return fallbackData directly so smoke tests don't hit network
-// (jsdom/happy-dom can't reach localhost:3000 in CI).
+// (jsdom/happy-dom can't reach localhost:3000 in CI). Phase 5 Plan 05-04 adds
+// useSWRConfig (used by simulate-call-modal.tsx) — same shape, returns a no-op
+// mutate that never actually triggers SWR refetch.
 vi.mock('swr', () => ({
   default: (_key: unknown, _fetcher: unknown, opts?: { fallbackData?: unknown }) => ({
     data: opts?.fallbackData,
@@ -17,6 +19,7 @@ vi.mock('swr', () => ({
     isLoading: false,
     mutate: vi.fn(),
   }),
+  useSWRConfig: () => ({ mutate: vi.fn() }),
 }));
 
 // Mock useT — the real implementation imports usePreferencesStore which

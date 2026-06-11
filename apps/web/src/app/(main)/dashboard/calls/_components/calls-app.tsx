@@ -6,12 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // Phase 4 ADMIN-NEW-08 — SOLE 'use client' boundary for /dashboard/calls.
 // SWR refreshInterval=30 000 per D-56 (calls aren't created fast); tab-visibility
 // pause per D-57. Filters update URL params (router.push) — D-29 bookmarkable.
+// Phase 5 POLISH-02 — header gains "▶ Simulate inbound call" button (modal).
 import { useState } from 'react';
 import useSWR from 'swr';
+
+import { Button } from '@/components/ui/button';
 
 import { CallDetailModal } from './call-detail-modal';
 import { CallsFilters } from './calls-filters';
 import { CallsTable } from './calls-table';
+import { SimulateCallModal } from './simulate-call-modal';
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const r = await fetch(url);
@@ -32,6 +36,7 @@ export function CallsApp({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isSimulateOpen, setIsSimulateOpen] = useState(false);
 
   const qs = searchParams.toString() || new URLSearchParams(initialQuery).toString();
 
@@ -55,9 +60,21 @@ export function CallsApp({
 
   return (
     <div className="space-y-4">
-      <CallsFilters value={currentFilters} onChange={onFilterChange} />
+      <div className="flex items-center justify-between gap-3">
+        <CallsFilters value={currentFilters} onChange={onFilterChange} />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setIsSimulateOpen(true)}
+          className="shrink-0 border-border"
+          data-testid="simulate-call-trigger"
+        >
+          ▶ Simulate inbound call
+        </Button>
+      </div>
       <CallsTable calls={calls} onRowClick={setSelectedId} />
       {selectedId && <CallDetailModal callId={selectedId} onClose={() => setSelectedId(null)} />}
+      <SimulateCallModal open={isSimulateOpen} onOpenChange={setIsSimulateOpen} />
     </div>
   );
 }
