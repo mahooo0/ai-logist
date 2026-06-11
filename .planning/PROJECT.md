@@ -89,6 +89,24 @@
 - ⏳ UAT-05: 8-step human protocol в HUMAN-UAT-05.md (Telegram smoke → Voice smoke → login → 6 pages → manager intercept → RU↔UA toggle) — отложено (Docker недоступен + требует реальный Telegram/Twilio)
 - ⏳ 319 pre-existing Zenith vendor Biome errors → deferred-items.md (out of scope per SCOPE BOUNDARY; v2 path: extend `biome.json` ignore list)
 
+**Phase 5 — Demo Polish + Notifications + Final i18n (2026-06-11) — ФИНАЛЬНАЯ ФАЗА v1:**
+- ✓ Server-side i18n словарь `apps/api/src/lib/i18n.ts` extended: `renderBotReply` + 22 templates (11 D-07 keys × 2 langs RU/UA); Phase 3 `renderNotificationTemplate` байт-идентичен — Phase 5 (I18N-01)
+- ✓ ICU MessageFormat plurals (Slavic one/few/many) via `intl-messageformat@11.2.8` + `icu.ts` wrappers на api + web; CLDR boundary `'ua' → 'uk-UA'`; 5 plural templates (машина/машины/машин, заказ/заказа/заказов, звонок/звонка/звонков, сообщение, тонна) + UA equivalents; 76 plural assertions pass — Phase 5 (I18N-03)
+- ✓ Locale-aware dates через per-path `date-fns/locale/ru` + `date-fns/locale/uk` (NOT barrel — Turbopack regression closed); `formatDateLocale(date, lang)` рендерит RU `"8 июн., пнд"` + UA `"8 черв., пон"`; admin-only scope — Phase 5 (I18N-04)
+- ✓ Declension-free templates audit (arrow separator `"Маршрут: {from} → {to}"`); grep guard CI check — Phase 5 (I18N-05)
+- ✓ FSM transition notifications via Telegram audit PASS-as-designed: Phase 3 wires DRIVER_ASSIGNED end-to-end; IN_TRANSIT + DELIVERED templates ship + signatures ready; v1 callers absent (geofence deferred to v2); integration test locks contract для all 3 transitions — Phase 5 (NOTIF-01)
+- ✓ NOTIF-02 grep guard: zero `/track/|trackingUrl|public_token` references в i18n.ts (public tracking deferred to v2) — Phase 5 (NOTIF-02)
+- ✓ Snapshot tests POLISH-01: 10 calcPrice combos + 20 extractRequest canonical inputs через MockAnthropicClient + FIXED_NOW; 10×/10× byte-stable via `pnpm test:snapshot`; zero timestamp/UUID leakage — Phase 5 (POLISH-01)
+- ✓ "Simulate inbound call" admin button: POST `/api/admin/simulate-call` replays 5 voice scenarios через Phase 3.1 tool handlers (Anti-Pitfall #1 preserved — injection_attempt НЕ создаёт 1-RUB order) + frontend modal на /dashboard/calls — Phase 5 (POLISH-02)
+- ✓ Voice fallback video: `apps/web/public/demo/voice-fallback.mp4` (45 KB placeholder — team re-records real ElevenLabs call before demo per ffmpeg recipe в `public/demo/README.md`) + RU/UA WebVTT captions + `voice-fallback-modal.tsx` + "🎬 Видео-резерв" button — Phase 5 (POLISH-03)
+- ✓ Pre-flight checklist `pnpm preflight` (6 sequential fail-fast checks ≤30s): Telegram bot getMe → Twilio number registered → DB seeded → /api/health PostGIS 3.5 → Anthropic LLM key → RU+UA simulate-call E2E; + `--json` machine-readable output — Phase 5 (POLISH-05)
+- ✓ LLM_PROVIDER failover: `openai@4.104.0` EXACT pin + `provider.ts` factory + Anthropic + OpenAI adapters; OpenAI `function.arguments` JSON.parse в try/catch (Pitfall §5 closed); both adapters consume SAME Phase 2 tool registry + SAME Zod validation; Anti-Pitfall #1 preserved на OpenAI path; ENV swap + docker restart procedure documented в README "Demo Day Checklist" — Phase 5 (POLISH-06)
+- ✓ `voice-scenarios.json` relocated `tests/fixtures/` → `src/fixtures/` (Phase 3.1 imports updated)
+- ✓ apps/api: 350 passed | 11 skipped | 0 todo; apps/web: 39 passed | 0 todo; `phase-5-stubs.test.ts` marker count = 0 (CI grep guard PASSES); typecheck + biome clean
+- ✓ 05-VALIDATION.md frontmatter sealed: status: complete, nyquist_compliant: true, wave_0_complete: true
+- ⏳ HUMAN-UAT-06: 8-step ~25-min protocol (preflight → docker stack → seed → simulate RU+UA → 6 dashboard pages → video plays → provider swap → /track verify absent) — отложено (требует реальный Telegram + Twilio + OpenAI credentials)
+- ⏳ MP4 placeholder — team re-records real ElevenLabs call before demo per `apps/web/public/demo/README.md` ffmpeg recipe
+
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
@@ -203,4 +221,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-11 after Phase 4 completion*
+*Last updated: 2026-06-11 after Phase 5 completion — v1.0 milestone CLOSED*

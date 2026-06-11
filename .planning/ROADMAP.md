@@ -17,7 +17,7 @@
 - [x] **Phase 3.1: Voice Channel (ElevenLabs + Twilio)** ✓ ⚠️ HIGH RISK — real inbound calls, ElevenLabs Agent reuses Phase 2 tool registry, conversation FSM, transcript+audio in `calls`
 - [x] **Phase 4: Admin Web (REDUCED scope)** ✓ 🎨 UI — multi-channel chat (Telegram+Voice), calls page, orders page, KPI dashboards, auth. NO Kanban/fleet/calendar/tracking/search/PDF/price-override (all → v2)
 - ~~**Phase 5: Tracking Loop + Live Map + Public Tracking**~~ — **DEFERRED to v2** (TRACK_V2-*, PUBLIC_V2-*)
-- [ ] **Phase 5: Demo Polish + Notifications + Final i18n** (was Phase 6) — ICU pluralization, locale-aware dates, FSM-driven client notifications, snapshot tests, pre-flight checklist, voice fallback video
+- [x] **Phase 5: Demo Polish + Notifications + Final i18n** ✓ (was Phase 6) — ICU pluralization, locale-aware dates, FSM-driven client notifications, snapshot tests, pre-flight checklist, voice fallback video
 
 ## Phase Details
 
@@ -191,7 +191,7 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 | 3. Telegram Channel | 6/6 | ✓ Complete | 2026-06-10 |
 | 3.1. Voice Channel (ElevenLabs + Twilio) | 5/5 | ✓ Complete | 2026-06-10 |
 | 4. Admin Web (REDUCED) | 7/7 | ✓ Complete | 2026-06-11 |
-| 5. Demo Polish + Notifications + i18n | 2/6 | Executing | - |
+| 5. Demo Polish + Notifications + i18n | 6/6 | ✓ Complete | 2026-06-11 |
 
 ---
 *Roadmap created: 2026-06-08 by gsd-roadmapper*
