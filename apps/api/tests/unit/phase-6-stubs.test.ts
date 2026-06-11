@@ -63,11 +63,13 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
     'D-11 8 new FSM edges allowed (validated by order-fsm-phase6.test.ts — Plan 06-02 Wave 2) — phase-6-stub',
     () => { /* flipped Plan 06-02 */ }
   );
-  test.skip(
-    'D-12 10-min reminder SQL fires once (validated by timeout-reminder.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
+  test(
+    'D-12 10-min reminder SQL fires once (validated by timeout-reminder.test.ts — Plan 06-02 Wave 2) — phase-6-stub',
+    () => { /* flipped Plan 06-02 */ }
   );
-  test.skip(
-    'D-13 30-min escalation sets manager_active=true (validated by timeout-escalation.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
+  test(
+    'D-13 30-min escalation sets manager_active=true (validated by timeout-escalation.test.ts — Plan 06-02 Wave 2) — phase-6-stub',
+    () => { /* flipped Plan 06-02 */ }
   );
   test(
     'D-14 decline → CANCELED + truck=available + manager_active=true (validated by decline-path.test.ts — Plan 06-01 Wave 1) — phase-6-stub',

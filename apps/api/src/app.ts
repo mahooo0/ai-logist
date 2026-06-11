@@ -10,6 +10,7 @@ import {
 } from 'fastify-type-provider-zod';
 import { config } from './config.js';
 import { registerFollowUpScheduler } from './pipeline/follow-up-scheduler.js';
+import { registerOrderTicker } from './pipeline/lifecycle/order-ticker.js';
 import { dbPlugin } from './plugins/db.js';
 import { redisPlugin } from './plugins/redis.js';
 import { telegramPlugin } from './plugins/telegram.js';
@@ -106,6 +107,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Phase 2 Plan 02-04b — auto-follow-up scheduler (FSM-06). Skips in test env;
   // production wires setInterval + onClose-driven clearInterval lifecycle.
   registerFollowUpScheduler(app);
+
+  // Phase 6 D-01 — background ticker. Skips in NODE_ENV=test; gated by
+  // DEMO_TICKER_ENABLED. Inside the setInterval callback runs both the
+  // progress ticker AND the timeout-escalation evaluator.
+  registerOrderTicker(app as Parameters<typeof registerOrderTicker>[0]);
 
   // Phase 3 Plan 03-05 D-08 — optional auto-register webhook at boot.
   // Skipped in test env (no bot decorator) and when the flag is off. The
