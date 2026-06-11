@@ -198,13 +198,13 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 **Goal**: Close the demo end-to-end loop CREATED → CLOSED with zero operator input on the happy path: background ticker advances orders.progress_percent for orders in DRIVER_ASSIGNED/IN_TRANSIT, fires Telegram approach notifications at 90%, transitions to AT_LOADING / DELIVERED_PENDING at 100%, ships Stripe Checkout (test mode) at AWAITING_PAYMENT, transitions to CLOSED on checkout.session.completed webhook. Plus decline path (truck released + manager_active), timeout reminder + escalation, admin overrides (PATCH status + ticker pause), action bar on /dashboard/orders/[id].
 **Requirements** (22 decisions; Phase 6 has no formal REQ-IDs in REQUIREMENTS.md — D-01..D-22 from 06-CONTEXT.md treated as the requirement set): D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16, D-17, D-18, D-19, D-20, D-21, D-22
 **Depends on**: Phase 5
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [x] 06-00-wave-zero-test-infra-and-migration-PLAN.md — Wave 0: install stripe@22.2.0, write migration 0006_order_lifecycle.sql (3 statuses + 14 event types + stripe webhook source + auto_progress_paused column), extend _enums + orders schema + order-fsm types + config; scaffold 20 test files + 21-marker stub-tracker
 - [x] 06-01-telegram-i18n-keyboards-callbacks-PLAN.md — Wave 1: 12 RU/UA templates (D-06), loadingKeyboard + deliveryKeyboard (D-08), Phase 6 callback regex extension (D-09), handleDecline → CANCELED + truck-available + manager_active (D-14), 5 notify* helpers
 - [x] 06-02-background-ticker-and-fsm-edges-PLAN.md — Wave 2: port polyline-interpolate to backend (D-04), order-ticker.ts with mutually exclusive 90/100 logic + per-leg event types (D-01..D-05, D-07), timeout-escalation.ts (D-12, D-13), app.ts wiring of registerOrderTicker
-- [ ] 06-03-stripe-checkout-and-webhook-PLAN.md — Wave 3 (autonomous: false): requireStripeConfig() + createCheckoutSession() (D-16, D-17), Fastify-scoped raw-body webhook with stripe.webhooks.constructEvent (D-18), sendPaymentLink helper, app.ts wiring; human checkpoint for STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET (D-19)
+- [x] 06-03-stripe-checkout-and-webhook-PLAN.md — Wave 3 (autonomous: false): requireStripeConfig() + createCheckoutSession() (D-16, D-17), Fastify-scoped raw-body webhook with stripe.webhooks.constructEvent (D-18), sendPaymentLink helper, app.ts wiring; human checkpoint for STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET (D-19)
 - [ ] 06-04-admin-overrides-and-action-bar-PLAN.md — Wave 4: admin-auth Fastify plugin (X-Admin-Secret), PATCH /api/orders/:id/status (D-15, D-20), POST /api/orders/:id/ticker (D-21), OrderActionBar React component + /payment/success + /payment/cancel stub pages (D-22)
 - [ ] 06-05-uat-and-phase-summary-PLAN.md — Wave 5 (autonomous: false): HUMAN-UAT-06.md 10-step walkthrough + 06-PHASE-SUMMARY.md + final D-10 stub flip; human verification checkpoint
 
