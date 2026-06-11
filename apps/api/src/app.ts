@@ -26,6 +26,7 @@ import trucksRoutes from './routes/trucks.js';
 import webhooksRoutes from './routes/webhooks.js';
 import webhooksTelegramRoutes from './routes/webhooks-telegram.js';
 import webhooksVoiceRoutes from './routes/webhooks-voice.js';
+import webhooksStripeRoutes from './routes/webhooks-stripe.js';
 
 /**
  * Build the Fastify v5 app with all plugins wired:
@@ -102,6 +103,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Phase 3.1 Plan 03.1-02 — webhooks-voice claims /webhook/voice/* (5 tool
   // routes + 3 lifecycle routes) BEFORE the generic webhooks plugin sees them.
   await app.register(webhooksVoiceRoutes, { prefix: '/webhook' });
+  // Phase 6 D-18 — Stripe webhook. Encapsulated raw-body parser; must
+  // register BEFORE the generic webhooksRoutes stub plugin so /stripe
+  // claims the path.
+  await app.register(webhooksStripeRoutes, { prefix: '/webhook' });
   await app.register(webhooksRoutes, { prefix: '/webhook' });
 
   // Phase 2 Plan 02-04b — auto-follow-up scheduler (FSM-06). Skips in test env;

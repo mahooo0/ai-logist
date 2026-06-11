@@ -78,14 +78,17 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
   test.skip(
     'D-15 PATCH /orders/:id/status bypasses FSM (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub'
   );
-  test.skip(
-    'D-16 Stripe Checkout Session payload shape correct (validated by stripe-checkout-payload.test.ts — Plan 06-03 Wave 3) — phase-6-stub'
+  test(
+    'D-16 Stripe Checkout Session payload shape correct (validated by stripe-checkout-payload.test.ts — Plan 06-03 Wave 3) — phase-6-stub',
+    () => { /* flipped Plan 06-03 */ }
   );
-  test.skip(
-    'D-17 requireStripeConfig() throws when missing (validated by stripe-config-guard.test.ts — Plan 06-03 Wave 3) — phase-6-stub'
+  test(
+    'D-17 requireStripeConfig() throws when missing (validated by stripe-config-guard.test.ts — Plan 06-03 Wave 3) — phase-6-stub',
+    () => { /* flipped Plan 06-03 */ }
   );
-  test.skip(
-    'D-18 webhook signature verification + checkout.session.completed → CLOSED (validated by stripe-webhook-sig + stripe-completed — Plan 06-03 Wave 3) — phase-6-stub'
+  test(
+    'D-18 webhook signature verification + checkout.session.completed → CLOSED (validated by stripe-webhook-sig + stripe-completed — Plan 06-03 Wave 3) — phase-6-stub',
+    () => { /* flipped Plan 06-03 */ }
   );
   test.skip(
     'D-20 ADMIN_OVERRIDE event written with reason (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub'

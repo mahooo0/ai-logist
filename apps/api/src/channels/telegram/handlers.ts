@@ -13,6 +13,8 @@
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Bot } from 'grammy';
+import { createCheckoutSession } from '../stripe/checkout.js';
+import { requireStripeConfig } from '../stripe/setup.js';
 import { clientsRepo } from '../../persistence/repos/index.js';
 import { handleInboundMessage } from '../../pipeline/intake.js';
 import { transitionLead } from '../../pipeline/lifecycle/lead-fsm.js';
@@ -20,7 +22,9 @@ import { transitionOrder } from '../../pipeline/lifecycle/order-fsm.js';
 import { AnthropicLlmClient, type LlmProvider } from '../../pipeline/llm-client.js';
 import { OutboundRegistry } from '../../pipeline/outbound.js';
 import { tryAdvanceOrderAfterCreation } from './adapter.js';
+import { notifyPaymentLink } from './notifications.js';
 import { createTelegramOutbound } from './outbound.js';
+import { renderPhase6Template } from '../../lib/i18n.js';
 
 // ============================================================================
 // Phase 6 D-14 — handleDecline
@@ -114,6 +118,120 @@ export async function handleDecline(args: HandleDeclineArgs): Promise<void> {
       }
     },
   });
+}
+
+// ============================================================================
+// Phase 6 D-16/D-17/D-18 — sendPaymentLink
+// ============================================================================
+//
+// Reads order from DB, calls requireStripeConfig (D-19 gate), creates a
+// Stripe Checkout Session, writes payment_link_sent audit event, sends
+// the payment URL to the client via Telegram.
+//
+// B2 / D-19 GATE: requireStripeConfig() MUST throw + log.fatal when Stripe
+// keys are missing. NEVER silent-swallow this error. Fail-safe path:
+//   1. FATAL log (D-19 gate signal for the executor/checker).
+//   2. Send payment_unavailable template to client.
+//   3. Flip leads.manager_active=true so dispatcher picks it up manually.
+//   4. Return without calling createCheckoutSession or any FSM transition.
+
+export async function sendPaymentLink(args: {
+  orderId: string;
+  app: FastifyInstance;
+  bot: Bot;
+}): Promise<void> {
+  const { orderId, app, bot } = args;
+  const orderRow = await app.db.execute(sql`
+    SELECT number, public_token, lead_id::text AS lead_id, price::text AS price
+    FROM orders WHERE id = ${orderId}::uuid
+  `);
+  const o = orderRow.rows[0] as
+    | { number: string; public_token: string; lead_id: string | null; price: string }
+    | undefined;
+  if (!o) {
+    app.log.warn({ orderId }, 'sendPaymentLink: order not found');
+    return;
+  }
+
+  // B2 / D-19 GATE: requireStripeConfig() throws when Stripe keys are missing.
+  // MUST NOT silently swallow — FATAL log + fail-safe Telegram message + manager escalation.
+  let cfg: ReturnType<typeof requireStripeConfig>;
+  try {
+    cfg = requireStripeConfig();
+  } catch (err) {
+    app.log.fatal(
+      { err, orderId, gate: 'D-19' },
+      'phase6: D-19 GATE — stripe_keys_missing; payment cannot proceed. Executor must request STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET from the user before the live server starts.'
+    );
+    // 1. Send Telegram fail-safe (uses Plan 06-01 payment_unavailable template).
+    try {
+      const clientRow = await app.db.execute(sql`
+        SELECT c.telegram_id, c.lang FROM orders o
+        LEFT JOIN clients c ON c.id = o.client_id
+        WHERE o.id = ${orderId}::uuid
+      `);
+      const row = clientRow.rows[0] as
+        | { telegram_id: string | null; lang: string | null }
+        | undefined;
+      if (row?.telegram_id) {
+        const lang = (row.lang === 'ua' ? 'ua' : 'ru') as 'ru' | 'ua';
+        const text = renderPhase6Template('payment_unavailable', { number: o.number }, lang);
+        await bot.api.sendMessage(row.telegram_id, text);
+      }
+    } catch (sendErr) {
+      app.log.error({ err: sendErr, orderId }, 'sendPaymentLink: failed to send fail-safe message');
+    }
+    // 2. Flip lead to manager_active so dispatcher picks it up.
+    if (o.lead_id) {
+      try {
+        await app.db.execute(sql`
+          UPDATE leads SET manager_active = true, updated_at = NOW(), version = version + 1
+          WHERE id = ${o.lead_id}::uuid
+        `);
+      } catch (leadErr) {
+        app.log.error(
+          { err: leadErr, orderId, leadId: o.lead_id },
+          'sendPaymentLink: failed to flip manager_active'
+        );
+      }
+    }
+    // 3. Do NOT proceed — dispatcher resolves it manually.
+    return;
+  }
+
+  let checkout: { url: string; sessionId: string };
+  try {
+    checkout = await createCheckoutSession({
+      orderId,
+      orderNumber: o.number,
+      priceKopecks: BigInt(o.price),
+      currency: cfg.priceCurrency,
+      publicToken: o.public_token,
+    });
+  } catch (err) {
+    // Stripe API call failed AFTER config validated (network, rate-limit, etc.).
+    app.log.error({ err, orderId }, 'sendPaymentLink: createCheckoutSession failed');
+    if (o.lead_id) {
+      await app.db
+        .execute(
+          sql`UPDATE leads SET manager_active = true, updated_at = NOW(), version = version + 1
+          WHERE id = ${o.lead_id}::uuid`
+        )
+        .catch(() => {});
+    }
+    return;
+  }
+
+  // Audit event — payment_link_sent (per-order unique, write before send so
+  // a successful Stripe call without Telegram delivery is still traceable).
+  await app.db.execute(sql`
+    INSERT INTO order_events (order_id, type, actor, payload)
+    VALUES (${orderId}::uuid, 'payment_link_sent'::order_event_type, 'system',
+            ${JSON.stringify({ stripe_session_id: checkout.sessionId })}::jsonb)
+    ON CONFLICT (order_id, type) DO NOTHING
+  `);
+
+  await notifyPaymentLink({ orderId, paymentUrl: checkout.url, db: app.db, bot, log: app.log });
 }
 
 const GREETING_RU =
@@ -320,12 +438,9 @@ export function registerTelegramHandlers(bot: Bot, app: FastifyInstance): void {
                 )
                 ON CONFLICT (order_id, type) DO NOTHING
               `);
-              // W7 placeholder — Plan 06-03 will replace this with
-              // notifyPaymentLink(sendPaymentLink) once Stripe is wired.
-              app.log.info(
-                { orderId },
-                'phase6: delivery confirmed, awaiting Stripe Plan 06-03 wiring'
-              );
+              // W7 — Wire sendPaymentLink (Plan 06-03). Creates Stripe
+              // Checkout Session + sends payment URL via Telegram.
+              await sendPaymentLink({ orderId, app, bot });
             },
           });
         } else {
