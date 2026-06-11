@@ -1,0 +1,116 @@
+# Dokploy compose: deployed at ai-logist.holy-water.app
+# Dokploy's Traefik terminates TLS and forwards HTTPS -> caddy:80 (single-domain layout).
+# Caddy then routes /api/*, /webhook/*, /ws/* -> api:3000; rest -> web:3001 (see Caddyfile).
+# NO host port bindings — Traefik already occupies 80/443 on the VPS.
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: ailogist
+      POSTGRES_USER: ailogist
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ailogist -d ailogist']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: always
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://ailogist:${DB_PASSWORD}@postgres:5432/ailogist?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: info
+      VERSION: ${VERSION:-dokploy}
+      # Phase 2 — LLM (optional at boot; AnthropicLlmClient throws only when invoked in prod)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-4-7}
+      LLM_TOKEN_BUDGET_PER_LEAD: ${LLM_TOKEN_BUDGET_PER_LEAD:-30000}
+      OSRM_URL: ${OSRM_URL:-https://router.project-osrm.org}
+      NOMINATIM_URL: ${NOMINATIM_URL:-https://nominatim.openstreetmap.org}
+      NOMINATIM_CONTACT_EMAIL: ${NOMINATIM_CONTACT_EMAIL:-demo@ai-logist.local}
+      # Phase 3 — Telegram (optional; requireTelegramConfig() asserts at plugin boundary)
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      TELEGRAM_PUBLIC_URL: ${TELEGRAM_PUBLIC_URL}
+      TELEGRAM_SET_WEBHOOK_ON_BOOT: ${TELEGRAM_SET_WEBHOOK_ON_BOOT:-false}
+      # Phase 3.1 — Voice (optional)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      TWILIO_WEBHOOK_SIGNATURE_SECRET: ${TWILIO_WEBHOOK_SIGNATURE_SECRET}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      ELEVENLABS_AGENT_ID: ${ELEVENLABS_AGENT_ID}
+      ELEVENLABS_WEBHOOK_SECRET: ${ELEVENLABS_WEBHOOK_SECRET}
+      VOICE_PUBLIC_URL: ${VOICE_PUBLIC_URL}
+    expose:
+      - '3000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_INTERNAL_URL: http://api:3000
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      AUTH_COOKIE_SECRET: ${AUTH_COOKIE_SECRET}
+    expose:
+      - '3001'
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    expose:
+      - '80'
+    depends_on:
+      - api
+      - web
+    restart: always
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
+  caddyconfig:
