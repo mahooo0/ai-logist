@@ -13,6 +13,7 @@ import {
   // Fingerprint,
   // Forklift,
   Gauge,
+  Columns3,
   // GraduationCap,
   // Kanban,
   LayoutDashboard,
@@ -98,6 +99,12 @@ export const sidebarItems: NavGroup[] = [
         title: 'Orders',
         url: '/dashboard/orders',
         icon: Package,
+      },
+      {
+        title: 'Воронка заказов',
+        url: '/dashboard/orders/kanban',
+        icon: Columns3,
+        isNew: true,
       },
       {
         title: 'Live tracking',
