@@ -13,9 +13,9 @@
 
 - [x] **Phase 1: Database + Backend Skeleton** ✓ — Postgres 17 + PostGIS 3.5, Drizzle schema, Fastify skeleton, docker-compose, fleet seed
 - [x] **Phase 2: LLM Pipeline + Deterministic Core** ✓ ⚠️ HIGH RISK — extractRequest, nearestTruck (KNN re-rank), calcPrice (corridor + price-lock), FSMs, sticky language detect
-- [ ] **Phase 3: Telegram Channel** — grammY webhook with `secret_token`, two-stage idempotency, inline buttons, driver-confirmation loop, manager intervention
-- [ ] **Phase 3.1: Voice Channel (ElevenLabs + Twilio)** ⚠️ HIGH RISK — real inbound calls, ElevenLabs Agent reuses Phase 2 tool registry, conversation FSM, transcript+audio in `calls`
-- [ ] **Phase 4: Admin Web (REDUCED scope)** 🎨 UI — multi-channel chat (Telegram+Voice), calls page, orders page, KPI dashboards, auth. NO Kanban/fleet/calendar/tracking/search/PDF/price-override (all → v2)
+- [x] **Phase 3: Telegram Channel** ✓ — grammY webhook with `secret_token`, two-stage idempotency, inline buttons, driver-confirmation loop, manager intervention
+- [x] **Phase 3.1: Voice Channel (ElevenLabs + Twilio)** ✓ ⚠️ HIGH RISK — real inbound calls, ElevenLabs Agent reuses Phase 2 tool registry, conversation FSM, transcript+audio in `calls`
+- [x] **Phase 4: Admin Web (REDUCED scope)** ✓ 🎨 UI — multi-channel chat (Telegram+Voice), calls page, orders page, KPI dashboards, auth. NO Kanban/fleet/calendar/tracking/search/PDF/price-override (all → v2)
 - ~~**Phase 5: Tracking Loop + Live Map + Public Tracking**~~ — **DEFERRED to v2** (TRACK_V2-*, PUBLIC_V2-*)
 - [ ] **Phase 5: Demo Polish + Notifications + Final i18n** (was Phase 6) — ICU pluralization, locale-aware dates, FSM-driven client notifications, snapshot tests, pre-flight checklist, voice fallback video
 
@@ -182,9 +182,9 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 |-------|----------------|--------|-----------|
 | 1. Database + Backend Skeleton | 11/11 | ✓ Complete | 2026-06-09 |
 | 2. LLM Pipeline + Deterministic Core | 8/8 | ✓ Complete | 2026-06-09 |
-| 3. Telegram Channel | 3/6 | In Progress | - |
-| 3.1. Voice Channel (ElevenLabs + Twilio) | 0/0 | Not started | - |
-| 4. Admin Web (REDUCED) | 6/7 | In Progress | - |
+| 3. Telegram Channel | 6/6 | ✓ Complete | 2026-06-10 |
+| 3.1. Voice Channel (ElevenLabs + Twilio) | 5/5 | ✓ Complete | 2026-06-10 |
+| 4. Admin Web (REDUCED) | 7/7 | ✓ Complete | 2026-06-11 |
 | 5. Demo Polish + Notifications + i18n | 0/0 | Not started | - |
 
 ---
