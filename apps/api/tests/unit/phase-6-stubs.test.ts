@@ -35,17 +35,20 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
   test.skip(
     'D-05 order_events row written per ticker-driven transition (validated by order-events-write.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
   );
-  test.skip(
-    'D-06 6 new RU+UA Telegram templates × 2 langs = 12 strings (validated by i18n-phase6.test.ts — Plan 06-01 Wave 1) — phase-6-stub'
+  test(
+    'D-06 6 new RU+UA Telegram templates × 2 langs = 12 strings (validated by i18n-phase6.test.ts — Plan 06-01 Wave 1) — phase-6-stub',
+    () => { /* flipped Plan 06-01 */ }
   );
   test.skip(
     'D-07 approach notification idempotent — second tick at 90% no-op (validated by approach-idempotent.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
   );
-  test.skip(
-    'D-08 loading + delivery inline keyboards built with 2 buttons (validated by telegram-keyboards-phase6.test.ts — Plan 06-01 Wave 1) — phase-6-stub'
+  test(
+    'D-08 loading + delivery inline keyboards built with 2 buttons (validated by telegram-keyboards-phase6.test.ts — Plan 06-01 Wave 1) — phase-6-stub',
+    () => { /* flipped Plan 06-01 */ }
   );
-  test.skip(
-    'D-09 callback regex matches 4 new actions (validated by telegram-callbacks.test.ts — Plan 06-01 Wave 1) — phase-6-stub'
+  test(
+    'D-09 callback regex matches 4 new actions (validated by telegram-callbacks.test.ts — Plan 06-01 Wave 1) — phase-6-stub',
+    () => { /* flipped Plan 06-01 */ }
   );
   test.skip(
     'D-10 migration adds 3 statuses + 14 event types + auto_progress_paused (validated by schema-introspect-phase6.test.ts — Plan 06-00 manual apply) — phase-6-stub'
@@ -59,8 +62,9 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
   test.skip(
     'D-13 30-min escalation sets manager_active=true (validated by timeout-escalation.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
   );
-  test.skip(
-    'D-14 decline → CANCELED + truck=available + manager_active=true (validated by decline-path.test.ts — Plan 06-01 Wave 1) — phase-6-stub'
+  test(
+    'D-14 decline → CANCELED + truck=available + manager_active=true (validated by decline-path.test.ts — Plan 06-01 Wave 1) — phase-6-stub',
+    () => { /* flipped Plan 06-01 */ }
   );
   test.skip(
     'D-15 PATCH /orders/:id/status bypasses FSM (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub'

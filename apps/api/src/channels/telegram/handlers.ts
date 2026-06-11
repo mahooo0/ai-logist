@@ -1,7 +1,10 @@
 // Phase 3 D-15, D-27, D-28 — Telegram bot.command + bot.callbackQuery wiring.
+// Phase 6 D-09, D-14 — Phase 6 loading/delivery callbacks + handleDecline.
 //
 // Client callbacks (confirm|reject|change) ship here (TG-03 path back into intake).
 // Driver callbacks (driver_accept|driver_decline) ship in Wave 4 (Plan 03-04).
+// Phase 6 callbacks (confirm_loading|decline_loading|confirm_delivery|decline_delivery)
+//   use direct transitionOrder calls (not LLM intake).
 //
 // All client callbacks synthesize a text message ('да' / 'нет' / 'изменить') and
 // dispatch via handleInboundMessage — the same intake entry point used by
@@ -18,6 +21,100 @@ import { AnthropicLlmClient, type LlmProvider } from '../../pipeline/llm-client.
 import { OutboundRegistry } from '../../pipeline/outbound.js';
 import { tryAdvanceOrderAfterCreation } from './adapter.js';
 import { createTelegramOutbound } from './outbound.js';
+
+// ============================================================================
+// Phase 6 D-14 — handleDecline
+// ============================================================================
+//
+// Core decline handler for loading/delivery declines from client Telegram
+// callbacks. Transitions order to CANCELED, releases truck (busy → available),
+// sets leads.manager_active = true, inserts loading_declined / delivery_declined
+// audit row (since STATUS_TO_EVENT.CANCELED = null, the explicit audit row is
+// required), and sends a best-effort Telegram reply.
+//
+// All side effects after transitionOrder happen inside the post-commit onSuccess
+// hook (fire-and-forget per RESEARCH Pitfall #3 — never block the row lock on
+// downstream Telegram calls). Integration tests MUST use vi.waitFor to drain.
+
+export interface HandleDeclineArgs {
+  orderId: string;
+  action: 'decline_loading' | 'decline_delivery';
+  app: FastifyInstance;
+  bot: Bot;
+}
+
+export async function handleDecline(args: HandleDeclineArgs): Promise<void> {
+  const { orderId, action, app, bot } = args;
+  const eventPayload = { source: 'telegram_callback', action };
+
+  await transitionOrder(app.db, {
+    orderId,
+    to: 'CANCELED',
+    actor: 'system',
+    payload: eventPayload,
+    onSuccess: async () => {
+      // Truck + lead side-effects post-commit (atomic transaction).
+      await app.db.transaction(async (tx) => {
+        const orderRow = await tx.execute(sql`
+          SELECT truck_id::text AS truck_id,
+                 lead_id::text AS lead_id,
+                 client_id::text AS client_id
+          FROM orders WHERE id = ${orderId}::uuid
+        `);
+        const o = orderRow.rows[0] as
+          | { truck_id: string | null; lead_id: string | null; client_id: string }
+          | undefined;
+        if (!o) return;
+        if (o.truck_id) {
+          await tx.execute(sql`
+            UPDATE trucks SET status='available', updated_at=NOW()
+            WHERE id=${o.truck_id}::uuid AND status='busy'
+          `);
+        }
+        if (o.lead_id) {
+          await tx.execute(sql`
+            UPDATE leads SET manager_active=true, updated_at=NOW(), version=version+1
+            WHERE id=${o.lead_id}::uuid
+          `);
+        }
+      });
+
+      // Write the per-leg decline audit row (explicit — CANCELED maps to null
+      // in STATUS_TO_EVENT so transitionOrder does not insert one).
+      const eventType = action === 'decline_loading' ? 'loading_declined' : 'delivery_declined';
+      await app.db.execute(sql`
+        INSERT INTO order_events (order_id, type, actor, payload)
+        VALUES (
+          ${orderId}::uuid,
+          ${eventType}::order_event_type,
+          'system',
+          ${JSON.stringify(eventPayload)}::jsonb
+        )
+        ON CONFLICT (order_id, type) DO NOTHING
+      `);
+
+      // Best-effort Telegram reply (fire-and-forget inside the onSuccess hook).
+      try {
+        const r = await app.db.execute(sql`
+          SELECT c.telegram_id, c.lang::text AS lang
+          FROM orders o
+          LEFT JOIN clients c ON c.id = o.client_id
+          WHERE o.id = ${orderId}::uuid
+        `);
+        const row = r.rows[0] as { telegram_id: string | null; lang: string | null } | undefined;
+        if (row?.telegram_id) {
+          const text =
+            row.lang === 'ua'
+              ? "Гаразд, передаю колезі — він зв'яжеться найближчим часом."
+              : 'Хорошо, передаю коллеге, он свяжется в ближайшее время.';
+          await bot.api.sendMessage(row.telegram_id, text);
+        }
+      } catch (err) {
+        app.log.warn({ err, orderId }, 'handleDecline: reply send failed');
+      }
+    },
+  });
+}
 
 const GREETING_RU =
   'Здравствуйте! Я AI-ассистент компании. Чтобы оформить заказ — напишите откуда, куда, сколько тонн и тип кузова. Например: "Киев-Львов, 18 тонн, тент".';
@@ -158,6 +255,88 @@ export function registerTelegramHandlers(bot: Bot, app: FastifyInstance): void {
     }
     await ctx.reply('Отказ зарегистрирован. Спасибо за обратную связь.');
   });
+
+  // Phase 6 D-09 — loading + delivery client-side callbacks.
+  // This block is ADDED after the Phase 3 regexes; the Phase 3 regexes are not modified.
+  bot.callbackQuery(
+    /^(confirm_loading|decline_loading|confirm_delivery|decline_delivery):(.+)$/,
+    async (ctx) => {
+      const action = ctx.match[1] as
+        | 'confirm_loading'
+        | 'decline_loading'
+        | 'confirm_delivery'
+        | 'decline_delivery';
+      const orderId = ctx.match[2];
+      if (!orderId) return;
+
+      await ctx.answerCallbackQuery().catch(() => {
+        /* swallow — dismiss spinner */
+      });
+      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch((err) => {
+        app.log.warn({ err, action, orderId }, 'phase6 callback: editMessageReplyMarkup failed');
+      });
+
+      try {
+        if (action === 'confirm_loading') {
+          await transitionOrder(app.db, {
+            orderId,
+            to: 'IN_TRANSIT',
+            actor: 'system',
+            payload: { source: 'telegram_callback', action },
+            onSuccess: async () => {
+              // Write loading_confirmed audit row (in addition to the in_transit row
+              // written by STATUS_TO_EVENT — this is the per-leg confirmation event).
+              await app.db.execute(sql`
+                INSERT INTO order_events (order_id, type, actor, payload)
+                VALUES (
+                  ${orderId}::uuid,
+                  'loading_confirmed'::order_event_type,
+                  'system',
+                  '{}'::jsonb
+                )
+                ON CONFLICT (order_id, type) DO NOTHING
+              `);
+              // Reset progress so leg 2 begins at 0%.
+              await app.db.execute(sql`
+                UPDATE orders SET progress_percent=0, updated_at=NOW()
+                WHERE id=${orderId}::uuid
+              `);
+            },
+          });
+        } else if (action === 'confirm_delivery') {
+          await transitionOrder(app.db, {
+            orderId,
+            to: 'AWAITING_PAYMENT',
+            actor: 'system',
+            payload: { source: 'telegram_callback', action },
+            onSuccess: async () => {
+              await app.db.execute(sql`
+                INSERT INTO order_events (order_id, type, actor, payload)
+                VALUES (
+                  ${orderId}::uuid,
+                  'delivery_confirmed'::order_event_type,
+                  'system',
+                  '{}'::jsonb
+                )
+                ON CONFLICT (order_id, type) DO NOTHING
+              `);
+              // W7 placeholder — Plan 06-03 will replace this with
+              // notifyPaymentLink(sendPaymentLink) once Stripe is wired.
+              app.log.info(
+                { orderId },
+                'phase6: delivery confirmed, awaiting Stripe Plan 06-03 wiring'
+              );
+            },
+          });
+        } else {
+          // decline_loading or decline_delivery
+          await handleDecline({ orderId, action, app, bot });
+        }
+      } catch (err) {
+        app.log.error({ err, orderId, action }, 'phase6 callback: transition failed');
+      }
+    }
+  );
 }
 
 /**
