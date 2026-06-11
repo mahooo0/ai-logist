@@ -1,10 +1,12 @@
 ---
 phase: 5
 slug: demo-polish-notifications-final-i18n
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-11
+completed: 2026-06-11
+approved: 2026-06-11
 ---
 
 # Phase 5 — Validation Strategy

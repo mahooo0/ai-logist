@@ -404,6 +404,47 @@ The web admin (Next.js 16 + Zenith template) runs on port 3001 behind Caddy at `
 | Russian shows as `??????` | Missing dictionary key | grep `lib/i18n/dict.ts` for missing entry |
 | Border colors look wrong | Tailwind v4 default change (Pitfall #13) | Replace bare `border` with `border-border` |
 
+## Demo Day Checklist (Phase 5)
+
+Run 5 minutes before showing the demo to confirm green-light:
+
+1. **Pre-flight check (`pnpm preflight`)** — 6 sequential fail-fast checks per CONTEXT D-34:
+   - Telegram bot alive (`bot.api.getMe()` returns username)
+   - Twilio number registered (lookup by E.164)
+   - DB seeded (`COUNT(*) trucks WHERE status='available'` ≥ 10)
+   - `/api/health` returns 200 + PostGIS 3.5.x
+   - LLM provider key (Anthropic `messages.create` with `max_tokens: 1`)
+   - E2E smoke (`POST /api/admin/simulate-call` for both `ru_happy_path` and `ua_happy_path` — both produce `orderId`)
+
+   ```bash
+   pnpm preflight                  # human-readable
+   pnpm preflight -- --json        # machine-readable: {exitCode, results: [{name, status, duration_ms, error?}]}
+   ```
+
+   Exits 0 on all-pass; loud `✗` + exit 1 on first failure (sequential fail-fast).
+
+2. **Provider failover (30-second swap)** — if Anthropic API has issues during demo:
+
+   ```bash
+   # 1. Edit .env.local — set LLM_PROVIDER=openai + OPENAI_API_KEY=sk-...
+   # 2. Restart api:
+   docker compose restart api
+   # 3. Wait 5s; re-verify:
+   curl -s localhost:3000/api/health | jq .checks
+   ```
+
+   Revert by setting `LLM_PROVIDER=anthropic` + restart. Both adapters wrap the same Zod schema, so behavior is byte-identical (snapshot tests prove it — see Plan 05-03).
+
+3. **Fallback content (if Twilio/ElevenLabs unavailable):**
+   - **"▶ Simulate inbound call"** button on `/dashboard/calls` — runs 5 canned voice scenarios through the live LLM pipeline (no external APIs needed):
+     - `ru_happy_path` / `ua_happy_path` — order created
+     - `injection_attempt` — Anti-Pitfall #1 verified (no 1-RUB order)
+     - `ambiguous_clarification` — agent asks for more info
+     - `abandon_mid_call` — graceful hangup
+   - **"🎬 Видео-резерв"** button on `/dashboard/calls` — plays a pre-recorded real ElevenLabs call (MP4 + RU/UA captions). File: `apps/web/public/demo/voice-fallback.mp4` (≤15 MB hard cap).
+
+4. **Full 8-step UAT protocol:** see `.planning/phases/05-demo-polish-notifications-final-i18n/HUMAN-UAT-06.md` (~25 min).
+
 ## Project layout
 
 ```
