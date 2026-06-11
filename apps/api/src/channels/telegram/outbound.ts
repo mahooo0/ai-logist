@@ -29,11 +29,14 @@ export function createTelegramOutbound(deps: { db: Db; bot: Bot }): OutboundChan
       );
       const cityNames = new Map<string, string>();
       if (cityIds.length > 0) {
+        // Drizzle's sql`${array}` expands a JS array as a record `(a,b)`, which
+        // postgres rejects when cast to uuid[]. Pass as a single JSON array
+        // parameter and unnest via ARRAY constructor with ::uuid[] cast.
         const cityRows = await deps.db.execute(sql`
           SELECT id::text AS id,
                  CASE WHEN ${lang} = 'ua' THEN name_ua ELSE name_ru END AS name
           FROM cities
-          WHERE id = ANY(${cityIds}::uuid[])
+          WHERE id::text = ANY(${cityIds}::text[])
         `);
         for (const r of cityRows.rows as Array<{ id: string; name: string }>) {
           cityNames.set(r.id, r.name);

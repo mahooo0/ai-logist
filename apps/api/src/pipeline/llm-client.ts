@@ -128,21 +128,28 @@ export class AnthropicLlmClient implements LlmProvider {
     const toolCalls = response.content
       .filter((b): b is Extract<typeof b, { type: 'tool_use' }> => b.type === 'tool_use')
       .map((block) => {
-        // Zod schema treats budget_kopecks as bigint (D-09); JSON-Schema can only
-        // express it as integer. Coerce so ExtractRequestSchema.strict() accepts it.
-        let normalized: unknown = block.input;
-        if (
-          normalized !== null &&
-          typeof normalized === 'object' &&
-          'budget_kopecks' in normalized &&
-          typeof (normalized as { budget_kopecks: unknown }).budget_kopecks === 'number'
-        ) {
-          normalized = {
-            ...(normalized as Record<string, unknown>),
-            budget_kopecks: BigInt(
-              (normalized as { budget_kopecks: number }).budget_kopecks
-            ),
-          };
+        // Claude doesn't always honour JSON-Schema number types — observed Sonnet 4.6
+        // returning "18" (string) for tons on follow-up turns. Coerce string→number
+        // for numeric fields and integer→BigInt for budget_kopecks so the upstream
+        // Zod strict parse accepts the payload instead of falling back to
+        // 'Уточните город' on every clarification message.
+        if (block.input === null || typeof block.input !== 'object') {
+          return { name: block.name, args: block.input };
+        }
+        const obj = block.input as Record<string, unknown>;
+        const normalized: Record<string, unknown> = { ...obj };
+        if (typeof obj.tons === 'string' && obj.tons.trim() !== '') {
+          const n = Number(obj.tons);
+          if (Number.isFinite(n)) normalized.tons = n;
+        }
+        if (typeof obj.budget_kopecks === 'number') {
+          normalized.budget_kopecks = BigInt(obj.budget_kopecks);
+        } else if (typeof obj.budget_kopecks === 'string' && obj.budget_kopecks.trim() !== '') {
+          try {
+            normalized.budget_kopecks = BigInt(obj.budget_kopecks);
+          } catch {
+            // leave the raw string; downstream Zod will reject and pipeline retries.
+          }
         }
         return { name: block.name, args: normalized };
       });
