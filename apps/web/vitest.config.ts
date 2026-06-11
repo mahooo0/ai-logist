@@ -11,7 +11,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: false,
     setupFiles: ['./tests/_helpers/render.ts'],
-    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
+    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx', 'tests/*.test.tsx'],
   },
   resolve: {
     alias: {

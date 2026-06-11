@@ -99,7 +99,8 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
     'D-21 POST /orders/:id/ticker pauses auto_progress (validated by ticker-pause.test.ts — Plan 06-04 Wave 4) — phase-6-stub',
     () => { /* flipped Plan 06-04 */ }
   );
-  test.skip(
-    'D-22 admin action bar renders + calls API (validated by apps/web order-action-bar.test.tsx — Plan 06-04 Wave 4) — phase-6-stub'
+  test(
+    'D-22 admin action bar renders + calls API (validated by apps/web order-action-bar.test.tsx — Plan 06-04 Wave 4) — phase-6-stub',
+    () => { /* flipped Plan 06-04 */ }
   );
 });

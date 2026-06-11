@@ -8,6 +8,7 @@ import useSWR from 'swr';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/format';
+import { OrderActionBar } from './order-action-bar';
 import { OrderCards } from './order-cards';
 import { OrderTimeline } from './order-timeline';
 
@@ -55,6 +56,13 @@ export function OrderDetailApp({ detail }: { detail: OrderDetailExtended }) {
           </Button>
         ) : null}
       </header>
+
+      {/* Phase 6 D-22 — admin action bar: status override + pause/resume + reset */}
+      <OrderActionBar
+        orderId={order.id}
+        currentStatus={order.status}
+        autoProgressPaused={order.autoProgressPaused ?? false}
+      />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <OrderCards
