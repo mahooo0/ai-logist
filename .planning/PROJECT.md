@@ -107,6 +107,24 @@
 - ⏳ HUMAN-UAT-06: 8-step ~25-min protocol (preflight → docker stack → seed → simulate RU+UA → 6 dashboard pages → video plays → provider swap → /track verify absent) — отложено (требует реальный Telegram + Twilio + OpenAI credentials)
 - ⏳ MP4 placeholder — team re-records real ElevenLabs call before demo per `apps/web/public/demo/README.md` ffmpeg recipe
 
+**Phase 6 — Order Lifecycle Automation (2026-06-11) — v1.0 EXTENSION:**
+- ✓ Миграция `0006_order_lifecycle.sql` — 3 новых `order_status` (DELIVERED_PENDING / AWAITING_PAYMENT / CANCELED) + 14 новых `order_event_type` + `webhook_source += 'stripe'` + `orders.auto_progress_paused boolean DEFAULT false`; MANUAL APPLY header (Pitfall 5 — `ALTER TYPE ADD VALUE` вне транзакций) — Phase 6 (D-10)
+- ✓ Background `setInterval` ticker `order-ticker.ts` (30s по умолчанию, +10pp/tick) — продвигает `orders.progress_percent` для DRIVER_ASSIGNED / IN_TRANSIT; mutual-exclusion 90% approach vs 100% transition (Pitfall 2); `WHERE status IN (...)` UPDATE filter (Pitfall 8); per-leg event types (`approach_notified` vs `delivery_approach_notified`, Pitfall 4) — Phase 6 (D-01, D-02, D-03, D-05, D-07)
+- ✓ Полилайн интерполяция `polyline-interpolate.ts` — byte-identical port из `apps/web/.../polyline-utils.ts`; ticker анимирует `trucks.geom` только на leg 2 (Pitfall 3 — deferred leg-1 animation) — Phase 6 (D-04)
+- ✓ 14 новых Telegram-шаблонов (RU + UA × 7 keys включая `payment_unavailable` D-19 fail-safe) через `renderPhase6Template()` — Phase 6 (D-06)
+- ✓ Inline keyboards `loadingKeyboard` + `deliveryKeyboard` (✅ Да, подтверждаю / ⚠️ Нет, есть проблема) + callback regex extension matching 4 новых actions (`confirm_loading|decline_loading|confirm_delivery|decline_delivery`) — Phase 6 (D-08, D-09)
+- ✓ 8 новых FSM edges в `ORDER_TRANSITIONS` (DRIVER_ASSIGNED→AT_LOADING, AT_LOADING→IN_TRANSIT/CANCELED, IN_TRANSIT→DELIVERED_PENDING, DELIVERED_PENDING→AWAITING_PAYMENT/CANCELED, AWAITING_PAYMENT→CLOSED) + `STATUS_TO_EVENT.AT_LOADING='loading_prompted'` + `.DELIVERED_PENDING='delivery_prompted'` (B5 Path A) — Phase 6 (D-11)
+- ✓ `timeout-escalation.ts` — 10-min reminder + 30-min `manager_active=true` escalation; SQL queries `type IN ('loading_prompted','delivery_prompted')`; `ON CONFLICT (order_id, type) DO NOTHING` идемпотентность — Phase 6 (D-12, D-13)
+- ✓ Decline path `handleDecline` — status → CANCELED + trucks.status → available + leads.manager_active = true + `loading_declined`/`delivery_declined` audit row (через post-commit `onSuccess`); `vi.waitFor` гарантирует race-safety в integration tests (B3) — Phase 6 (D-14)
+- ✓ Stripe Checkout (hosted) — `stripe@22.2.0` exact pin; `requireStripeConfig()` boundary guard; `createCheckoutSession()` mode=payment + `idempotencyKey: order_${id}_v1` + RUB kopecks `unit_amount`; `webhooks-stripe.ts` Fastify-scoped raw-body parser (`removeAllContentTypeParsers` + `parseAs:'buffer'` — Pitfall 1, no `fastify-raw-body` dep); HMAC verification via `stripe.webhooks.constructEvent`; `webhook_updates` идемпотентность; `setImmediate` post-ack обработка → transitionOrder CLOSED — Phase 6 (D-16, D-17, D-18)
+- ✓ D-19 GATE: `sendPaymentLink` при отсутствии Stripe ключей делает `app.log.fatal` + шлёт `payment_unavailable` через Telegram (RU/UA) + flips `leads.manager_active=true`. **НЕ silent-swallow.** User supplied `sk_test_...` test keys via interactive checkpoint; `STRIPE_WEBHOOK_SECRET` pending `stripe listen` output (Wave 5 UAT step 4) — Phase 6 (D-19)
+- ✓ Admin overrides — `PATCH /api/orders/:id/status { status, reason }` пишет `admin_override` audit с reason (FSM bypass); `POST /api/orders/:id/ticker { paused }` устанавливает `auto_progress_paused`; `requireAdmin` Fastify plugin с optional-secret `X-Admin-Secret` semantics (no-op если `ADMIN_API_SECRET` не задан — Pitfall 6 mitigation) — Phase 6 (D-15, D-20, D-21)
+- ✓ Frontend action bar `OrderActionBar` на `/dashboard/orders/[id]` — status dropdown (10 enum values + reason prompt) + Pause/Resume toggle + Reset Progress button; SWR `mutate` после действия; `packages/shared-types/src/api/orders.ts` `OrderSchema` extended with `autoProgressPaused: z.boolean().optional()` (W8) — Phase 6 (D-22)
+- ✓ Public payment stub pages `/payment/success` + `/payment/cancel` (no auth, RU только) — Stripe redirects land here — Phase 6
+- ✓ apps/api: 73 unit pass + 1 intentional skip (D-10 pending migration apply); apps/web typecheck clean; apps/api typecheck clean; `phase-6-stubs.test.ts` marker count 21 → 1 (D-10 marker remains for live-DB UAT)
+- ⏳ HUMAN-UAT-06: 10-step end-to-end walkthrough (psql migration apply → API+Web boot → `stripe listen` + paste `whsec_` → create order via Telegram → observe ticker → confirm loading → confirm delivery → pay test card `4242 4242 4242 4242` → verify CLOSED + Telegram "Оплата получена" → decline path + admin override smoke) — auto-deferred; document persists at `.planning/phases/06-.../HUMAN-UAT-06.md`
+- ⏳ `STRIPE_WEBHOOK_SECRET` — pending `stripe listen --forward-to localhost:3000/webhook/stripe` step
+
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
@@ -124,8 +142,9 @@
 - [ ] Cycle трекинга: позиция → WebSocket → автоматические события заказа по гео-фенсу — §4.7 — Phase 5
 - [ ] Fallback на биржи ATI.SU / Lardi-Trans (Phase 2 stub → реальные API в v2) — §4.6 → отложено к v2 EXT-01/02
 
-**Demo polish (Phase 6):**
-- [ ] ICU pluralization, voice fallback video, локали дат — Phase 6
+**Demo polish — закрыто:**
+- ✓ ICU pluralization, voice fallback video, локали дат — закрыто в Phase 5 (I18N-03/04 + POLISH-03)
+- ✓ Order lifecycle automation (ticker → Telegram confirms → Stripe → CLOSED + negative paths) — закрыто в Phase 6
 
 **Telegram-канал:**
 - [ ] Telegram-бот (aiogram или grammY) с webhook → пайплайн §3
@@ -221,4 +240,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-11 after Phase 5 completion — v1.0 milestone CLOSED*
+*Last updated: 2026-06-11 after Phase 6 completion — v1.0 EXTENSION (order lifecycle automation); 22/22 D-decisions verified in code, HUMAN-UAT-06 auto-deferred*
