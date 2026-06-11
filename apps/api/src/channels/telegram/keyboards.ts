@@ -32,6 +32,30 @@ export function driverKeyboard(orderId: string, lang: Lang): InlineKeyboard {
     .text(labels.decline, `driver_decline:${orderId}`);
 }
 
+/** Loading confirmation keyboard (D-08). callback_data = '<action>:<orderId>'. */
+export function loadingKeyboard(orderId: string, lang: Lang): InlineKeyboard {
+  const labels =
+    lang === 'ua'
+      ? { yes: '✅ Так, підтверджую', no: '⚠️ Ні, є проблема' }
+      : { yes: '✅ Да, подтверждаю', no: '⚠️ Нет, есть проблема' };
+  return new InlineKeyboard()
+    .text(labels.yes, `confirm_loading:${orderId}`)
+    .row()
+    .text(labels.no, `decline_loading:${orderId}`);
+}
+
+/** Delivery confirmation keyboard (D-08). callback_data = '<action>:<orderId>'. */
+export function deliveryKeyboard(orderId: string, lang: Lang): InlineKeyboard {
+  const labels =
+    lang === 'ua'
+      ? { yes: '✅ Так, отримав', no: '⚠️ Ні, є проблема' }
+      : { yes: '✅ Да, получил', no: '⚠️ Нет, есть проблема' };
+  return new InlineKeyboard()
+    .text(labels.yes, `confirm_delivery:${orderId}`)
+    .row()
+    .text(labels.no, `decline_delivery:${orderId}`);
+}
+
 /**
  * Templated quote text (TG-04). Pulls every value from DB — no LLM strings.
  * `fromCityName` / `toCityName` are optional; missing → em-dash placeholder.

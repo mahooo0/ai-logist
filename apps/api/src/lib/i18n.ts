@@ -175,3 +175,63 @@ export function renderBotReply<K extends BotReplyKey>(
   }
   return out;
 }
+
+// ============================================================================
+// Phase 6 D-06 — Order lifecycle automation templates.
+// ============================================================================
+//
+// 7 keys × {ru, ua} = 14 strings. Templates are deterministic string subs;
+// every {parameter} is supplied from a DB row (order.number, order.public_token,
+// stripe checkout URL). The LLM never sees these strings — same defensive
+// posture as Phase 3 renderNotificationTemplate.
+
+export type Phase6Transition =
+  | 'truck_approaching_pickup'
+  | 'confirm_loading'
+  | 'truck_approaching_delivery'
+  | 'confirm_delivery'
+  | 'payment_link'
+  | 'payment_received'
+  | 'payment_unavailable'; // B2: D-19 fail-safe fallback when Stripe keys missing.
+
+export interface Phase6Row {
+  number: string;
+  plate_number?: string | null;
+  from_city?: string | null;
+  to_city?: string | null;
+  payment_url?: string | null;
+}
+
+/**
+ * Render a Phase 6 Telegram message template for order lifecycle events.
+ *
+ * All values come from DB row (never LLM-produced). The `payment_url` field
+ * renders em-dash when absent (null / undefined).
+ */
+export function renderPhase6Template(
+  transition: Phase6Transition,
+  row: Phase6Row,
+  lang: 'ru' | 'ua'
+): string {
+  const templates = {
+    ru: {
+      truck_approaching_pickup: `🚚 Машина подъезжает к точке загрузки. Заказ ${row.number}.`,
+      confirm_loading: `🚚 Машина прибыла на загрузку. Заказ ${row.number}. Подтвердите, что груз загружен.`,
+      truck_approaching_delivery: `📍 Машина подъезжает к точке выгрузки. Заказ ${row.number}.`,
+      confirm_delivery: `📦 Машина прибыла на выгрузку. Заказ ${row.number}. Подтвердите получение груза.`,
+      payment_link: `💳 Спасибо! Для завершения заказа ${row.number} оплатите по ссылке:\n${row.payment_url ?? '—'}`,
+      payment_received: `✅ Оплата получена. Заказ ${row.number} закрыт. Спасибо!`,
+      payment_unavailable: `💳 Оплата временно недоступна, наш менеджер свяжется с вами.`,
+    },
+    ua: {
+      truck_approaching_pickup: `🚚 Машина під'їжджає до точки завантаження. Замовлення ${row.number}.`,
+      confirm_loading: `🚚 Машина прибула на завантаження. Замовлення ${row.number}. Підтвердіть, що вантаж завантажено.`,
+      truck_approaching_delivery: `📍 Машина під'їжджає до точки розвантаження. Замовлення ${row.number}.`,
+      confirm_delivery: `📦 Машина прибула на розвантаження. Замовлення ${row.number}. Підтвердіть отримання вантажу.`,
+      payment_link: `💳 Дякуємо! Для завершення замовлення ${row.number} сплатіть за посиланням:\n${row.payment_url ?? '—'}`,
+      payment_received: `✅ Оплату отримано. Замовлення ${row.number} закрите. Дякуємо!`,
+      payment_unavailable: `💳 Оплата тимчасово недоступна, наш менеджер зв'яжеться з вами.`,
+    },
+  } as const;
+  return templates[lang][transition];
+}
