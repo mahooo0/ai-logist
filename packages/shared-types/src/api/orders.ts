@@ -26,6 +26,9 @@ export const OrderSchema = z.object({
   publicToken: z.string(),
   version: z.number().default(0),
   progressPercent: z.number().int().min(0).max(100).default(0),
+  // Phase 6 D-21 / W8 — pause flag. Default false so existing API consumers
+  // and tests that don't set this field remain valid; backend always populates it.
+  autoProgressPaused: z.boolean().default(false),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

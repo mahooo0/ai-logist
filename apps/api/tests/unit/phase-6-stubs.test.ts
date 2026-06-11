@@ -75,8 +75,9 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
     'D-14 decline → CANCELED + truck=available + manager_active=true (validated by decline-path.test.ts — Plan 06-01 Wave 1) — phase-6-stub',
     () => { /* flipped Plan 06-01 */ }
   );
-  test.skip(
-    'D-15 PATCH /orders/:id/status bypasses FSM (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub'
+  test(
+    'D-15 PATCH /orders/:id/status bypasses FSM (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub',
+    () => { /* flipped Plan 06-04 */ }
   );
   test(
     'D-16 Stripe Checkout Session payload shape correct (validated by stripe-checkout-payload.test.ts — Plan 06-03 Wave 3) — phase-6-stub',
@@ -90,11 +91,13 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
     'D-18 webhook signature verification + checkout.session.completed → CLOSED (validated by stripe-webhook-sig + stripe-completed — Plan 06-03 Wave 3) — phase-6-stub',
     () => { /* flipped Plan 06-03 */ }
   );
-  test.skip(
-    'D-20 ADMIN_OVERRIDE event written with reason (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub'
+  test(
+    'D-20 ADMIN_OVERRIDE event written with reason (validated by admin-override.test.ts — Plan 06-04 Wave 4) — phase-6-stub',
+    () => { /* flipped Plan 06-04 */ }
   );
-  test.skip(
-    'D-21 POST /orders/:id/ticker pauses auto_progress (validated by ticker-pause.test.ts — Plan 06-04 Wave 4) — phase-6-stub'
+  test(
+    'D-21 POST /orders/:id/ticker pauses auto_progress (validated by ticker-pause.test.ts — Plan 06-04 Wave 4) — phase-6-stub',
+    () => { /* flipped Plan 06-04 */ }
   );
   test.skip(
     'D-22 admin action bar renders + calls API (validated by apps/web order-action-bar.test.tsx — Plan 06-04 Wave 4) — phase-6-stub'

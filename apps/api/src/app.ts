@@ -11,6 +11,7 @@ import {
 import { config } from './config.js';
 import { registerFollowUpScheduler } from './pipeline/follow-up-scheduler.js';
 import { registerOrderTicker } from './pipeline/lifecycle/order-ticker.js';
+import { adminAuthPlugin } from './plugins/admin-auth.js';
 import { dbPlugin } from './plugins/db.js';
 import { redisPlugin } from './plugins/redis.js';
 import { telegramPlugin } from './plugins/telegram.js';
@@ -63,6 +64,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(sensible);
   await app.register(dbPlugin);
   await app.register(redisPlugin);
+  // Phase 6 Pitfall 6 — admin shared-secret preHandler. Registered BEFORE
+  // route plugins so the decorator is available when ordersRoutes loads.
+  await app.register(adminAuthPlugin);
   // Phase 3 — must run BEFORE routes that touch app.bot.
   await app.register(telegramPlugin);
   // Phase 3.1 — decorates app.voiceOutbound (no-op channel). Independent of voice

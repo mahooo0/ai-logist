@@ -51,6 +51,8 @@ function serializeOrder(raw: unknown): OrderResponse {
     publicToken: r.publicToken as string,
     version: Number(r.version ?? 0),
     progressPercent: Number(r.progressPercent ?? 0),
+    // Phase 6 W8 — populate autoProgressPaused from DB alias (snake or camel).
+    autoProgressPaused: Boolean(r.autoProgressPaused ?? r.auto_progress_paused ?? false),
     createdAt: new Date(r.createdAt as string | Date).toISOString(),
     updatedAt: new Date(r.updatedAt as string | Date).toISOString(),
   };
@@ -136,6 +138,7 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
                o.to_city_id AS "toCityId", o.distance_km AS "distanceKm",
                o.price, o.currency, o.status, o.public_token AS "publicToken",
                o.version, o.progress_percent AS "progressPercent",
+               o.auto_progress_paused AS "autoProgressPaused",
                o.created_at AS "createdAt", o.updated_at AS "updatedAt"
         FROM orders o
         WHERE o.id = ${id}::uuid
@@ -403,6 +406,101 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (_req, reply) => reply.notImplemented('price override deferred to v2')
+  );
+
+  // Phase 6 D-15 + D-20 — admin status override (bypasses FSM).
+  // The admin can force any valid order_status regardless of current state.
+  // An admin_override audit event is written with the supplied reason.
+  // Guarded by requireAdmin (X-Admin-Secret header) — no-op when ADMIN_API_SECRET unset.
+  app.patch(
+    '/orders/:id/status',
+    {
+      schema: {
+        tags: ['orders'],
+        summary: 'Admin status override (Phase 6 D-15/D-20)',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({
+          status: z.enum([
+            'CREATED', 'DRIVER_ASSIGNED', 'AT_LOADING', 'IN_TRANSIT',
+            'AT_BORDER', 'DELIVERED', 'CLOSED',
+            'DELIVERED_PENDING', 'AWAITING_PAYMENT', 'CANCELED',
+          ]),
+          reason: z.string().min(1).max(500),
+        }),
+        response: {
+          200: OrderSchema,
+          401: z.object({ error: z.string() }),
+          404: NotImpl,
+        },
+      },
+      preHandler: async (req, reply) => { await app.requireAdmin(req, reply); },
+    },
+    async (req, reply) => {
+      const { id } = req.params;
+      const { status, reason } = req.body;
+      // Manual write — bypass transitionOrder so we can move to ANY status.
+      // Audit event is the proof-of-override; the verifier asserts admin_override row exists.
+      const updated = await app.db.transaction(async (tx) => {
+        const r = await tx.execute(sql`
+          UPDATE orders
+          SET status = ${status}::order_status,
+              updated_at = NOW(),
+              version = version + 1
+          WHERE id = ${id}::uuid
+          RETURNING id, number, lead_id AS "leadId", client_id AS "clientId",
+                    truck_id AS "truckId", from_city_id AS "fromCityId",
+                    to_city_id AS "toCityId", distance_km AS "distanceKm",
+                    price, currency, status, public_token AS "publicToken",
+                    version, progress_percent AS "progressPercent",
+                    auto_progress_paused AS "autoProgressPaused",
+                    created_at AS "createdAt", updated_at AS "updatedAt"
+        `);
+        if (r.rows.length === 0) return null;
+        await tx.execute(sql`
+          INSERT INTO order_events (order_id, type, actor, payload)
+          VALUES (${id}::uuid, 'admin_override'::order_event_type, 'manager',
+                  ${JSON.stringify({ reason, new_status: status })}::jsonb)
+          ON CONFLICT (order_id, type) DO NOTHING
+        `);
+        return r.rows[0];
+      });
+      if (!updated) return reply.notFound(`order ${id} not found`);
+      return serializeOrder(updated);
+    }
+  );
+
+  // Phase 6 D-21 — pause/resume auto-progress.
+  // Sets orders.auto_progress_paused; ticker SELECT excludes paused=true rows.
+  // Guarded by requireAdmin (X-Admin-Secret header) — no-op when ADMIN_API_SECRET unset.
+  app.post(
+    '/orders/:id/ticker',
+    {
+      schema: {
+        tags: ['orders'],
+        summary: 'Pause/resume auto-progress ticker (Phase 6 D-21)',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({ paused: z.boolean() }),
+        response: {
+          200: z.object({ id: z.string().uuid(), autoProgressPaused: z.boolean() }),
+          401: z.object({ error: z.string() }),
+          404: NotImpl,
+        },
+      },
+      preHandler: async (req, reply) => { await app.requireAdmin(req, reply); },
+    },
+    async (req, reply) => {
+      const { id } = req.params;
+      const { paused } = req.body;
+      const r = await app.db.execute(sql`
+        UPDATE orders
+        SET auto_progress_paused = ${paused}, updated_at = NOW()
+        WHERE id = ${id}::uuid
+        RETURNING id, auto_progress_paused AS "autoProgressPaused"
+      `);
+      if (r.rows.length === 0) return reply.notFound(`order ${id} not found`);
+      const row = r.rows[0] as { id: string; autoProgressPaused: boolean };
+      return { id: row.id, autoProgressPaused: row.autoProgressPaused };
+    }
   );
 };
 
