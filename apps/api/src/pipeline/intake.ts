@@ -287,10 +287,24 @@ export async function handleInboundMessage(
     // CRITICAL: client text is wrapped in <client_message>...</client_message>
     // BEFORE being sent to the LLM. The system prompt instructs the model that
     // anything inside these tags is data, not instructions (D-42).
-    const wrapped = `<client_message>${args.text}</client_message>`;
+    //
+    // Conversation history: replay up to the last 12 messages on this lead so
+    // Claude treats follow-ups as the SAME conversation (no amnesia between
+    // "10 тонн" and the prior "Киев → Астана"). Filter out manager-role
+    // messages — those originate from the admin and aren't part of the AI's
+    // own dialog memory.
+    const history = await messagesRepo.listByLead(tx, lead.id, 12);
+    const userMessages: Array<{ role: 'user' | 'assistant'; content: string }> = history
+      .filter((m) => m.role === 'client' || m.role === 'ai')
+      .map((m) => ({
+        role: m.role === 'client' ? ('user' as const) : ('assistant' as const),
+        content: m.role === 'client' ? `<client_message>${m.text}</client_message>` : m.text,
+      }));
+    // The current inbound message was just inserted into the DB above, so it
+    // already lives in `history`. Don't append it again.
     const llmResult = await args.llm.runTurn({
       systemPrompt: EXTRACT_REQUEST_SYSTEM_PROMPT,
-      userMessages: [{ role: 'user', content: wrapped }],
+      userMessages,
       toolNames: ['extractRequest'],
     });
 
