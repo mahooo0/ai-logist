@@ -41,10 +41,14 @@ describe('Phase 5 — Demo Polish + Notifications + Final i18n: monotonic verifi
   test.skip(
     'POLISH-01 snapshot tests on 20 canonical extractRequest + 10 calcPrice inputs are byte-stable across 10 runs (validated by tests/snapshots/*.snap.ts + test:snapshot 10× loop — Plan 05-03 Wave 3)'
   );
-  test.todo('POLISH-02 POST /api/admin/simulate-call replays 5 scenarios end-to-end');
+  test.skip(
+    'POLISH-02 POST /api/admin/simulate-call replays 5 scenarios end-to-end (validated by tests/integration/simulate-call.test.ts — Plan 05-04 Wave 4)'
+  );
   test.todo('POLISH-03 voice-fallback.mp4 exists, ≤15MB, valid MP4 magic bytes, WebVTT captions');
-  test.todo('POLISH-05 preflight.ts script exists and exports 6 sequential checks');
-  test.todo(
-    'POLISH-06 OpenAIAdapter + AnthropicAdapter produce same Zod-validated output for same input'
+  test.skip(
+    'POLISH-05 preflight.ts script exists and exports 6 sequential checks (validated by tests/unit/preflight-script-shape.test.ts — Plan 05-04 Wave 4)'
+  );
+  test.skip(
+    'POLISH-06 OpenAIAdapter + AnthropicAdapter produce same Zod-validated output for same input (validated by tests/unit/llm-provider-adapter.test.ts — Plan 05-04 Wave 4)'
   );
 });

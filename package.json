@@ -16,7 +16,8 @@
     "seed": "pnpm --filter @ai-logist/api seed",
     "compose:up": "docker compose up -d postgres redis",
     "compose:down": "docker compose down",
-    "compose:full": "docker compose up -d"
+    "compose:full": "docker compose up -d",
+    "preflight": "pnpm --filter @ai-logist/api exec tsx --env-file=../../.env.local scripts/preflight.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
