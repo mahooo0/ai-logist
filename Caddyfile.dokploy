@@ -1,0 +1,31 @@
+# Caddyfile for Dokploy deployment — service names are project-prefixed to
+# avoid alias collisions on dokploy-network (see dokploy-compose.yml header).
+# Dokploy's Traefik terminates TLS and forwards HTTPS -> here over plain HTTP.
+:80 {
+    encode gzip
+
+    # API: /api/* — preserve prefix (Fastify routes are /api/health, /api/leads, …)
+    handle /api/* {
+        reverse_proxy ailogist-api:3000
+    }
+
+    # Webhooks (Telegram, voice/gps)
+    handle /webhook/* {
+        reverse_proxy ailogist-api:3000
+    }
+
+    # WebSocket (/ws/tracking, /ws/inbox)
+    handle /ws/* {
+        reverse_proxy ailogist-api:3000
+    }
+
+    # Everything else → Next.js admin
+    handle {
+        reverse_proxy ailogist-web:3001
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}

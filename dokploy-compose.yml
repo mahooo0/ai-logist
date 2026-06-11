@@ -1,10 +1,15 @@
 # Dokploy compose: deployed at ai-logist.holy-water.app
-# Dokploy's Traefik terminates TLS and forwards HTTPS -> caddy:80 (single-domain layout).
-# Caddy then routes /api/*, /webhook/*, /ws/* -> api:3000; rest -> web:3001 (see Caddyfile).
+# Dokploy's Traefik terminates TLS and forwards HTTPS -> ailogist-caddy:80 (single-domain layout).
+# Caddy then routes /api/*, /webhook/*, /ws/* -> ailogist-api:3000; rest -> ailogist-web:3001
+# (see Caddyfile).
+#
+# Service names are project-prefixed because Caddy lives on dokploy-network too
+# (for Traefik routing), and short names like 'api'/'web' collide with other
+# Dokploy stacks' aliases on that shared network → Docker DNS returns the wrong IP.
 # NO host port bindings — Traefik already occupies 80/443 on the VPS.
 
 services:
-  postgres:
+  ailogist-postgres:
     image: postgis/postgis:17-3.5
     environment:
       POSTGRES_DB: ailogist
@@ -19,7 +24,7 @@ services:
       retries: 10
     restart: always
 
-  redis:
+  ailogist-redis:
     image: redis:7-alpine
     command: redis-server --appendonly yes
     volumes:
@@ -31,21 +36,21 @@ services:
       retries: 10
     restart: always
 
-  api:
+  ailogist-api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     depends_on:
-      postgres:
+      ailogist-postgres:
         condition: service_healthy
-      redis:
+      ailogist-redis:
         condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
-      DATABASE_URL: postgresql://ailogist:${DB_PASSWORD}@postgres:5432/ailogist?sslmode=disable
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://ailogist:${DB_PASSWORD}@ailogist-postgres:5432/ailogist?sslmode=disable
+      REDIS_URL: redis://ailogist-redis:6379
       LOG_LEVEL: info
       VERSION: ${VERSION:-dokploy}
       # Phase 2 — LLM (optional at boot; AnthropicLlmClient throws only when invoked in prod)
@@ -79,16 +84,16 @@ services:
       retries: 5
     restart: always
 
-  web:
+  ailogist-web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     depends_on:
-      - api
+      - ailogist-api
     environment:
       NODE_ENV: production
       PORT: 3001
-      API_INTERNAL_URL: http://api:3000
+      API_INTERNAL_URL: http://ailogist-api:3000
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
       AUTH_COOKIE_SECRET: ${AUTH_COOKIE_SECRET}
@@ -96,21 +101,21 @@ services:
       - '3001'
     restart: always
 
-  caddy:
+  ailogist-caddy:
     image: caddy:2-alpine
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.dokploy:/etc/caddy/Caddyfile:ro
       - caddydata:/data
       - caddyconfig:/config
     expose:
       - '80'
     depends_on:
-      - api
-      - web
+      - ailogist-api
+      - ailogist-web
     restart: always
     # Dokploy attaches the domain-bound service to its dokploy-network for
     # Traefik routing. Explicitly include the compose default network so
-    # Caddy can still resolve api:3000 / web:3001 upstream.
+    # Caddy can still resolve ailogist-api:3000 / ailogist-web:3001 upstream.
     networks:
       - default
       - dokploy-network
