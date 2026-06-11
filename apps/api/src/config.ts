@@ -29,6 +29,14 @@ const ConfigSchema = z.object({
   NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
   NOMINATIM_CONTACT_EMAIL: z.string().email().default('demo@ai-logist.local'),
 
+  // Phase 5 POLISH-06 — LLM provider failover. Default 'anthropic'; setting to
+  // 'openai' swaps in OpenAIAdapter (requires OPENAI_API_KEY). Both adapters
+  // share the Phase 2 tool registry — Anti-Pitfall #1 invariant preserved
+  // (prices always rendered from leads.quoted_price DB column).
+  LLM_PROVIDER: z.enum(['anthropic', 'openai']).optional().default('anthropic'),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().optional().default('gpt-4o'),
+
   // Phase 3.1 — voice channel config (D-26). All optional at schema level so
   // Phase 2 unit tests + Phase 3 boot without voice config. requireVoiceConfig()
   // throws at the voice plugin/route boundary (same pattern as requireTelegramConfig).
@@ -56,6 +64,17 @@ if (!parsed.success) {
 }
 
 export const config: AppConfig = parsed.data;
+
+/** Phase 5 POLISH-06 — boundary assertion for OpenAI provider swap.
+ *  Throws at the first call to getLLMClient() when LLM_PROVIDER=openai but
+ *  OPENAI_API_KEY is absent. NOT enforced at config-parse time so the API
+ *  boots happily on the default ('anthropic') without needing the OpenAI key.
+ */
+export function requireOpenAIConfig(): void {
+  if (config.LLM_PROVIDER === 'openai' && !config.OPENAI_API_KEY) {
+    throw new Error('LLM_PROVIDER=openai requires OPENAI_API_KEY to be set');
+  }
+}
 
 /** D-30 / RESEARCH Open Question §1 — boundary assertion for live Telegram channel. */
 export function requireTelegramConfig(): void {
