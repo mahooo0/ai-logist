@@ -138,11 +138,11 @@
 ### Demo Polish (POLISH)
 
 - [x] **POLISH-01**: Snapshot-тесты `extractRequest` и `calcPrice` (20 канонических входов) в CI
-- [ ] **POLISH-02**: «Simulate inbound call» кнопка в админке — проигрывает заранее заготовленный транскрипт через LLM-пайплайн (резерв на случай если real-call упадёт)
+- [x] **POLISH-02**: «Simulate inbound call» кнопка в админке — проигрывает заранее заготовленный транскрипт через LLM-пайплайн (резерв на случай если real-call упадёт)
 - [ ] **POLISH-03**: Pre-recorded видео реального звонка ElevenLabs для показа возможностей голоса (резерв если venue WiFi или Twilio лёг)
 - [ ] **POLISH-04**: Локально кэшированные тайлы карты на случай плохого WiFi на демо-площадке
-- [ ] **POLISH-05**: Pre-flight чек-лист (бот жив, БД сидится, симулятор стартует, обе ссылки `/track/*` работают, **тестовый звонок проходит**)
-- [ ] **POLISH-06**: Опционально — failover на OpenAI SDK если Anthropic API лежит
+- [x] **POLISH-05**: Pre-flight чек-лист (бот жив, БД сидится, симулятор стартует, обе ссылки `/track/*` работают, **тестовый звонок проходит**)
+- [x] **POLISH-06**: Опционально — failover на OpenAI SDK если Anthropic API лежит
 
 ## v2 Requirements
 
@@ -295,11 +295,11 @@
 | DEPLOY-03 | Phase 1 | Complete |
 | DEPLOY-04 | Phase 1 | Complete |
 | POLISH-01 | Phase 6 | Complete |
-| POLISH-02 | Phase 6 | Pending |
+| POLISH-02 | Phase 6 | Complete |
 | POLISH-03 | Phase 6 | Pending |
 | POLISH-04 | Phase 6 | Pending |
-| POLISH-05 | Phase 6 | Pending |
-| POLISH-06 | Phase 6 | Pending |
+| POLISH-05 | Phase 6 | Complete |
+| POLISH-06 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: **89 total** (10 DB + 16 API + 5 LOGIC + 6 MATCH + 6 FSM + 7 TG + 6 ADMIN + 7 ADMIN-NEW + 7 TRACK + 2 PUBLIC + 5 I18N + 2 NOTIF + 4 DEPLOY + 6 POLISH = 89; the earlier "97 total" was an arithmetic typo)
