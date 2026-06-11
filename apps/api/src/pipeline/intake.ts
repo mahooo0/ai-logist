@@ -110,8 +110,12 @@ const NO_TRUCKS_UA = "На жаль, вільних машин немає. Ме�
  * but also accepts "подтверждаю", "согласен", "погоджуюсь", "підтверджую",
  * "так". Case-insensitive + Unicode flag for Cyrillic boundaries.
  */
+// \b in JavaScript regex (even with /u) defines word boundary via ASCII \w,
+// so Cyrillic 'да' / 'оформляй' / 'підтверджую' would NEVER match. Use
+// Unicode property escape \P{L} (not-a-letter) instead so the word boundary
+// works across alphabets.
 const CONFIRM_PATTERNS =
-  /\b(да|ок|окей|ага|угу|подтверждаю|согласен|согласна|согласны|так|погоджуюсь|підтверджую|погоджуюся|оформля(й|йте|ем|ю)|оформи(те)?|давай(те)?|беру|берём|берем|готов(а|ы)?|хорошо|годиться|годится|підтверджую\s*замовлення)\b/iu;
+  /(?:^|\P{L})(да|ок|окей|ага|угу|подтверждаю|согласен|согласна|согласны|так|погоджуюсь|підтверджую|погоджуюся|оформля(й|йте|ем|ю)|оформи(те)?|давай(те)?|беру|берём|берем|готов(а|ы)?|хорошо|годиться|годится|підтверджую\s*замовлення)(?:\P{L}|$)/iu;
 
 /**
  * Pipeline entry-point for an inbound client message.
