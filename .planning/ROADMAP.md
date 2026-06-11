@@ -138,7 +138,7 @@ Plans:
   5. Pre-flight checklist script (`pnpm preflight`) confirms: Telegram bot is alive, Twilio number answers a test call, DB is seeded, `/api/health` returns PostGIS version + LLM key check, RU and UA paths both complete end-to-end via voice and Telegram in a smoke run.
 **Plans**: 6 plans
   - [x] 05-00-test-infra-PLAN.md — Wave 0: phase-5-stubs (11 markers) + 7 unit + 2 integration + 2 snapshot + 1 web scaffolds + PHASE-5.md
-  - [ ] 05-01-notif-audit-PLAN.md — Wave 1: audit Phase 3 NOTIF-01/02 wiring (zero new code if pass) + flip notif-fsm-transitions + i18n-no-track-link scaffolds
+  - [x] 05-01-notif-audit-PLAN.md — Wave 1: audit Phase 3 NOTIF-01/02 wiring (verdict PASS as-designed; zero new code) + flipped notif-fsm-transitions + i18n-no-track-link scaffolds ✅ (2026-06-11)
   - [ ] 05-02-i18n-core-PLAN.md — Wave 2: install intl-messageformat@11.2.8 + extend i18n.ts with renderBotReply + create icu.ts (server + web) + extend dict.ts with 5 ICU plural templates + migrate intake.ts inline strings + flip I18N-01/03/05
   - [ ] 05-03-snapshot-format-date-PLAN.md — Wave 3: POLISH-01 snapshot tests (10 calcPrice + 20 extractRequest, byte-stable via MockAnthropicClient + FIXED_NOW) + I18N-04 formatDateLocale (date-fns/locale per-path imports) + flip POLISH-01 + NOTIF-01/02 + I18N-04
   - [ ] 05-04-simulate-adapter-preflight-PLAN.md — Wave 4: POLISH-02 simulate-call route + modal + POLISH-06 LLM provider adapter (Anthropic + OpenAI@4.104.0 EXACT pin + JSON.parse on function.arguments per Pitfall §5) + POLISH-05 preflight.ts (6 sequential fail-fast checks) + voice-scenarios.json relocation src/fixtures/ + flip POLISH-02/05/06
@@ -191,7 +191,7 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 | 3. Telegram Channel | 6/6 | ✓ Complete | 2026-06-10 |
 | 3.1. Voice Channel (ElevenLabs + Twilio) | 5/5 | ✓ Complete | 2026-06-10 |
 | 4. Admin Web (REDUCED) | 7/7 | ✓ Complete | 2026-06-11 |
-| 5. Demo Polish + Notifications + i18n | 0/6 | Planned | - |
+| 5. Demo Polish + Notifications + i18n | 2/6 | Executing | - |
 
 ---
 *Roadmap created: 2026-06-08 by gsd-roadmapper*

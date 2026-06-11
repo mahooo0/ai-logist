@@ -110,8 +110,8 @@
 
 ### Notifications & Communication (NOTIF)
 
-- [ ] **NOTIF-01**: Сервис уведомлений шлёт Telegram-апдейты клиенту на каждый переход FSM заказа (DRIVER_ASSIGNED, IN_TRANSIT, DELIVERED — упрощённый набор без geofence-stages)
-- [ ] **NOTIF-02**: Шаблоны уведомлений на RU/UA (без ссылки на /track/[token] — tracking page deferred to v2)
+- [x] **NOTIF-01**: Сервис уведомлений шлёт Telegram-апдейты клиенту на каждый переход FSM заказа (DRIVER_ASSIGNED, IN_TRANSIT, DELIVERED — упрощённый набор без geofence-stages)
+- [x] **NOTIF-02**: Шаблоны уведомлений на RU/UA (без ссылки на /track/[token] — tracking page deferred to v2)
 
 ### Deployment & Demo (DEPLOY)
 
@@ -288,8 +288,8 @@
 | I18N-03 | Phase 6 | Pending |
 | I18N-04 | Phase 6 | Pending |
 | I18N-05 | Phase 6 | Pending |
-| NOTIF-01 | Phase 6 | Pending |
-| NOTIF-02 | Phase 6 | Pending |
+| NOTIF-01 | Phase 6 | Complete |
+| NOTIF-02 | Phase 6 | Complete |
 | DEPLOY-01 | Phase 1 | Complete |
 | DEPLOY-02 | Phase 1 | Complete |
 | DEPLOY-03 | Phase 1 | Complete |
