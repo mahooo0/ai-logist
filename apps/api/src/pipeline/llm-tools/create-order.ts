@@ -111,6 +111,17 @@ export async function createOrderHandler(
       throw new Error(`createOrder: concurrent createOrder on lead ${lead.id} (version mismatch)`);
     }
 
+    // 5. Mark the matched truck as busy so /dashboard/tracking + the matcher
+    // reflect reality. Skip when the lead came off the bourse stub
+    // (matched_truck_id is null in that case — see intake.ts STEP G).
+    if (lead.matched_truck_id) {
+      await tx.execute(sql`
+        UPDATE trucks
+        SET status = 'busy', updated_at = NOW()
+        WHERE id = ${lead.matched_truck_id} AND status = 'available'
+      `);
+    }
+
     ctx.log.info(
       {
         tool: 'createOrder',
