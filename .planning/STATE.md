@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 7
-status: executing
-last_updated: "2026-06-10T23:31:18.002Z"
+current_plan: Not started
+status: planning
+last_updated: "2026-06-11T00:17:44.813Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -29,11 +29,11 @@ progress:
 
 Phase: 04 (admin-web-reduced-scope-chat-calls-orders-kpi) — EXECUTING
 Plan: 7 of 7
-Current Plan: 7
+Current Plan: Not started
 Total Plans in Phase: 7
-**Phase:** 4 of 6 (admin web (reduced scope — chat + calls + orders + kpi))
+**Phase:** 5 of 6 (demo polish + notifications + final i18n (was phase 6 — renumbered after tracking deferral))
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 ALL PLANS complete: 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook route: two-stage handler, ON CONFLICT idempotency, secret_token auth, /voice flipped 501→200) + 03-03 (Wave 3 adapter+keyboards+outbound: TG-03 + TG-04) + 03-04 (Wave 4 notifications+driver-FSM-hook: TG-05 + TG-07; ORDER_TRANSITIONS gains DRIVER_ASSIGNED→CLOSED edge; transitionOrder onSuccess post-commit hook; adapter-driven tryAdvanceOrderAfterCreation helper) + 03-05 (Wave 5 manager intercept routes + setupWebhook + README + final stub flip TG-06 + HUMAN-UAT-03). 9/9 Phase 3 reqs covered; 0 stub todos; 157 unit tests passing.
-**Status:** Ready to execute
+**Status:** Ready to plan
 
 **Progress:**
 
