@@ -9,7 +9,16 @@
 // Note: leads.order_id forward-references this table. Drizzle resolves circular
 // FKs at runtime via the references(() => orders.id) lazy callback.
 
-import { bigint, index, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  index,
+  numeric,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { orderStatusEnum } from './_enums.js';
 import { cities } from './cities.js';
 import { clients } from './clients.js';
@@ -39,6 +48,12 @@ export const orders = pgTable(
 
     // CONTEXT FSM-03 — optimistic concurrency (Phase 2)
     version: bigint('version', { mode: 'number' }).notNull().default(0),
+
+    // Free-form 0..100 progress driven by /dashboard/tracking (slider + draggable
+    // marker). Independent of `status` — status moves through the FSM at its own
+    // cadence (DRIVER_ASSIGNED → AT_LOADING → ...), while progress_percent is
+    // visual state the dispatcher edits manually.
+    progressPercent: smallint('progress_percent').notNull().default(0),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

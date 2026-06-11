@@ -15,12 +15,16 @@ import {
   type OrderDetailSchema,
   OrderListItemSchema,
   OrderListQuerySchema,
+  OrderRouteResponseSchema,
   OrderSchema,
+  PatchOrderProgressBodySchema,
+  PatchOrderProgressResponseSchema,
   PriceOverrideBodySchema,
 } from '@ai-logist/shared-types/api/orders';
 import { sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod/v4';
+import { routeGeometry } from '../lib/routing.js';
 
 const NotImpl = z.object({
   statusCode: z.number(),
@@ -46,6 +50,7 @@ function serializeOrder(raw: unknown): OrderResponse {
     status: r.status as OrderResponse['status'],
     publicToken: r.publicToken as string,
     version: Number(r.version ?? 0),
+    progressPercent: Number(r.progressPercent ?? 0),
     createdAt: new Date(r.createdAt as string | Date).toISOString(),
     updatedAt: new Date(r.updatedAt as string | Date).toISOString(),
   };
@@ -81,7 +86,8 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
                o.truck_id AS "truckId", o.from_city_id AS "fromCityId",
                o.to_city_id AS "toCityId", o.distance_km AS "distanceKm",
                o.price, o.currency, o.status, o.public_token AS "publicToken",
-               o.version, o.created_at AS "createdAt", o.updated_at AS "updatedAt",
+               o.version, o.progress_percent AS "progressPercent",
+               o.created_at AS "createdAt", o.updated_at AS "updatedAt",
                fc.name_ru AS "fromCityName", tc.name_ru AS "toCityName",
                c.name AS "clientName", l.channel AS "leadChannel"
         FROM orders o
@@ -129,7 +135,8 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
                o.truck_id AS "truckId", o.from_city_id AS "fromCityId",
                o.to_city_id AS "toCityId", o.distance_km AS "distanceKm",
                o.price, o.currency, o.status, o.public_token AS "publicToken",
-               o.version, o.created_at AS "createdAt", o.updated_at AS "updatedAt"
+               o.version, o.progress_percent AS "progressPercent",
+               o.created_at AS "createdAt", o.updated_at AS "updatedAt"
         FROM orders o
         WHERE o.id = ${id}::uuid
       `);
@@ -285,6 +292,89 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
         : null;
 
       return { order, events, client, fromCity, toCity, truck, lead };
+    }
+  );
+
+  // /dashboard/tracking — return the OSRM road geometry between pickup and
+  // drop-off + the order's stored progress percent so the map can draw a
+  // polyline and position the truck marker along it.
+  app.get(
+    '/orders/:id/route',
+    {
+      schema: {
+        tags: ['orders'],
+        summary: 'Road polyline + progress (live tracking)',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: OrderRouteResponseSchema, 404: NotImpl },
+      },
+    },
+    async (req, reply) => {
+      const { id } = req.params;
+      const rows = await app.db.execute(sql`
+        SELECT o.id,
+               o.progress_percent AS "progressPercent",
+               ST_X(fc.geom::geometry) AS "fromLon",
+               ST_Y(fc.geom::geometry) AS "fromLat",
+               ST_X(tc.geom::geometry) AS "toLon",
+               ST_Y(tc.geom::geometry) AS "toLat"
+        FROM orders o
+        LEFT JOIN cities fc ON fc.id = o.from_city_id
+        LEFT JOIN cities tc ON tc.id = o.to_city_id
+        WHERE o.id = ${id}::uuid
+      `);
+      if (rows.rows.length === 0) return reply.notFound(`order ${id} not found`);
+      const r = rows.rows[0] as Record<string, unknown>;
+      if (
+        r.fromLon == null ||
+        r.fromLat == null ||
+        r.toLon == null ||
+        r.toLat == null
+      ) {
+        return reply.notFound(`order ${id} is missing pickup or drop-off geometry`);
+      }
+      const result = await routeGeometry(
+        { lon: Number(r.fromLon), lat: Number(r.fromLat) },
+        { lon: Number(r.toLon), lat: Number(r.toLat) },
+        app.log
+      );
+      return {
+        geometry: result.geometry,
+        distanceKm: result.route_km,
+        etaSec: result.eta_sec,
+        progressPercent: Number(r.progressPercent ?? 0),
+        source: result.source,
+      };
+    }
+  );
+
+  // /dashboard/tracking — dispatcher updates the order's progress (slider or
+  // drag-on-map). Optimistic-lock-free for simplicity; clobbering is fine
+  // because the only writers are the tracking UI and the future GPS webhook.
+  app.patch(
+    '/orders/:id/progress',
+    {
+      schema: {
+        tags: ['orders'],
+        summary: 'Update progress percent (tracking UI)',
+        params: z.object({ id: z.string().uuid() }),
+        body: PatchOrderProgressBodySchema,
+        response: { 200: PatchOrderProgressResponseSchema, 404: NotImpl },
+      },
+    },
+    async (req, reply) => {
+      const { id } = req.params;
+      const { progressPercent } = req.body;
+      const updated = await app.db.execute(sql`
+        UPDATE orders
+        SET progress_percent = ${progressPercent},
+            updated_at = NOW(),
+            version = version + 1
+        WHERE id = ${id}::uuid
+        RETURNING progress_percent AS "progressPercent"
+      `);
+      if (updated.rows.length === 0) return reply.notFound(`order ${id} not found`);
+      const r = updated.rows[0] as Record<string, unknown>;
+      return { progressPercent: Number(r.progressPercent ?? 0) };
     }
   );
 

@@ -25,6 +25,7 @@ export const OrderSchema = z.object({
   status: OrderStatus,
   publicToken: z.string(),
   version: z.number().default(0),
+  progressPercent: z.number().int().min(0).max(100).default(0),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -111,3 +112,24 @@ export const OrderDetailExtendedSchema = z.object({
   lead: LeadSchema.nullable(), // for channel breadcrumb (D-38)
 });
 export type OrderDetailExtended = z.infer<typeof OrderDetailExtendedSchema>;
+
+// /api/orders/:id/route — polyline + progress for the tracking page.
+export const OrderRouteResponseSchema = z.object({
+  geometry: z.array(z.tuple([z.number(), z.number()])), // [[lng, lat], ...]
+  distanceKm: z.number(),
+  etaSec: z.number(),
+  progressPercent: z.number().int().min(0).max(100),
+  source: z.enum(['osrm', 'haversine_fallback']),
+});
+export type OrderRouteResponse = z.infer<typeof OrderRouteResponseSchema>;
+
+// PATCH /api/orders/:id/progress
+export const PatchOrderProgressBodySchema = z.object({
+  progressPercent: z.number().int().min(0).max(100),
+});
+export type PatchOrderProgressBody = z.infer<typeof PatchOrderProgressBodySchema>;
+
+export const PatchOrderProgressResponseSchema = z.object({
+  progressPercent: z.number().int().min(0).max(100),
+});
+export type PatchOrderProgressResponse = z.infer<typeof PatchOrderProgressResponseSchema>;
