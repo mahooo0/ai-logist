@@ -23,16 +23,27 @@ export type OrderStatus =
   | 'IN_TRANSIT'
   | 'AT_BORDER'
   | 'DELIVERED'
-  | 'CLOSED';
+  | 'CLOSED'
+  | 'DELIVERED_PENDING'
+  | 'AWAITING_PAYMENT'
+  | 'CANCELED';
 
 /**
- * Allowed order lifecycle transitions per CONTEXT D-32.
+ * Allowed order lifecycle transitions per CONTEXT D-32 + Phase 6 D-11.
  *
  *   CREATED → DRIVER_ASSIGNED → AT_LOADING → IN_TRANSIT → AT_BORDER ⇄ IN_TRANSIT
- *                                                    └→ DELIVERED → CLOSED
+ *                                                    └→ DELIVERED_PENDING → AWAITING_PAYMENT → CLOSED
+ *                                         └→ CANCELED
+ *
+ * Phase 6 D-11 adds 8 new edges:
+ *   AT_LOADING → CANCELED (client declines loading)
+ *   IN_TRANSIT → DELIVERED_PENDING (ticker hits 100% on leg 2)
+ *   DELIVERED_PENDING → AWAITING_PAYMENT (client confirms delivery)
+ *   DELIVERED_PENDING → CANCELED (client declines delivery)
+ *   AWAITING_PAYMENT → CLOSED (Stripe webhook checkout.session.completed)
  *
  * AT_BORDER can re-emerge to IN_TRANSIT (cleared customs); IN_TRANSIT can branch
- * to AT_BORDER (international leg) or DELIVERED (domestic leg).
+ * to AT_BORDER (international leg) or DELIVERED (domestic leg for backwards compat).
  */
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CREATED: ['DRIVER_ASSIGNED'],
@@ -42,10 +53,17 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   // driver explicitly refuses the assignment; lead is independently
   // transitioned to LOST by the callback handler.
   DRIVER_ASSIGNED: ['AT_LOADING', 'CLOSED'],
-  AT_LOADING: ['IN_TRANSIT'],
-  IN_TRANSIT: ['AT_BORDER', 'DELIVERED'],
+  // Phase 6 D-11: CANCELED added for client decline path.
+  AT_LOADING: ['IN_TRANSIT', 'CANCELED'],
+  // Phase 6 D-11: DELIVERED_PENDING added for auto-progress ticker (leg 2 at 100%).
+  // DELIVERED kept for backwards compat (existing orders on legacy path).
+  IN_TRANSIT: ['AT_BORDER', 'DELIVERED', 'DELIVERED_PENDING'],
   AT_BORDER: ['IN_TRANSIT'],
   DELIVERED: ['CLOSED'],
+  // Phase 6 D-11: new statuses.
+  DELIVERED_PENDING: ['AWAITING_PAYMENT', 'CANCELED'],
+  AWAITING_PAYMENT: ['CLOSED'],
+  CANCELED: [],
   CLOSED: [],
 };
 
@@ -54,18 +72,29 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
  *
  * Phase 1 declared order_event_type as
  *   'created'|'driver_assigned'|'at_loading'|'in_transit'|'at_border'|'delivered'
- * — six values, no 'closed'. CLOSED is a terminal admin status without a
- * corresponding geofence/timeline event, so audit-log writes for CLOSED transitions
- * are skipped (audit_row_inserted = false).
+ * — six values. Phase 6 D-11 (B5 Path A) extends this:
+ *   AT_LOADING → 'loading_prompted' (NOT the legacy 'at_loading' — B5 Path A chosen).
+ *     This is the single source of truth the timeout SQL queries in Plan 06-02 Task 3
+ *     use (WHERE type IN ('loading_prompted', 'delivery_prompted')).
+ *   CLOSED → 'closed' (now has an event type; was null pre-Phase-6).
+ *   CANCELED → null (terminal failure; no event inserted via this map).
  */
 export const STATUS_TO_EVENT: Record<OrderStatus, string | null> = {
   CREATED: 'created',
   DRIVER_ASSIGNED: 'driver_assigned',
-  AT_LOADING: 'at_loading',
+  // Phase 6 B5 Path A: 'loading_prompted' (NOT legacy 'at_loading').
+  AT_LOADING: 'loading_prompted',
   IN_TRANSIT: 'in_transit',
   AT_BORDER: 'at_border',
   DELIVERED: 'delivered',
-  CLOSED: null,
+  // Phase 6: CLOSED now has an event type.
+  CLOSED: 'closed',
+  // Phase 6 D-11 new statuses.
+  DELIVERED_PENDING: 'delivery_prompted',
+  AWAITING_PAYMENT: 'payment_link_sent',
+  // CANCELED is a terminal failure state; no dedicated event type in STATUS_TO_EVENT
+  // (decline/escalation events are written explicitly by the handler, not via this map).
+  CANCELED: null,
 };
 
 /**

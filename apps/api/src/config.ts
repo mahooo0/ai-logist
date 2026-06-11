@@ -49,6 +49,25 @@ const ConfigSchema = z.object({
   ELEVENLABS_WEBHOOK_SECRET: z.string().optional(),
   VOICE_PUBLIC_URL: z.string().url().optional(),
 
+  // Phase 6 — Demo ticker (D-01). Both default-on with sane values; flag
+  // gates registration in test/CI envs where Postgres isn't running.
+  DEMO_TICKER_ENABLED: z.coerce.boolean().default(false),
+  DEMO_TICKER_INTERVAL_SEC: z.coerce.number().int().positive().default(30),
+  DEMO_TICKER_DELTA_PCT: z.coerce.number().int().min(1).max(100).default(10),
+
+  // Phase 6 — Stripe Checkout (D-17). All optional at config-parse so the API
+  // boots without keys; requireStripeConfig() in apps/api/src/channels/stripe/setup.ts
+  // throws at the route boundary (mirrors requireVoiceConfig pattern).
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_CURRENCY: z.string().default('rub'),
+  STRIPE_SUCCESS_URL: z.string().url().optional(),
+  STRIPE_CANCEL_URL: z.string().url().optional(),
+
+  // Phase 6 — Admin shared-secret (Pitfall 6 mitigation). Optional; routes
+  // enforce only when set so dev keeps working without it.
+  ADMIN_API_SECRET: z.string().optional(),
+
   // Build info (passed at docker build time)
   VERSION: z.string().default('dev'),
 });

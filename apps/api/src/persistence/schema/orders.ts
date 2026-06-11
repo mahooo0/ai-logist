@@ -11,6 +11,7 @@
 
 import {
   bigint,
+  boolean,
   index,
   numeric,
   pgTable,
@@ -54,6 +55,10 @@ export const orders = pgTable(
     // cadence (DRIVER_ASSIGNED → AT_LOADING → ...), while progress_percent is
     // visual state the dispatcher edits manually.
     progressPercent: smallint('progress_percent').notNull().default(0),
+
+    // Phase 6 D-21 — pause/resume auto-progress ticker per order.
+    // Added via migration 0006_order_lifecycle.sql (manual apply required).
+    autoProgressPaused: boolean('auto_progress_paused').notNull().default(false),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -20,6 +20,9 @@ export const orderStatusEnum = pgEnum('order_status', [
   'AT_BORDER',
   'DELIVERED',
   'CLOSED',
+  'DELIVERED_PENDING',
+  'AWAITING_PAYMENT',
+  'CANCELED',
 ]);
 
 export const orderEventTypeEnum = pgEnum('order_event_type', [
@@ -29,6 +32,20 @@ export const orderEventTypeEnum = pgEnum('order_event_type', [
   'in_transit',
   'at_border',
   'delivered',
+  'approach_notified',
+  'loading_prompted',
+  'loading_confirmed',
+  'loading_declined',
+  'delivery_approach_notified',
+  'delivery_prompted',
+  'delivery_confirmed',
+  'delivery_declined',
+  'payment_link_sent',
+  'payment_received',
+  'reminder_sent',
+  'operator_escalated',
+  'admin_override',
+  'closed',
 ]);
 
 export const bodyTypeEnum = pgEnum('body_type_t', ['tent', 'ref', 'iso', 'container']);
@@ -37,7 +54,7 @@ export const truckStatusEnum = pgEnum('truck_status', ['available', 'busy', 'mai
 
 export const clientLangEnum = pgEnum('client_lang', ['ru', 'ua']);
 
-export const webhookSourceEnum = pgEnum('webhook_source', ['telegram', 'voice', 'gps']);
+export const webhookSourceEnum = pgEnum('webhook_source', ['telegram', 'voice', 'gps', 'stripe']);
 
 // Phase 2 Plan 02-01 — FSM-05 audit-log actor enum. D-29.
 export const leadEventActorEnum = pgEnum('lead_event_actor', ['ai', 'manager', 'system']);

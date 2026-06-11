@@ -14,8 +14,9 @@ import {
 } from '../../src/pipeline/lifecycle/order-fsm.js';
 
 describe('order-fsm — ORDER_TRANSITIONS table', () => {
-  it('ORDER_TRANSITIONS has exactly 7 statuses', () => {
-    expect(Object.keys(ORDER_TRANSITIONS)).toHaveLength(7);
+  // Phase 6 D-11: updated from 7 to 10 (added DELIVERED_PENDING, AWAITING_PAYMENT, CANCELED).
+  it('ORDER_TRANSITIONS has exactly 10 statuses', () => {
+    expect(Object.keys(ORDER_TRANSITIONS)).toHaveLength(10);
   });
 
   it.each<[OrderStatus, OrderStatus[]]>([
@@ -23,11 +24,17 @@ describe('order-fsm — ORDER_TRANSITIONS table', () => {
     // Phase 3 D-19 — DRIVER_ASSIGNED → CLOSED edge added for driver-decline
     // shortcut path. Standard happy-path still goes via AT_LOADING.
     ['DRIVER_ASSIGNED', ['AT_LOADING', 'CLOSED']],
-    ['AT_LOADING', ['IN_TRANSIT']],
-    ['IN_TRANSIT', ['AT_BORDER', 'DELIVERED']],
+    // Phase 6 D-11: CANCELED added for client decline path.
+    ['AT_LOADING', ['IN_TRANSIT', 'CANCELED']],
+    // Phase 6 D-11: DELIVERED_PENDING added for auto-progress ticker leg 2.
+    ['IN_TRANSIT', ['AT_BORDER', 'DELIVERED', 'DELIVERED_PENDING']],
     ['AT_BORDER', ['IN_TRANSIT']],
     ['DELIVERED', ['CLOSED']],
     ['CLOSED', []],
+    // Phase 6 new statuses.
+    ['DELIVERED_PENDING', ['AWAITING_PAYMENT', 'CANCELED']],
+    ['AWAITING_PAYMENT', ['CLOSED']],
+    ['CANCELED', []],
   ])('status %s allows exactly %j', (status, allowed) => {
     expect(ORDER_TRANSITIONS[status]).toEqual(allowed);
   });
@@ -40,10 +47,15 @@ describe('order-fsm — ORDER_TRANSITIONS table', () => {
     expect(ORDER_TRANSITIONS.CLOSED).toEqual([]);
   });
 
-  it('IN_TRANSIT branches to both AT_BORDER and DELIVERED', () => {
-    // Either international (via border) or domestic (straight to delivered).
+  it('CANCELED is terminal — no outgoing edges', () => {
+    expect(ORDER_TRANSITIONS.CANCELED).toEqual([]);
+  });
+
+  it('IN_TRANSIT branches to AT_BORDER, DELIVERED, and DELIVERED_PENDING', () => {
+    // International (via border), domestic legacy (DELIVERED), or Phase 6 auto path (DELIVERED_PENDING).
     expect(ORDER_TRANSITIONS.IN_TRANSIT).toContain('AT_BORDER');
     expect(ORDER_TRANSITIONS.IN_TRANSIT).toContain('DELIVERED');
+    expect(ORDER_TRANSITIONS.IN_TRANSIT).toContain('DELIVERED_PENDING');
   });
 
   it('AT_BORDER → IN_TRANSIT (cleared customs), no direct DELIVERED', () => {
@@ -52,21 +64,32 @@ describe('order-fsm — ORDER_TRANSITIONS table', () => {
 });
 
 describe('order-fsm — STATUS_TO_EVENT mapping', () => {
-  it('all 6 non-terminal statuses map to lowercase event type', () => {
+  it('all non-terminal statuses map to lowercase event type', () => {
     // order_event_type enum is lowercase (Phase 1); order_status is uppercase.
     expect(STATUS_TO_EVENT.CREATED).toBe('created');
     expect(STATUS_TO_EVENT.DRIVER_ASSIGNED).toBe('driver_assigned');
-    expect(STATUS_TO_EVENT.AT_LOADING).toBe('at_loading');
+    // Phase 6 B5 Path A: AT_LOADING maps to 'loading_prompted' (NOT legacy 'at_loading').
+    expect(STATUS_TO_EVENT.AT_LOADING).toBe('loading_prompted');
     expect(STATUS_TO_EVENT.IN_TRANSIT).toBe('in_transit');
     expect(STATUS_TO_EVENT.AT_BORDER).toBe('at_border');
     expect(STATUS_TO_EVENT.DELIVERED).toBe('delivered');
   });
 
-  it('CLOSED maps to null (no event type — terminal admin action)', () => {
-    expect(STATUS_TO_EVENT.CLOSED).toBeNull();
+  it('CLOSED maps to "closed" (Phase 6: now has an event type)', () => {
+    expect(STATUS_TO_EVENT.CLOSED).toBe('closed');
   });
 
-  it('STATUS_TO_EVENT covers all 7 order statuses', () => {
-    expect(Object.keys(STATUS_TO_EVENT)).toHaveLength(7);
+  it('CANCELED maps to null (terminal failure; events written explicitly by handler)', () => {
+    expect(STATUS_TO_EVENT.CANCELED).toBeNull();
+  });
+
+  it('Phase 6 new statuses map to correct event types', () => {
+    expect(STATUS_TO_EVENT.DELIVERED_PENDING).toBe('delivery_prompted');
+    expect(STATUS_TO_EVENT.AWAITING_PAYMENT).toBe('payment_link_sent');
+  });
+
+  // Phase 6 D-11: updated from 7 to 10 (added DELIVERED_PENDING, AWAITING_PAYMENT, CANCELED).
+  it('STATUS_TO_EVENT covers all 10 order statuses', () => {
+    expect(Object.keys(STATUS_TO_EVENT)).toHaveLength(10);
   });
 });
