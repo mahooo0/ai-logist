@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: completed
-last_updated: "2026-06-11T07:26:28.217Z"
+current_plan: 2
+status: executing
+last_updated: "2026-06-11T18:06:22.365Z"
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 6
-  total_plans: 43
-  completed_plans: 46
-  percent: 100
+  total_plans: 49
+  completed_plans: 47
+  percent: 96
 ---
 
 # State: AI-Логист
@@ -21,23 +21,23 @@ progress:
 
 **Core value:** Диалог ведёт LLM, но решения по деньгам и подбору принимает детерминированный код — цена и подбор должны быть предсказуемыми, тестируемыми, воспроизводимыми.
 
-**Current focus:** Phase 05 — demo-polish-notifications-final-i18n
+**Current focus:** Phase 06 — Order lifecycle automation: auto-progress ticker, Telegram confirmations at pickup/delivery, Stripe test-mode checkout, status transitions + negative paths
 
 **Stack (locked):** Node 22 LTS + TypeScript 5.7 strict + Fastify 5 + Drizzle ORM 0.45.2 + PostgreSQL 17 + PostGIS 3.5 + Redis 7.4 + grammY 1.43 + Anthropic SDK 0.102 (betaZodTool) + Next.js 16 / React 19 / Tailwind v4 / shadcn/ui (Zenith Admin template) + Leaflet + OSM. Monorepo via pnpm workspaces. Deploy: docker-compose + Caddy on single VM.
 
 ## Current Position
 
-Phase: 05 (demo-polish-notifications-final-i18n) — EXECUTING
-Plan: 6 of 6
-Current Plan: Not started
+Phase: 06 (Order lifecycle automation: auto-progress ticker, Telegram confirmations at pickup/delivery, Stripe test-mode checkout, status transitions + negative paths) — EXECUTING
+Plan: 2 of 6
+Current Plan: 2
 Total Plans in Phase: 6
 **Phase:** 05 of 6 (demo polish + notifications + final i18n (was phase 6 — renumbered after tracking deferral)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 ALL PLANS complete: 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook route: two-stage handler, ON CONFLICT idempotency, secret_token auth, /voice flipped 501→200) + 03-03 (Wave 3 adapter+keyboards+outbound: TG-03 + TG-04) + 03-04 (Wave 4 notifications+driver-FSM-hook: TG-05 + TG-07; ORDER_TRANSITIONS gains DRIVER_ASSIGNED→CLOSED edge; transitionOrder onSuccess post-commit hook; adapter-driven tryAdvanceOrderAfterCreation helper) + 03-05 (Wave 5 manager intercept routes + setupWebhook + README + final stub flip TG-06 + HUMAN-UAT-03). 9/9 Phase 3 reqs covered; 0 stub todos; 157 unit tests passing.
-**Status:** Milestone complete
+**Status:** Ready to execute
 
 **Progress:**
 
-[██████████] 100%
+[██████████] 96%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -96,6 +96,7 @@ Total Plans in Phase: 6
 | Phase 05 P03 | ~10min | 2 tasks | 8 files |
 | Phase 05-demo-polish-notifications-final-i18n P04 | 17min | 3 tasks | 17 files |
 | Phase 05-demo-polish-notifications-final-i18n P05 | 12min | 3 tasks | 11 files |
+| Phase 06 P00 | 11m | 3 tasks | 29 files |
 
 ## Accumulated Context
 
@@ -212,6 +213,10 @@ Total Plans in Phase: 6
 - **Plan 03-05 deviations:** (1) Top-level .planning/HUMAN-UAT.md created rather than phase-local (Phase 1 had phase-local; top-level becomes the cross-phase entry point + links to phase-local logs). No content lost. (2) The intercept→bot-silent integration test (case #2 of 5) asserts lead.stage UNCHANGED instead of testing the full processTelegramUpdate path — adapter looks up client by Number(telegram_id) but seed uses non-numeric tags. The full adapter-side manager_active gate is already covered by Plan 03-03's telegram-adapter.test.ts. (3) biome-ignore lint/suspicious/noConsole removed from CLI script — biome.json sets noConsole:off at project level so suppressions are unused (same lesson as Plan 03-04).
 
 - **Plan 03-03:** `OutboundChannel` interface (sendQuoteKeyboard + sendText) + `OutboundRegistry` class (Map<string, OutboundChannel> with register/get) in `pipeline/outbound.ts` — channel-agnostic surface so intake.ts stays Telegram-blind. `TelegramOutbound` in `channels/telegram/outbound.ts`: client lookup → silent-skip on null telegramId (D-26) → lead lookup → best-effort city name CTE → `bot.api.sendMessage(client.telegramId, formatQuoteMessage(...), {reply_markup: quoteKeyboard(leadId, lang), parse_mode:'HTML'})`. `keyboards.ts` ships `quoteKeyboard` (3 buttons RU/UA, callback_data `<action>:<leadId>` per D-13), `driverKeyboard` (Wave 4 ready), `formatQuoteMessage` (HTML template pulling route/tons/price from DB — NO LLM strings). Real `processTelegramUpdate` in `adapter.ts` triages per RESEARCH Pattern 5: callback_query → bot.handleUpdate; no message → log+skip; no from → log+skip; command (startsWith '/') → handleUpdate; non-text → polite refusal `'Я понимаю только текстовые сообщения. Напишите детали груза.'`; else → `clientsRepo.findByTelegramId(app.db, String(from.id))` → upsert with synthetic phone `tg:<id>` (D-10) → `findInterceptedLead` (manager_active=true on open lead, EXCLUDES terminal stages) → if intercepted: persist client msg + return; else: build OutboundRegistry with telegram entry → `handleInboundMessage({db, llm: resolveLlm(app), log, clientId, text, channel:'telegram', outbound})` → loop `result.exchanges.filter(role==='assistant')` and `bot.api.sendMessage(chat.id, content)`. `handlers.ts` wires `bot.command('start')` (RU greeting), `bot.command('help')` (lang-aware RU/UA/both), `bot.callbackQuery(/^(confirm|reject|change):(.+)$/)` (answerCallbackQuery + editMessageReplyMarkup undefined + synthetic text 'да'/'нет'/'изменить' → handleInboundMessage → render exchanges). `plugins/telegram.ts` calls `registerTelegramHandlers(bot, app)` via dynamic import after `bot.init()`. **intake.ts surgical edit: 25 added lines (≤30 budget). ONE import (`type OutboundRegistry`), ONE optional `outbound?: OutboundRegistry` field on InboundMessageArgs, local `type PostCommitQuote` + `let postCommitQuote: PostCommitQuote | null = null as PostCommitQuote | null` BEFORE `args.db.transaction`, ONE in-tx mutation `postCommitQuote = { leadId, quotedPriceKop, lang }` at END of STEP I, ONE post-tx fire-and-forget block: `if (payload && args.outbound) args.outbound.get(args.channel)?.sendQuoteKeyboard({clientId, ...payload}).catch(err => args.log?.warn(...))` + `return result`**. transitionLead count = 15 (UNCHANGED). sendQuoteKeyboard count = 2. Lazy LLM resolution via `resolveLlm(app)` helper (mirror in adapter + handlers) — tests inject `app.llm`, prod constructs `AnthropicLlmClient` lazily. Mock bot substituted via direct `(app as unknown as {bot}).bot = mock.bot` after `buildApp()`. Tests: telegram-keyboards.test.ts (6 it() blocks, unit-style, NO Docker — quoteKeyboard shape + UA labels + driverKeyboard + formatQuoteMessage RU/UA/em-dash). telegram-adapter.test.ts (2 it() blocks, Docker-gated — non-text refusal + manager_active gate). phase-3-stubs marker count: 5 → 3 (TG-03/TG-04 flipped; TG-05/TG-06/TG-07 remain for Waves 4-5). Unit suite: 154 passed | 3 todo (was 152/5; +2 flipped).
+
+### Roadmap Evolution
+
+- Phase 6 added: Order lifecycle automation — auto-progress ticker, Telegram confirmations at pickup/delivery, Stripe test-mode checkout, status transitions + negative paths
 
 ### TODOs
 
