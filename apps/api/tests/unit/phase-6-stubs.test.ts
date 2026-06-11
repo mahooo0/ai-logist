@@ -29,8 +29,9 @@ describe('Phase 6 — Order lifecycle automation: monotonic verifier baseline', 
   test.skip(
     'D-03 tick rules: increment, fire approach at 90%, transition at 100% (validated by ticker-loop.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
   );
-  test.skip(
-    'D-04 polyline interpolation matches web math (validated by polyline-interpolate.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
+  test(
+    'D-04 polyline interpolation matches web math (validated by polyline-interpolate.test.ts — Plan 06-02 Wave 2) — phase-6-stub',
+    () => { /* flipped Plan 06-02 */ }
   );
   test.skip(
     'D-05 order_events row written per ticker-driven transition (validated by order-events-write.test.ts — Plan 06-02 Wave 2) — phase-6-stub'
