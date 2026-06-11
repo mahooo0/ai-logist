@@ -72,6 +72,23 @@
 - ✓ 187 unit tests passing / 0 todos
 - ⏳ UAT-04: реальный звонок через Twilio + ElevenLabs (10-step protocol в HUMAN-UAT.md, ~$15 cost)
 
+**Phase 4 — Admin Web (REDUCED scope — chat + calls + orders + KPI) (2026-06-11):**
+- ✓ Zenith Admin template (`mahooo0/next-shadcn-admin-dashboard` @ SHA `4e667cc`) vendored в `apps/web/` — Phase 4 (ADMIN-01)
+- ✓ Auth gate via Next.js 16 `proxy.ts` (Pitfall #4) + bcrypt (cost-12) + jose HS256 12h JWT + HTTP-only sameSite=lax secure cookie `al_session` — Phase 4 (ADMIN-02)
+- ✓ `/dashboard/chat` мульти-канальный mixed-timeline view — Telegram bubbles + voice transcript turns с inline audio seek (`audio.currentTime = timestampMs/1000`); manager intercept controls на Telegram threads только (voice threads никогда — D-47) — Phase 4 (ADMIN-03)
+- ✓ `/dashboard/calls` table — 6 columns (timestamp, phone-masked, lang, duration mm:ss, outcome color badge, linked_order) + URL-bookmarkable filters (outcome/lang/date) + shadcn Dialog modal с audio player + full transcript + Open lead/Open order — Phase 4 (ADMIN-NEW-08)
+- ✓ `/dashboard/orders` table — 7 columns с joined city names + client + channel; row click → `/orders/[id]` full page (не modal) — Phase 4 (ADMIN-NEW-02)
+- ✓ `/dashboard/orders/[id]` read-only детальная карточка — header (number + status + price), 4 cards (client/route/truck/cargo), vertical `order_events` timeline, source-channel breadcrumb ("Прослушать звонок" / "Открыть диалог") — Phase 4 (ADMIN-NEW-03)
+- ✓ `/dashboard/default` + `/analytics` KPI dashboards — recharts (conversion funnel 5-stage, channel split donut, revenue trend line, calls per day bar, avg call duration sparkline); day/week/month window selector — Phase 4 (ADMIN-05)
+- ✓ Backend: 5 routes flipped (GET /api/leads, /orders +:id, /trucks, /clients/:id/messages UNION, /analytics/kpi v2) + 1 NEW file (`apps/api/src/routes/calls.ts`) — Phase 4 (API-03, API-04, API-05, API-06, API-09)
+- ✓ shared-types extensions: NEW `api/calls.ts` (Call/CallDetail/CallListQuery); extended `analytics.ts` (KpiResponse v2 с avgCallDurationS + byChannel + 5-stage conversionFunnel); `orders.ts` (OrderListItem + OrderDetailExtended); `clients.ts` (UnifiedMessage)
+- ✓ RU/UA dictionary + `useT()` hook + Customize-panel toggle hooked to existing Zenith preferences Zustand store — Phase 4 (I18N-02)
+- ✓ Sidebar trimmed to 5 shipped routes (Default/Analytics/Chat/Calls/Orders); другие пункты commented-out (не удалены — D-48/D-49 для v2 re-enable)
+- ✓ Pitfall #13 защитные grep guards (5/5 GREEN): нет `'use cache'` на /chat/calls/orders; border-border explicit; page.tsx Server / `_components/*` client convention
+- ✓ apps/api: 200 passed | 0 todo | phase-4-stubs marker count = 0 (все 13 reqs flipped); apps/web: 28 passed | 0 todo (первый запуск vitest+RTL+happy-dom на этом проекте)
+- ⏳ UAT-05: 8-step human protocol в HUMAN-UAT-05.md (Telegram smoke → Voice smoke → login → 6 pages → manager intercept → RU↔UA toggle) — отложено (Docker недоступен + требует реальный Telegram/Twilio)
+- ⏳ 319 pre-existing Zenith vendor Biome errors → deferred-items.md (out of scope per SCOPE BOUNDARY; v2 path: extend `biome.json` ignore list)
+
 ### Active
 
 <!-- Current scope. Building toward demo per §9 of spec. -->
@@ -186,4 +203,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 after Phase 3.1 completion*
+*Last updated: 2026-06-11 after Phase 4 completion*
