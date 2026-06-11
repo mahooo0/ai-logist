@@ -129,7 +129,7 @@ Plans:
 ### Phase 5: Demo Polish + Notifications + Final i18n (was Phase 6 — renumbered after Tracking deferral)
 **Goal**: Final dress rehearsal — every order transition fires a Telegram notification, Slavic pluralization works, dates render in locale, snapshot tests are green, voice channel has a fallback video + "simulate call" button, pre-flight checklist closes every demo-day risk.
 **Depends on**: Phase 4 (admin runs end-to-end with Telegram + Voice data)
-**Requirements** (10): I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-05, POLISH-06
+**Requirements** (11): I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-05, POLISH-06
 **Success Criteria** (what must be TRUE):
   1. Every order FSM transition (`DRIVER_ASSIGNED`, `IN_TRANSIT`, `DELIVERED`) sends the client a Telegram notification using the `I18N-01` RU/UA dictionary; the message contains exactly one number that equals the stored field — no LLM paraphrase. (No `/track/[token]` link — public tracking deferred.)
   2. Pluralization tests pass for `0`, `1`, `2`, `5`, `21`, `25` ("Найдено 1 машина / 2 машины / 5 машин"); declension-free templates ("Маршрут: {from} → {to}") render correctly; dates show `8 июн, ср` (RU) and `8 чер, ср` (UA) via `date-fns/locale`.
@@ -137,6 +137,12 @@ Plans:
   4. Voice fallback video (pre-recorded real ElevenLabs call) is bundled and accessible from the admin's `/dashboard/calls` page; `LLM_PROVIDER` env can swap Anthropic ↔ OpenAI failover in <30 seconds.
   5. Pre-flight checklist script (`pnpm preflight`) confirms: Telegram bot is alive, Twilio number answers a test call, DB is seeded, `/api/health` returns PostGIS version + LLM key check, RU and UA paths both complete end-to-end via voice and Telegram in a smoke run.
 **Plans**: 6 plans
+  - [x] 05-00-test-infra-PLAN.md — Wave 0: phase-5-stubs (11 markers) + 7 unit + 2 integration + 2 snapshot + 1 web scaffolds + PHASE-5.md
+  - [ ] 05-01-notif-audit-PLAN.md — Wave 1: audit Phase 3 NOTIF-01/02 wiring (zero new code if pass) + flip notif-fsm-transitions + i18n-no-track-link scaffolds
+  - [ ] 05-02-i18n-core-PLAN.md — Wave 2: install intl-messageformat@11.2.8 + extend i18n.ts with renderBotReply + create icu.ts (server + web) + extend dict.ts with 5 ICU plural templates + migrate intake.ts inline strings + flip I18N-01/03/05
+  - [ ] 05-03-snapshot-format-date-PLAN.md — Wave 3: POLISH-01 snapshot tests (10 calcPrice + 20 extractRequest, byte-stable via MockAnthropicClient + FIXED_NOW) + I18N-04 formatDateLocale (date-fns/locale per-path imports) + flip POLISH-01 + NOTIF-01/02 + I18N-04
+  - [ ] 05-04-simulate-adapter-preflight-PLAN.md — Wave 4: POLISH-02 simulate-call route + modal + POLISH-06 LLM provider adapter (Anthropic + OpenAI@4.104.0 EXACT pin + JSON.parse on function.arguments per Pitfall §5) + POLISH-05 preflight.ts (6 sequential fail-fast checks) + voice-scenarios.json relocation src/fixtures/ + flip POLISH-02/05/06
+  - [ ] 05-05-video-uat-gate-PLAN.md — Wave 5: POLISH-03 voice-fallback.mp4 ≤15MB + RU+UA captions + modal + button + HUMAN-UAT-06.md (8 steps) + README Demo Day Checklist + 05-PHASE-SUMMARY + checkpoint:human-verify + flip POLISH-03 (FINAL — count → 0)
 
 ---
 
@@ -172,8 +178,8 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 | 3 — Telegram Channel | 9 | API-13, API-15, TG-01..07 |
 | 3.1 — Voice Channel (ElevenLabs + Twilio) | 12 | VOICE-01..12 |
 | 4 — Admin Web (REDUCED) | 12 | API-03, API-04, API-05, API-06, API-09, ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-05, ADMIN-NEW-02, ADMIN-NEW-03, ADMIN-NEW-08, I18N-02 |
-| 5 — Polish + Notif + i18n | 10 | I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-05, POLISH-06 |
-| **Total v1 after pivot** | **78** | |
+| 5 — Polish + Notif + i18n | 11 | I18N-01, I18N-03, I18N-04, I18N-05, NOTIF-01, NOTIF-02, POLISH-01, POLISH-02, POLISH-03, POLISH-05, POLISH-06 |
+| **Total v1 after pivot** | **79** | |
 | Moved to v2: TRACK-01..07, PUBLIC-01,02, ADMIN-04, ADMIN-06, ADMIN-NEW-01, ADMIN-NEW-04, ADMIN-NEW-05, ADMIN-NEW-06, ADMIN-NEW-07, API-08, API-10, API-11, API-12, API-14, POLISH-04 | 22 | deferred per 2026-06-09 pivot |
 
 ## Progress
@@ -185,8 +191,9 @@ Phase 1 ✓ ──> Phase 2 ✓ ──> Phase 3 (Telegram) ───┐
 | 3. Telegram Channel | 6/6 | ✓ Complete | 2026-06-10 |
 | 3.1. Voice Channel (ElevenLabs + Twilio) | 5/5 | ✓ Complete | 2026-06-10 |
 | 4. Admin Web (REDUCED) | 7/7 | ✓ Complete | 2026-06-11 |
-| 5. Demo Polish + Notifications + i18n | 0/0 | Not started | - |
+| 5. Demo Polish + Notifications + i18n | 0/6 | Planned | - |
 
 ---
 *Roadmap created: 2026-06-08 by gsd-roadmapper*
 *Pivoted 2026-06-09 — voice focus, tracking → v2, admin reduced.*
+*Phase 5 planned: 2026-06-11 — 6 plans (00 test-infra → 05 video+UAT) covering 11 requirements via 5-wave delta on top of Phase 1-4.*
