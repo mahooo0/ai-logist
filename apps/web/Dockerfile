@@ -12,7 +12,8 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @ai-logist/web build
+RUN pnpm --filter @ai-logist/shared-types build && \
+    pnpm --filter @ai-logist/web build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
