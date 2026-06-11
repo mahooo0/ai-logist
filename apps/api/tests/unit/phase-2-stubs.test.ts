@@ -257,8 +257,9 @@ describe('Phase 2 acceptance criteria', () => {
     expect(LEAD_TRANSITIONS.LOST).toEqual([]);
   });
   // FSM-02 — order lifecycle transitions (FLIPPED in Plan 02-03b)
-  it('FSM-02: ORDER_TRANSITIONS has exactly 7 statuses and table-driven', () => {
-    expect(Object.keys(ORDER_TRANSITIONS)).toHaveLength(7);
+  // Phase 6 D-11: updated from 7 → 10 (added DELIVERED_PENDING, AWAITING_PAYMENT, CANCELED).
+  it('FSM-02: ORDER_TRANSITIONS has exactly 10 statuses and table-driven', () => {
+    expect(Object.keys(ORDER_TRANSITIONS)).toHaveLength(10);
     expect(ORDER_TRANSITIONS.CREATED).toEqual(['DRIVER_ASSIGNED']);
     expect(ORDER_TRANSITIONS.CLOSED).toEqual([]);
   });
