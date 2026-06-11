@@ -129,6 +129,7 @@ describe('Phase 4 page-render smoke (all 6 pages)', () => {
             status: 'CREATED',
             publicToken: 't',
             version: 0,
+            progressPercent: 0,
             createdAt: '2026-06-10T10:00:00Z',
             updatedAt: '2026-06-10T10:00:00Z',
           },
