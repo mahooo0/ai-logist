@@ -108,6 +108,17 @@ services:
       - api
       - web
     restart: always
+    # Dokploy attaches the domain-bound service to its dokploy-network for
+    # Traefik routing. Explicitly include the compose default network so
+    # Caddy can still resolve api:3000 / web:3001 upstream.
+    networks:
+      - default
+      - dokploy-network
+
+networks:
+  default:
+  dokploy-network:
+    external: true
 
 volumes:
   pgdata:
