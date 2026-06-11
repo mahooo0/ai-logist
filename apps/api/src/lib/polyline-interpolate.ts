@@ -40,8 +40,8 @@ export function buildSegments(coords: LngLat[]): Segment[] {
   const segs: Segment[] = [];
   let cum = 0;
   for (let i = 1; i < coords.length; i++) {
-    const from = coords[i - 1];
-    const to = coords[i];
+    const from = coords[i - 1] as LngLat;
+    const to = coords[i] as LngLat;
     const segLen = segLength(from, to);
     cum += segLen;
     segs.push({ from, to, segLen, cumLen: cum });
@@ -56,11 +56,11 @@ export function buildSegments(coords: LngLat[]): Segment[] {
  */
 export function interpolateAlongPolyline(coords: LngLat[], progress: number): LngLat {
   if (coords.length === 0) return [0, 0];
-  if (coords.length === 1) return coords[0];
+  if (coords.length === 1) return coords[0] as LngLat;
   const segs = buildSegments(coords);
-  const total = segs[segs.length - 1].cumLen;
-  if (progress <= 0 || total === 0) return coords[0];
-  if (progress >= 1) return coords[coords.length - 1];
+  const total = (segs[segs.length - 1] as Segment).cumLen;
+  if (progress <= 0 || total === 0) return coords[0] as LngLat;
+  if (progress >= 1) return coords[coords.length - 1] as LngLat;
   const target = progress * total;
   for (const seg of segs) {
     if (seg.cumLen >= target) {
@@ -69,7 +69,7 @@ export function interpolateAlongPolyline(coords: LngLat[], progress: number): Ln
       return [seg.from[0] + (seg.to[0] - seg.from[0]) * t, seg.from[1] + (seg.to[1] - seg.from[1]) * t];
     }
   }
-  return coords[coords.length - 1];
+  return coords[coords.length - 1] as LngLat;
 }
 
 /**
@@ -82,13 +82,13 @@ export function closestPointOnPolyline(
   target: LngLat
 ): { point: LngLat; progress: number } {
   if (coords.length === 0) return { point: target, progress: 0 };
-  if (coords.length === 1) return { point: coords[0], progress: 0 };
+  if (coords.length === 1) return { point: coords[0] as LngLat, progress: 0 };
   const segs = buildSegments(coords);
-  const total = segs[segs.length - 1].cumLen;
-  if (total === 0) return { point: coords[0], progress: 0 };
+  const total = (segs[segs.length - 1] as Segment).cumLen;
+  if (total === 0) return { point: coords[0] as LngLat, progress: 0 };
 
   let bestDist = Number.POSITIVE_INFINITY;
-  let bestPoint: LngLat = coords[0];
+  let bestPoint: LngLat = coords[0] as LngLat;
   let bestProgress = 0;
 
   for (const seg of segs) {
