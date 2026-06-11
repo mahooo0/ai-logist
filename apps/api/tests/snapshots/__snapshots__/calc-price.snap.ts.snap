@@ -1,0 +1,141 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 0.5km-1t-tent-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "2100",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "0",
+  "id": "0.5km-1t-tent-default",
+  "max": "0",
+  "min": "0",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 100km-5t-iso-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "420000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "420000",
+  "id": "100km-5t-iso-default",
+  "max": "485000",
+  "min": "355000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 300km-10t-tent-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "1260000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "1260000",
+  "id": "300km-10t-tent-default",
+  "max": "1450000",
+  "min": "1070000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 450km-12t-iso-backhaul 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "1890000",
+    "dir_factor": 0.85,
+    "season_factor": 1,
+  },
+  "default": "1605000",
+  "id": "450km-12t-iso-backhaul",
+  "max": "1845000",
+  "min": "1365000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 540km-18t-ref-backhaul 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "2268000",
+    "dir_factor": 0.85,
+    "season_factor": 1,
+  },
+  "default": "1930000",
+  "id": "540km-18t-ref-backhaul",
+  "max": "2215000",
+  "min": "1640000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 540km-18t-tent-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "2268000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "2270000",
+  "id": "540km-18t-tent-default",
+  "max": "2610000",
+  "min": "1930000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 800km-15t-ref-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "3360000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "3360000",
+  "id": "800km-15t-ref-default",
+  "max": "3865000",
+  "min": "2855000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 1200km-20t-container-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "5040000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "5040000",
+  "id": "1200km-20t-container-default",
+  "max": "5795000",
+  "min": "4285000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 1500km-22t-container-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "6300000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "6300000",
+  "id": "1500km-22t-container-default",
+  "max": "7245000",
+  "min": "5355000",
+}
+`;
+
+exports[`snapshot: calcPrice — POLISH-01 byte stability > case 2000km-25t-tent-default 1`] = `
+{
+  "breakdown": {
+    "base_kopecks": "8400000",
+    "dir_factor": 1,
+    "season_factor": 1,
+  },
+  "default": "8400000",
+  "id": "2000km-25t-tent-default",
+  "max": "9660000",
+  "min": "7140000",
+}
+`;

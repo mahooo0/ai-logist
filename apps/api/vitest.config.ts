@@ -11,7 +11,14 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
-          include: ['tests/unit/**/*.test.ts', 'src/**/*.test.ts'],
+          // Phase 5 Plan 05-03: extend include glob to pick up tests/snapshots/*.snap.ts
+          // for POLISH-01 byte-stability snapshot tests. Same setup (fake-timers) and
+          // same project name so `vitest run --project unit -t snapshot` still selects them.
+          include: [
+            'tests/unit/**/*.test.ts',
+            'src/**/*.test.ts',
+            'tests/snapshots/**/*.snap.ts',
+          ],
           environment: 'node',
           // Phase 2 Wave 0: centralized fake-timers preset for snapshot stability.
           // Loaded only by the `unit` project; integration suites manage their own clocks

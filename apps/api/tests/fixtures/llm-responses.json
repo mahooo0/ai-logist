@@ -10,14 +10,21 @@
           "body_type": "tent",
           "budget_kopecks": null,
           "deadline_iso": "2026-06-10T08:00:00.000Z",
-          "confidence": { "from_city": 1.0, "to_city": 1.0, "tons": 1.0 },
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
           "clarifying_question_ru": null,
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 320, "output_tokens": 88 }
+    "usage": {
+      "input_tokens": 320,
+      "output_tokens": 88
+    }
   },
   "extractRequest::61ac3783d728ee80": {
     "toolCalls": [
@@ -30,14 +37,21 @@
           "body_type": "tent",
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 1.0, "to_city": 1.0, "tons": 1.0 },
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
           "clarifying_question_ru": null,
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 312, "output_tokens": 84 }
+    "usage": {
+      "input_tokens": 312,
+      "output_tokens": 84
+    }
   },
   "extractRequest::56bb16f64bd9e1fb": {
     "toolCalls": [
@@ -50,14 +64,21 @@
           "body_type": "tent",
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.9, "to_city": 0.9, "tons": 1.0 },
+          "confidence": {
+            "from_city": 0.9,
+            "to_city": 0.9,
+            "tons": 1
+          },
           "clarifying_question_ru": null,
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 310, "output_tokens": 82 }
+    "usage": {
+      "input_tokens": 310,
+      "output_tokens": 82
+    }
   },
   "extractRequest::1430f9bdf2332f5b": {
     "toolCalls": [
@@ -70,14 +91,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.6 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0.6
+          },
           "clarifying_question_ru": "Откуда и куда везём? Например: Киев → Львов.",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 305, "output_tokens": 96 }
+    "usage": {
+      "input_tokens": 305,
+      "output_tokens": 96
+    }
   },
   "extractRequest::6de513faf843c9be": {
     "toolCalls": [
@@ -90,14 +118,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 303, "output_tokens": 102 }
+    "usage": {
+      "input_tokens": 303,
+      "output_tokens": 102
+    }
   },
   "extractRequest::f33acb5d927f61ff": {
     "toolCalls": [
@@ -110,14 +145,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 318, "output_tokens": 110 }
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 110
+    }
   },
   "extractRequest::dda2893a95c35090": {
     "toolCalls": [
@@ -130,14 +172,21 @@
           "body_type": "tent",
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 1.0, "to_city": 1.0, "tons": 1.0 },
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
           "clarifying_question_ru": null,
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 312, "output_tokens": 84 }
+    "usage": {
+      "input_tokens": 312,
+      "output_tokens": 84
+    }
   },
   "extractRequest::83e52d2966d47a37": {
     "toolCalls": [
@@ -150,14 +199,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Откуда и куда везём?",
           "clarifying_question_ua": "Звідки й куди везти?"
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 304, "output_tokens": 70 }
+    "usage": {
+      "input_tokens": 304,
+      "output_tokens": 70
+    }
   },
   "extractRequest::bd0450efae740bc8": {
     "toolCalls": [
@@ -170,14 +226,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 320, "output_tokens": 100 }
+    "usage": {
+      "input_tokens": 320,
+      "output_tokens": 100
+    }
   },
   "extractRequest::70c76323e789174c": {
     "toolCalls": [
@@ -190,14 +253,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 322, "output_tokens": 100 }
+    "usage": {
+      "input_tokens": 322,
+      "output_tokens": 100
+    }
   },
   "extractRequest::b7dc21d9f708722b": {
     "toolCalls": [
@@ -210,14 +280,21 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 320, "output_tokens": 100 }
+    "usage": {
+      "input_tokens": 320,
+      "output_tokens": 100
+    }
   },
   "extractRequest::0884b49cf44b1490": {
     "toolCalls": [
@@ -230,13 +307,398 @@
           "body_type": null,
           "budget_kopecks": null,
           "deadline_iso": null,
-          "confidence": { "from_city": 0.0, "to_city": 0.0, "tons": 0.0 },
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
           "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
           "clarifying_question_ua": null
         }
       }
     ],
     "finalText": null,
-    "usage": { "input_tokens": 318, "output_tokens": 100 }
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 100
+    }
+  },
+  "extractRequest::6701424c5995eb2e": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Киев",
+          "to_city": "Львов",
+          "tons": 20,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 0.85,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::b583345454090324": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Киев",
+          "to_city": "Львов",
+          "tons": 20,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::1e13fc1e6654a567": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Київ",
+          "to_city": "Львов",
+          "tons": 20,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 0.9,
+            "tons": 1
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": "Який кузов потрібен?"
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::73c2dc5f265722c5": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Одесса",
+          "to_city": "Львов",
+          "tons": 12,
+          "body_type": "ref",
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::10913cbfa6f3a3ce": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Київ",
+          "to_city": "Львів",
+          "tons": 18,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": "Який кузов потрібен?"
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::9a6674d35466ebe2": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": "Львов",
+          "tons": 12,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 0.3,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": "Уточните, пожалуйста, какая Александровка? (есть несколько городов с таким названием)",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::64125ac45847af86": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Минск",
+          "to_city": "Варшава",
+          "tons": 20,
+          "body_type": "container",
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::0feb8d90ebd9178d": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Москва",
+          "to_city": "Киев",
+          "tons": 25,
+          "body_type": "iso",
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::2046f8d177042508": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Львов",
+          "to_city": "Киев",
+          "tons": 15,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": "2026-06-10T06:00:00.000Z",
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::7dbd09f7451c61e1": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Киев",
+          "to_city": "Львов",
+          "tons": 20,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::9772ca7b463e104c": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
+          "clarifying_question_ru": "Я виртуальный помощник по перевозкам. Подскажите маршрут и вес?",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::200592890ac6aa62": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": "Київ",
+          "to_city": "Львів",
+          "tons": 18,
+          "body_type": "tent",
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 1,
+            "to_city": 1,
+            "tons": 1
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::e3e2a2b5615086de": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
+          "clarifying_question_ru": "Подскажите, пожалуйста, маршрут, вес и тип кузова — тогда смогу посчитать цену со скидкой.",
+          "clarifying_question_ua": null
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
+  },
+  "extractRequest::4434f359732abe2b": {
+    "toolCalls": [
+      {
+        "name": "extractRequest",
+        "args": {
+          "from_city": null,
+          "to_city": null,
+          "tons": null,
+          "body_type": null,
+          "budget_kopecks": null,
+          "deadline_iso": null,
+          "confidence": {
+            "from_city": 0,
+            "to_city": 0,
+            "tons": 0
+          },
+          "clarifying_question_ru": null,
+          "clarifying_question_ua": "Підкажіть маршрут і вантаж."
+        }
+      }
+    ],
+    "finalText": null,
+    "usage": {
+      "input_tokens": 318,
+      "output_tokens": 88
+    }
   }
 }

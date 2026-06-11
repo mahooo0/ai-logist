@@ -1,0 +1,381 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-01 1`] = `
+{
+  "body_type": "tent",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": "2026-06-10T08:00:00.000Z",
+  "from_city": "Киев",
+  "id": "canon-01",
+  "to_city": "Львов",
+  "tons": 18,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-02 1`] = `
+{
+  "body_type": "tent",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Київ",
+  "id": "canon-02",
+  "to_city": "Львів",
+  "tons": 18,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-03 1`] = `
+{
+  "body_type": "tent",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0.9,
+    "to_city": 0.9,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Kyiv",
+  "id": "canon-03",
+  "to_city": "Lviv",
+  "tons": 18,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-04 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Откуда и куда везём? Например: Киев → Львов.",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0,
+    "to_city": 0,
+    "tons": 0.6,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-04",
+  "to_city": null,
+  "tons": 18,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-05 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0,
+    "to_city": 0,
+    "tons": 0,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-05",
+  "to_city": null,
+  "tons": null,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-06 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0.85,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Киев",
+  "id": "canon-06",
+  "to_city": "Львов",
+  "tons": 20,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-07 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Киев",
+  "id": "canon-07",
+  "to_city": "Львов",
+  "tons": 20,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-08 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": "Який кузов потрібен?",
+  "confidence": {
+    "from_city": 1,
+    "to_city": 0.9,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Київ",
+  "id": "canon-08",
+  "to_city": "Львов",
+  "tons": 20,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-09 1`] = `
+{
+  "body_type": "ref",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Одесса",
+  "id": "canon-09",
+  "to_city": "Львов",
+  "tons": 12,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-10 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": "Який кузов потрібен?",
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Київ",
+  "id": "canon-10",
+  "to_city": "Львів",
+  "tons": 18,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-11 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Подскажите, пожалуйста, откуда, куда и сколько тонн?",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0,
+    "to_city": 0,
+    "tons": 0,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-11",
+  "to_city": null,
+  "tons": null,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-12 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Уточните, пожалуйста, какая Александровка? (есть несколько городов с таким названием)",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0.3,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-12",
+  "to_city": "Львов",
+  "tons": 12,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-13 1`] = `
+{
+  "body_type": "container",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Минск",
+  "id": "canon-13",
+  "to_city": "Варшава",
+  "tons": 20,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-14 1`] = `
+{
+  "body_type": "iso",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Москва",
+  "id": "canon-14",
+  "to_city": "Киев",
+  "tons": 25,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-15 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": "2026-06-10T06:00:00.000Z",
+  "from_city": "Львов",
+  "id": "canon-15",
+  "to_city": "Киев",
+  "tons": 15,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-16 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Какой кузов нужен? (тент, реф, изотерм, контейнер)",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Киев",
+  "id": "canon-16",
+  "to_city": "Львов",
+  "tons": 20,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-17 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Я виртуальный помощник по перевозкам. Подскажите маршрут и вес?",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0,
+    "to_city": 0,
+    "tons": 0,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-17",
+  "to_city": null,
+  "tons": null,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-18 1`] = `
+{
+  "body_type": "tent",
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 1,
+    "to_city": 1,
+    "tons": 1,
+  },
+  "deadline_iso": null,
+  "from_city": "Київ",
+  "id": "canon-18",
+  "to_city": "Львів",
+  "tons": 18,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-19 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": "Подскажите, пожалуйста, маршрут, вес и тип кузова — тогда смогу посчитать цену со скидкой.",
+  "clarifying_question_ua": null,
+  "confidence": {
+    "from_city": 0,
+    "to_city": 0,
+    "tons": 0,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-19",
+  "to_city": null,
+  "tons": null,
+}
+`;
+
+exports[`snapshot: extractRequest — POLISH-01 byte stability (Mock LLM) > canonical input canon-20 1`] = `
+{
+  "body_type": null,
+  "budget_kopecks": null,
+  "clarifying_question_ru": null,
+  "clarifying_question_ua": "Підкажіть маршрут і вантаж.",
+  "confidence": {
+    "from_city": 0,
+    "to_city": 0,
+    "tons": 0,
+  },
+  "deadline_iso": null,
+  "from_city": null,
+  "id": "canon-20",
+  "to_city": null,
+  "tons": null,
+}
+`;
