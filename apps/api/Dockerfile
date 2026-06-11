@@ -25,4 +25,4 @@ COPY --from=build /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=build /app/packages/shared-types/package.json ./packages/shared-types/package.json
 WORKDIR /app/apps/api
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]
