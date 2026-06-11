@@ -205,7 +205,7 @@ Plans:
 - [x] 06-01-telegram-i18n-keyboards-callbacks-PLAN.md — Wave 1: 12 RU/UA templates (D-06), loadingKeyboard + deliveryKeyboard (D-08), Phase 6 callback regex extension (D-09), handleDecline → CANCELED + truck-available + manager_active (D-14), 5 notify* helpers
 - [x] 06-02-background-ticker-and-fsm-edges-PLAN.md — Wave 2: port polyline-interpolate to backend (D-04), order-ticker.ts with mutually exclusive 90/100 logic + per-leg event types (D-01..D-05, D-07), timeout-escalation.ts (D-12, D-13), app.ts wiring of registerOrderTicker
 - [x] 06-03-stripe-checkout-and-webhook-PLAN.md — Wave 3 (autonomous: false): requireStripeConfig() + createCheckoutSession() (D-16, D-17), Fastify-scoped raw-body webhook with stripe.webhooks.constructEvent (D-18), sendPaymentLink helper, app.ts wiring; human checkpoint for STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET (D-19)
-- [ ] 06-04-admin-overrides-and-action-bar-PLAN.md — Wave 4: admin-auth Fastify plugin (X-Admin-Secret), PATCH /api/orders/:id/status (D-15, D-20), POST /api/orders/:id/ticker (D-21), OrderActionBar React component + /payment/success + /payment/cancel stub pages (D-22)
+- [x] 06-04-admin-overrides-and-action-bar-PLAN.md — Wave 4: admin-auth Fastify plugin (X-Admin-Secret), PATCH /api/orders/:id/status (D-15, D-20), POST /api/orders/:id/ticker (D-21), OrderActionBar React component + /payment/success + /payment/cancel stub pages (D-22)
 - [ ] 06-05-uat-and-phase-summary-PLAN.md — Wave 5 (autonomous: false): HUMAN-UAT-06.md 10-step walkthrough + 06-PHASE-SUMMARY.md + final D-10 stub flip; human verification checkpoint
 
 ---
