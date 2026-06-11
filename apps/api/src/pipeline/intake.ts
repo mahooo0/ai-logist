@@ -39,6 +39,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { config } from '../config.js';
 import type { Db } from '../db.js';
 import { geocode } from '../lib/geocoding.js';
+import { renderBotReply } from '../lib/i18n.js';
 import { cyrillicHeuristic, type Lang } from '../lib/lang-detect.js';
 import { formatPriceKop } from '../lib/money.js';
 import { priceGuard } from '../lib/price-guard.js';
@@ -75,20 +76,28 @@ export interface InboundMessageResult {
   exchanges: InboundMessageExchange[];
 }
 
+// Phase 5 Plan 05-02 — Wave 2: customer-facing replies migrated to
+// `renderBotReply` (D-07 dictionary). The constants below cover the few
+// pipeline-internal fallback strings that do NOT map cleanly onto a D-07
+// dictionary key:
+//   - RU_BOILERPLATE_SHORT: D-14 path — client lang still NULL, message
+//     < 20 chars; ambiguous-lang fallback. Not in D-07.
+//   - CITY_NOT_FOUND_*: city normalization miss. Not in D-07.
+//   - NO_TRUCKS_*: own-fleet + bourse-stub both empty. Not in D-07.
+//   - MANUAL_TRIAGE_*: low-confidence + 2 rounds spent. Mapped to
+//     `escalate` in D-07.
+//
+// All four customer-facing D-07 keys flow through `renderBotReply` below:
+//   `budget-exceeded`, `quote-present`, `order-confirmed`, `escalate`.
+
 /**
  * D-14 boilerplate sent to a client whose lang is still NULL and who wrote a
  * message shorter than 20 chars — too short to reliably detect language.
  */
 const RU_BOILERPLATE_SHORT = 'Здравствуйте! Расскажите подробнее: откуда, куда, сколько тонн?';
 
-const TOKEN_BUDGET_SORRY_RU = 'Превышен бюджет диалога. Свяжитесь с менеджером.';
-const TOKEN_BUDGET_SORRY_UA = "Перевищили бюджет. Будь ласка, зв'яжіться з менеджером.";
-
 const CITY_NOT_FOUND_RU = 'Не нашёл город. Уточните.';
 const CITY_NOT_FOUND_UA = 'Не знайшов місто. Уточніть.';
-
-const MANUAL_TRIAGE_RU = 'Не удалось понять. Менеджер свяжется.';
-const MANUAL_TRIAGE_UA = "Не вдалося розпізнати. Менеджер зв'яжеться.";
 
 // Step G — no own-fleet trucks AND bourse-stub empty.
 const NO_TRUCKS_RU = 'К сожалению, свободных машин нет. Менеджер свяжется.';
@@ -210,7 +219,9 @@ export async function handleInboundMessage(
         actor: 'system',
         payload: { reason: 'token_budget_exhausted', tokens_in: tokensIn, tokens_out: tokensOut },
       });
-      const sorry = lang === 'ua' ? TOKEN_BUDGET_SORRY_UA : TOKEN_BUDGET_SORRY_RU;
+      // D-07 — `budget-exceeded` template covers this customer-facing
+      // sorry message. No params.
+      const sorry = renderBotReply('budget-exceeded', {}, lang);
       await messagesRepo.create(tx, {
         clientId: args.clientId,
         leadId: lead.id,
@@ -255,10 +266,11 @@ export async function handleInboundMessage(
         actor: 'ai',
         payload: { order_id: order.order_id, order_number: order.order_number },
       });
-      const reply =
-        lang === 'ua'
-          ? `Замовлення ${order.order_number} створено. Стеження: /track/${order.public_token}`
-          : `Заказ ${order.order_number} создан. Отслеживание: /track/${order.public_token}`;
+      // D-07 — `order-confirmed` template; takes `{number}` only. The
+      // previous /track/ URL surface is dropped per Phase 5 NOTIF-02
+      // (tracking links removed from bot replies; admin UI is the SoT
+      // for live tracking).
+      const reply = renderBotReply('order-confirmed', { number: order.order_number }, lang);
       await messagesRepo.create(tx, {
         clientId: args.clientId,
         leadId: lead.id,
@@ -326,9 +338,10 @@ export async function handleInboundMessage(
       const clarifyCount = await countClarificationRounds(tx, lead.id);
       if (clarifyCount >= 2) {
         // 2 rounds spent — annotate lead and tell the client a manager will help.
-        // Marker for Phase 4 admin: AI message body contains "Менеджер" + the
+        // Marker for Phase 4 admin: AI message body contains "менеджеру" + the
         // lead's own state stays NEW so the admin can pick it up from the funnel.
-        const reply = lang === 'ua' ? MANUAL_TRIAGE_UA : MANUAL_TRIAGE_RU;
+        // D-07 — `escalate` template covers this customer-facing handover.
+        const reply = renderBotReply('escalate', {}, lang);
         await messagesRepo.create(tx, {
           clientId: args.clientId,
           leadId: lead.id,
@@ -493,12 +506,29 @@ export async function handleInboundMessage(
     const quotedPriceKop = BigInt(refreshed.quotedPrice as unknown as string);
 
     // (3) Render templated reply by substitution. No LLM call here — the only
-    //     numeric content is the formatted quoted_price.
+    //     numeric content is the formatted quoted_price (DB-sourced; Pitfall #1).
+    //     D-07 — `quote-present` carries route + tons + bodyType + price; followed
+    //     by `confirm-ask` for the confirmation prompt. City display names come
+    //     from `extracted.{from_city,to_city}` (LLM-extracted, nominative — D-09).
     const priceStr = formatPriceKop(quotedPriceKop, lang);
-    const reply =
-      lang === 'ua'
-        ? `Ціна за рейс: ${priceStr} ₽. Підтверджуєте?`
-        : `Цена за рейс: ${priceStr} ₽. Подтверждаете?`;
+    // `'тент'` here is a domain-level body-type identifier (the canonical
+    // RU label that matches our pricing-config `body_type_multipliers` map
+    // — Phase 2 LOGIC-05). It is intentionally a domain value, not a
+    // translatable customer-facing string.
+    const quoteReply = renderBotReply(
+      'quote-present',
+      {
+        from: extracted.from_city,
+        to: extracted.to_city,
+        tons: extracted.tons,
+        bodyType: extracted.body_type ?? 'тент',
+        price: priceStr,
+        currency: '₽',
+      },
+      lang
+    );
+    const confirmAsk = renderBotReply('confirm-ask', {}, lang);
+    const reply = `${quoteReply} ${confirmAsk}`;
 
     // (4) Defensive priceGuard. Templated text passes by construction; this
     //     gate fires the moment a future plan switches to an LLM-rendered reply
