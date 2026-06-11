@@ -97,11 +97,11 @@
 
 ### Bilingual RU/UA (I18N)
 
-- [ ] **I18N-01**: Серверный словарь RU/UA (`lib/i18n.ts`) для всех Telegram-ответов и системных сообщений
+- [x] **I18N-01**: Серверный словарь RU/UA (`lib/i18n.ts`) для всех Telegram-ответов и системных сообщений
 - [x] **I18N-02**: Клиентский i18n-словарь (RU/UA) для UI админки, переключатель в Customize-панели шаблона
-- [ ] **I18N-03**: Декларация ICU MessageFormat для славянских множественных форм (one/few/many) в админке
+- [x] **I18N-03**: Декларация ICU MessageFormat для славянских множественных форм (one/few/many) в админке
 - [ ] **I18N-04**: Локаль-aware форматирование дат через `date-fns/locale` (ru, uk)
-- [ ] **I18N-05**: Шаблоны сообщений без склонений («Маршрут: {from} → {to}» вместо «Из {from} в {to}»)
+- [x] **I18N-05**: Шаблоны сообщений без склонений («Маршрут: {from} → {to}» вместо «Из {from} в {to}»)
 
 ### Tracking & Live Map (TRACK) — **DEFERRED to v2 on 2026-06-09 per user pivot**
 
@@ -283,11 +283,11 @@
 | TRACK-07 | Phase 5 | Pending |
 | PUBLIC-01 | Phase 5 | Pending |
 | PUBLIC-02 | Phase 5 | Pending |
-| I18N-01 | Phase 6 | Pending |
+| I18N-01 | Phase 6 | Complete |
 | I18N-02 | Phase 4 | Complete |
-| I18N-03 | Phase 6 | Pending |
+| I18N-03 | Phase 6 | Complete |
 | I18N-04 | Phase 6 | Pending |
-| I18N-05 | Phase 6 | Pending |
+| I18N-05 | Phase 6 | Complete |
 | NOTIF-01 | Phase 6 | Complete |
 | NOTIF-02 | Phase 6 | Complete |
 | DEPLOY-01 | Phase 1 | Complete |
