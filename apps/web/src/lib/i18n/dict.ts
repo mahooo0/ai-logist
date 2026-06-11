@@ -65,3 +65,43 @@ export const dict = {
 } as const satisfies Record<'ru' | 'ua', Record<string, string>>;
 
 export type DictKey = keyof typeof dict.ru;
+
+// ============================================================================
+// I18N-03 / Phase 5 Plan 05-02 — Wave 2: ICU plural templates
+// ============================================================================
+//
+// Five admin-only pluralized templates × {ru, ua} verbatim per D-13. Use
+// these via `formatPlural(pluralTemplates[lang][key], n, lang)` from the
+// `./icu.ts` helper. The `other` clause is mandatory in ICU MessageFormat
+// (the parser throws `MISSING_OTHER_CLAUSE` otherwise); per CLDR plural
+// rules for RU + UA the `other` form coincides with the `many` form for
+// integers (covers decimals and very-large numbers).
+//
+// CLDR locale mapping ('ua' → 'uk-UA') happens inside `formatPlural`; the
+// templates here use raw `'ua'` keys so this dictionary stays consistent
+// with the app's lang code.
+
+export const pluralTemplates = {
+  ru: {
+    'fleet.foundTrucks':
+      '{n, plural, one {# машина} few {# машины} many {# машин} other {# машин}}',
+    'kpi.orders': '{n, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказов}}',
+    'kpi.calls': '{n, plural, one {# звонок} few {# звонка} many {# звонков} other {# звонков}}',
+    'kpi.messages':
+      '{n, plural, one {# сообщение} few {# сообщения} many {# сообщений} other {# сообщений}}',
+    'quote.tons': '{n, plural, one {# тонна} few {# тонны} many {# тонн} other {# тонн}}',
+  },
+  ua: {
+    'fleet.foundTrucks':
+      '{n, plural, one {# машина} few {# машини} many {# машин} other {# машин}}',
+    'kpi.orders':
+      '{n, plural, one {# замовлення} few {# замовлення} many {# замовлень} other {# замовлень}}',
+    'kpi.calls':
+      '{n, plural, one {# дзвінок} few {# дзвінка} many {# дзвінків} other {# дзвінків}}',
+    'kpi.messages':
+      '{n, plural, one {# повідомлення} few {# повідомлення} many {# повідомлень} other {# повідомлень}}',
+    'quote.tons': '{n, plural, one {# тонна} few {# тонни} many {# тонн} other {# тонн}}',
+  },
+} as const;
+
+export type PluralKey = keyof typeof pluralTemplates.ru;

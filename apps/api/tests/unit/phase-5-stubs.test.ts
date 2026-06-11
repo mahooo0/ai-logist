@@ -20,10 +20,16 @@ import { describe, test } from 'vitest';
  * uses naive grep -c so any prose mention inflates the count.
  */
 describe('Phase 5 — Demo Polish + Notifications + Final i18n: monotonic verifier baseline', () => {
-  test.todo('I18N-01 server-side i18n.ts ships renderBotReply with 11 keys x 2 langs');
-  test.todo('I18N-03 ICU MessageFormat plural rules render correctly for n in {0,1,2,5,21,25}');
+  test.skip(
+    'I18N-01 server-side i18n.ts ships renderBotReply with 11 keys x 2 langs (validated by i18n-dict.test.ts — Plan 05-02 Wave 2)'
+  );
+  test.skip(
+    'I18N-03 ICU MessageFormat plural rules render correctly for n in {0,1,2,5,21,25} (validated by icu-plural.test.ts — Plan 05-02 Wave 2)'
+  );
   test.todo('I18N-04 formatDateLocale renders RU "8 июн, ср" + UA "8 чер, ср"');
-  test.todo('I18N-05 declension-free templates: arrow separator "Маршрут: {from} → {to}"');
+  test.skip(
+    'I18N-05 declension-free templates: arrow separator "Маршрут: {from} → {to}" (validated by declension-grep.test.ts — Plan 05-02 Wave 2)'
+  );
   test.todo(
     'NOTIF-01 each ORDER_TRANSITION (DRIVER_ASSIGNED + IN_TRANSIT + DELIVERED) fires notifyClient post-commit'
   );
