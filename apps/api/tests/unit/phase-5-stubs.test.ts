@@ -44,7 +44,9 @@ describe('Phase 5 — Demo Polish + Notifications + Final i18n: monotonic verifi
   test.skip(
     'POLISH-02 POST /api/admin/simulate-call replays 5 scenarios end-to-end (validated by tests/integration/simulate-call.test.ts — Plan 05-04 Wave 4)'
   );
-  test.todo('POLISH-03 voice-fallback.mp4 exists, ≤15MB, valid MP4 magic bytes, WebVTT captions');
+  test.skip(
+    'POLISH-03 voice-fallback.mp4 exists, ≤15MB, valid MP4 magic bytes, WebVTT captions (validated by apps/web/tests/unit/voice-fallback-asset.test.ts — Plan 05-05 Wave 5)'
+  );
   test.skip(
     'POLISH-05 preflight.ts script exists and exports 6 sequential checks (validated by tests/unit/preflight-script-shape.test.ts — Plan 05-04 Wave 4)'
   );

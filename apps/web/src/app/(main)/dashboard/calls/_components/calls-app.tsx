@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // SWR refreshInterval=30 000 per D-56 (calls aren't created fast); tab-visibility
 // pause per D-57. Filters update URL params (router.push) — D-29 bookmarkable.
 // Phase 5 POLISH-02 — header gains "▶ Simulate inbound call" button (modal).
+// Phase 5 POLISH-03 — header gains "🎬 Видео-резерв" button (modal).
 import { useState } from 'react';
 import useSWR from 'swr';
 
@@ -16,6 +17,7 @@ import { CallDetailModal } from './call-detail-modal';
 import { CallsFilters } from './calls-filters';
 import { CallsTable } from './calls-table';
 import { SimulateCallModal } from './simulate-call-modal';
+import { VoiceFallbackModal } from './voice-fallback-modal';
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const r = await fetch(url);
@@ -37,6 +39,7 @@ export function CallsApp({
   const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
+  const [isFallbackOpen, setIsFallbackOpen] = useState(false);
 
   const qs = searchParams.toString() || new URLSearchParams(initialQuery).toString();
 
@@ -62,19 +65,31 @@ export function CallsApp({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <CallsFilters value={currentFilters} onChange={onFilterChange} />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setIsSimulateOpen(true)}
-          className="shrink-0 border-border"
-          data-testid="simulate-call-trigger"
-        >
-          ▶ Simulate inbound call
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsSimulateOpen(true)}
+            className="border-border"
+            data-testid="simulate-call-trigger"
+          >
+            ▶ Simulate inbound call
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsFallbackOpen(true)}
+            className="border-border"
+            data-testid="voice-fallback-trigger"
+          >
+            🎬 Видео-резерв
+          </Button>
+        </div>
       </div>
       <CallsTable calls={calls} onRowClick={setSelectedId} />
       {selectedId && <CallDetailModal callId={selectedId} onClose={() => setSelectedId(null)} />}
       <SimulateCallModal open={isSimulateOpen} onOpenChange={setIsSimulateOpen} />
+      <VoiceFallbackModal open={isFallbackOpen} onOpenChange={setIsFallbackOpen} />
     </div>
   );
 }

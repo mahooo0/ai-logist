@@ -1,0 +1,3 @@
+# Phase 5 — voice fallback demo assets (POLISH-03 / Pitfall §4)
+public/demo/*.mp4 binary
+public/demo/*.vtt text eol=lf
