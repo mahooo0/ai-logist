@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2
+current_plan: 3
 status: executing
-last_updated: "2026-06-11T18:06:22.365Z"
+last_updated: "2026-06-11T18:16:37.891Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 49
-  completed_plans: 47
-  percent: 96
+  completed_plans: 48
+  percent: 98
 ---
 
 # State: AI-Логист
@@ -28,8 +28,8 @@ progress:
 ## Current Position
 
 Phase: 06 (Order lifecycle automation: auto-progress ticker, Telegram confirmations at pickup/delivery, Stripe test-mode checkout, status transitions + negative paths) — EXECUTING
-Plan: 2 of 6
-Current Plan: 2
+Plan: 3 of 6
+Current Plan: 3
 Total Plans in Phase: 6
 **Phase:** 05 of 6 (demo polish + notifications + final i18n (was phase 6 — renumbered after tracking deferral)
 **Plan:** Phase 1 (01-00..01-10) complete. Phase 2 (02-00..02-05) complete. Phase 3 ALL PLANS complete: 03-00 (Wave 0 test infra) + 03-01 (Wave 1 foundation) + 03-02 (Wave 2 webhook route: two-stage handler, ON CONFLICT idempotency, secret_token auth, /voice flipped 501→200) + 03-03 (Wave 3 adapter+keyboards+outbound: TG-03 + TG-04) + 03-04 (Wave 4 notifications+driver-FSM-hook: TG-05 + TG-07; ORDER_TRANSITIONS gains DRIVER_ASSIGNED→CLOSED edge; transitionOrder onSuccess post-commit hook; adapter-driven tryAdvanceOrderAfterCreation helper) + 03-05 (Wave 5 manager intercept routes + setupWebhook + README + final stub flip TG-06 + HUMAN-UAT-03). 9/9 Phase 3 reqs covered; 0 stub todos; 157 unit tests passing.
@@ -37,7 +37,7 @@ Total Plans in Phase: 6
 
 **Progress:**
 
-[██████████] 96%
+[██████████] 98%
 [██████████] 100%
 [████████████████████] 11/11 plans complete in Phase 01
 [█░░░░░░░░░░░░░░░░░░░] 1/6 phases complete
@@ -97,6 +97,7 @@ Total Plans in Phase: 6
 | Phase 05-demo-polish-notifications-final-i18n P04 | 17min | 3 tasks | 17 files |
 | Phase 05-demo-polish-notifications-final-i18n P05 | 12min | 3 tasks | 11 files |
 | Phase 06 P00 | 11m | 3 tasks | 29 files |
+| Phase 6 P1 | 7m 16s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
