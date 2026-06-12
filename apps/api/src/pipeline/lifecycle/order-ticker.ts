@@ -106,10 +106,11 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
     // 3. Mutual exclusion (Pitfall 2).
     if (newPct >= 100) {
       const nextStatus = raw.status === 'DRIVER_ASSIGNED' ? 'AT_LOADING' : 'DELIVERED_PENDING';
-      // Reset progress so next leg starts at 0.
-      await db.execute(sql`
-        UPDATE orders SET progress_percent = 0 WHERE id = ${raw.id}::uuid
-      `);
+      // Reset progress + notify ONLY after a successful transition.
+      // Resetting before transitionOrder would leave the row in a 0%↔100% loop
+      // when transitionOrder fails (e.g. migration 0006 not applied → enum cast
+      // error on 'loading_prompted'). Keep progress at 100 so the next tick
+      // retries cleanly without re-walking the bar.
       try {
         await transitionOrder(db, {
           orderId: raw.id,
@@ -117,6 +118,9 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
           actor: 'system',
           payload: { reason: 'ticker_completed_leg' },
           onSuccess: async () => {
+            await db.execute(sql`
+              UPDATE orders SET progress_percent = 0 WHERE id = ${raw.id}::uuid
+            `);
             if (nextStatus === 'AT_LOADING') {
               await notifyLoadingPrompt({ orderId: raw.id, db, bot: deps.bot, log });
             } else {
@@ -125,7 +129,7 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
           },
         });
       } catch (err) {
-        log.warn({ err, orderId: raw.id }, 'order-ticker: transition failed (concurrent?)');
+        log.warn({ err, orderId: raw.id }, 'order-ticker: transition failed');
       }
     } else if (newPct >= 90) {
       // Distinct event types per leg (Pitfall 4) — per-leg idempotency.
