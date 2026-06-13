@@ -88,20 +88,97 @@ async function main(): Promise<void> {
     `✓ Loaded system prompt from elevenlabs-agent-config.md (${systemPrompt.length} chars)`
   );
 
-  // Per-tool api_schema. ElevenLabs Agent platform validates the args struct
-  // before invoking the webhook — use a permissive shape that accepts the
-  // callback envelope keys; voice handlers do their own Zod re-validation.
-  const baseSchema = {
+  // Per-tool schema — envelope { conversation_id, sequence, parameters }
+  // matches what the Phase 3.1 handlers parse. conversation_id is platform-
+  // injected via dynamic_variable=system__conversation_id; sequence is a
+  // constant (the LLM has no per-call counter, and our idempotency key is
+  // really keyed on conversation_id + tool_call_id anyway); ONLY `parameters`
+  // gets fields the LLM populates. Without proper per-tool field descriptions
+  // the LLM stalls (observed: 0 tool calls in conv_0801kv0k2 + conv_1801kv0mm
+  // with the previous empty-properties envelope).
+  function envelope(paramsSchema: object) {
+    return {
+      type: 'object',
+      required: ['conversation_id', 'sequence', 'parameters'],
+      properties: {
+        conversation_id: {
+          type: 'string',
+          dynamic_variable: 'system__conversation_id',
+        },
+        sequence: { type: 'number', constant_value: 1 },
+        parameters: paramsSchema,
+      },
+    };
+  }
+
+  // Per-tool parameters schemas — only fields the LLM should fill.
+  // pickup_lon/lat and route_km are derived server-side from voice state's
+  // extracted_fields (see tool-handlers.ts) so they're intentionally absent.
+  const extractRequestParams = {
     type: 'object',
+    required: ['text'],
+    description: 'Tool arguments for extract-request.',
     properties: {
-      conversation_id: { type: 'string', description: 'ElevenLabs conversation identifier' },
-      sequence: { type: 'number', description: 'Per-call tool invocation sequence number' },
-      parameters: {
-        type: 'object',
-        description: 'Tool-specific arguments collected by the agent',
+      text: {
+        type: 'string',
+        description:
+          'Verbatim last user utterance about the freight request — do not paraphrase.',
       },
     },
-    required: ['conversation_id', 'sequence'],
+  };
+  const nearestTruckParams = {
+    type: 'object',
+    required: ['tons'],
+    description: 'Tool arguments for nearest-truck.',
+    properties: {
+      tons: { type: 'number', description: 'Cargo weight in metric tons.' },
+      body_type: {
+        type: 'string',
+        enum: ['tent', 'ref', 'iso', 'container'],
+        description: 'Truck body type. Omit for any.',
+      },
+    },
+  };
+  const calcPriceParams = {
+    type: 'object',
+    required: ['tons', 'body_type'],
+    description: 'Tool arguments for calc-price.',
+    properties: {
+      tons: { type: 'number', description: 'Cargo weight in metric tons.' },
+      body_type: {
+        type: 'string',
+        enum: ['tent', 'ref', 'iso', 'container'],
+        description: 'Truck body type.',
+      },
+      direction: {
+        type: 'string',
+        enum: ['default', 'return'],
+        description: "'default' for forward haul; 'return' for backhaul.",
+      },
+    },
+  };
+  const createOrderParams = {
+    type: 'object',
+    required: ['confirmed'],
+    description: 'Tool arguments for create-order.',
+    properties: {
+      confirmed: {
+        type: 'boolean',
+        description: 'MUST be true. Only call after the caller explicitly accepted the price.',
+      },
+    },
+  };
+  const discountParams = {
+    type: 'object',
+    required: ['requested_kopecks'],
+    description: 'Tool arguments for discount.',
+    properties: {
+      requested_kopecks: {
+        type: 'string',
+        description: 'Discounted price the caller requests, in kopecks as a decimal string.',
+      },
+      reason: { type: 'string', description: 'Short reason given by the caller.' },
+    },
   };
 
   const agentBody = {
@@ -126,33 +203,33 @@ async function main(): Promise<void> {
           tools: [
             toolDef(
               'extract-request',
-              'Extract structured freight request from the caller speech',
+              'Extract structured freight request (from_city, to_city, tons, body_type) from the caller’s last utterance. CALL FIRST after the caller describes the load.',
               publicUrl,
-              baseSchema
+              envelope(extractRequestParams)
             ),
             toolDef(
               'nearest-truck',
-              'Find the nearest available truck by pickup geo and capacity',
+              'Find the nearest available truck. CALL AFTER extract-request once tons + body_type are known. Pickup coords are resolved server-side; do NOT pass them.',
               publicUrl,
-              baseSchema
+              envelope(nearestTruckParams)
             ),
             toolDef(
               'calc-price',
-              'Compute the deterministic price for the route (writes leads.quoted_price before return)',
+              'Compute the deterministic route price. CALL AFTER nearest-truck. route_km is resolved server-side from the city pair; do NOT pass it. Writes leads.quoted_price BEFORE returning.',
               publicUrl,
-              baseSchema
+              envelope(calcPriceParams)
             ),
             toolDef(
               'create-order',
-              'Create the order (re-reads quoted_price from DB; NEVER pass price)',
+              'Create the order. CALL ONLY after the caller explicitly accepted the price voiced from calc-price. NEVER pass price_kopecks — backend re-reads from DB.',
               publicUrl,
-              baseSchema
+              envelope(createOrderParams)
             ),
             toolDef(
               'discount',
-              'Negotiate a discount within the corridor floor',
+              'Negotiate a discount. CALL ONLY if the caller asks for a lower price after calc-price.',
               publicUrl,
-              baseSchema
+              envelope(discountParams)
             ),
           ],
         },
