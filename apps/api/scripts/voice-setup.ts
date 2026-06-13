@@ -116,13 +116,41 @@ async function main(): Promise<void> {
   // extracted_fields (see tool-handlers.ts) so they're intentionally absent.
   const extractRequestParams = {
     type: 'object',
-    required: ['text'],
-    description: 'Tool arguments for extract-request.',
+    required: ['from_city', 'to_city', 'tons', 'body_type', 'confidence'],
+    description:
+      'Structured freight request extracted from the caller. Extract all required fields yourself from the latest user turn before calling — the backend persists them, it does not re-extract from raw text.',
     properties: {
-      text: {
+      from_city: {
         type: 'string',
-        description:
-          'Verbatim last user utterance about the freight request — do not paraphrase.',
+        description: 'Pickup city name as named by the caller (RU/UA). Capitalized.',
+      },
+      to_city: {
+        type: 'string',
+        description: 'Delivery city name as named by the caller. Capitalized.',
+      },
+      tons: { type: 'number', description: 'Cargo weight in metric tons. Numeric only.' },
+      body_type: {
+        type: 'string',
+        enum: ['tent', 'ref', 'iso', 'container'],
+        description: 'Truck body type the caller asked for.',
+      },
+      confidence: {
+        type: 'object',
+        required: ['from_city', 'to_city', 'tons'],
+        description: 'Per-field confidence 0.0–1.0. Use ≥0.7 when spoken clearly; <0.7 when guessed.',
+        properties: {
+          from_city: { type: 'number', description: 'Confidence 0–1.' },
+          to_city: { type: 'number', description: 'Confidence 0–1.' },
+          tons: { type: 'number', description: 'Confidence 0–1.' },
+        },
+      },
+      clarifying_question_ru: {
+        type: 'string',
+        description: 'If a field is missing/uncertain, SHORT Russian clarifying question; else null.',
+      },
+      clarifying_question_ua: {
+        type: 'string',
+        description: 'Same for Ukrainian.',
       },
     },
   };
