@@ -22,7 +22,8 @@
 //     (grep guard in plan verify). We import them; we never modify them.
 
 import { sql } from 'drizzle-orm';
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify';
+import type { Redis } from 'ioredis';
 import { z } from 'zod/v4';
 import { calcPrice, readPricingConfig } from '../../pipeline/llm-tools/calc-price.js';
 import { createOrderHandler } from '../../pipeline/llm-tools/create-order.js';
@@ -32,7 +33,7 @@ import { nearestTruck } from '../../pipeline/llm-tools/nearest-truck.js';
 import { resolveCity } from '../../pipeline/intake.js';
 import { routeKm } from '../../lib/routing.js';
 import { elevenlabsSignaturePreHandler } from './signature.js';
-import { getVoiceState, mergeVoiceState } from './state.js';
+import { getVoiceState, mergeVoiceState, setVoiceState, type VoiceState } from './state.js';
 
 /**
  * ElevenLabs callback envelope (RESEARCH §Block 5).
@@ -94,6 +95,70 @@ async function recordIdempotency(tx: Tx, externalId: string, payload: unknown): 
 }
 
 /**
+ * Lazy-create voice state when the conversation_id arrives at a tool handler
+ * without a corresponding seed in Redis. Inbound calls seed state in
+ * twilio-webhook.ts (which has access to Twilio's From header), but outbound
+ * calls go through ElevenLabs' native Twilio integration — our /webhook/voice/*
+ * routes never see the call, so the first time we hear about the conversation
+ * is when a tool fires. Seed with a placeholder client + lead so tool handlers
+ * progress; the post-call audit job can re-link client by phone if needed.
+ */
+async function ensureVoiceState(
+  tx: Tx,
+  redis: Redis,
+  conversationId: string,
+  log: FastifyBaseLogger | undefined
+): Promise<VoiceState> {
+  const existing = await getVoiceState(redis, conversationId);
+  if (existing) return existing;
+
+  log?.info({ conversationId }, 'voice.state.lazy_seed.start');
+  const callIns = await tx.execute(sql`
+    INSERT INTO calls (elevenlabs_conversation_id, direction, created_at)
+    VALUES (${conversationId}, 'outbound', NOW())
+    ON CONFLICT (elevenlabs_conversation_id)
+      DO UPDATE SET elevenlabs_conversation_id = EXCLUDED.elevenlabs_conversation_id
+    RETURNING id::text AS id
+  `);
+  const callId = (callIns.rows[0] as { id: string }).id;
+
+  // Placeholder client — phone is voice:<conv> so the unique constraint won't
+  // collide with any real E.164. Post-call audit can re-link to a real client
+  // by reading ElevenLabs' caller_id metadata from the conversations API.
+  const placeholderPhone = `voice:${conversationId}`;
+  const clientIns = await tx.execute(sql`
+    INSERT INTO clients (name, phone, lang)
+    VALUES (${`voice:${conversationId}`}, ${placeholderPhone}, 'ru'::client_lang)
+    ON CONFLICT (phone) DO UPDATE SET phone = EXCLUDED.phone
+    RETURNING id::text AS id
+  `);
+  const clientId = (clientIns.rows[0] as { id: string }).id;
+
+  const leadIns = await tx.execute(sql`
+    INSERT INTO leads (client_id, channel, stage, version)
+    VALUES (${clientId}::uuid, 'voice', 'NEW', 0)
+    RETURNING id::text AS id
+  `);
+  const leadId = (leadIns.rows[0] as { id: string }).id;
+
+  await tx.execute(sql`
+    UPDATE calls SET lead_id = ${leadId}::uuid WHERE id = ${callId}::uuid
+  `);
+
+  const state: VoiceState = {
+    conversation_id: conversationId,
+    client_id: clientId,
+    lead_id: leadId,
+    lang: 'ru',
+    twilio_call_sid: null,
+    created_at: new Date().toISOString(),
+  };
+  await setVoiceState(redis, state);
+  log?.info({ conversationId, clientId, leadId }, 'voice.state.lazy_seed.done');
+  return state;
+}
+
+/**
  * Acquire per-conversation advisory lock (CONTEXT D-24).
  *
  * hashtext(text) returns int4; pg_advisory_xact_lock(int4, int4) or
@@ -145,13 +210,11 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
     return await app.db.transaction(async (tx: Tx) => {
       await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
       await acquireConversationLock(tx, conversation_id);
-      const state = await getVoiceState(app.redis, conversation_id);
-      if (!state) {
-        return reply.send({
-          ok: false,
-          error: { code: 'no_state', message: 'call-start not received for this conversation' },
-        });
-      }
+      // Lazy-seed: outbound calls (initiated via ElevenLabs /twilio/outbound-call)
+      // never hit our /webhook/voice/twilio/twiml route, so the conversation
+      // first surfaces here. Create a placeholder client + lead so the rest
+      // of the handler can proceed.
+      const state = await ensureVoiceState(tx, app.redis, conversation_id, req.log);
 
       // Agent passed structured args directly (already JSON, not free text).
       // ExtractRequestSchema strict-parses to guarantee no extra fields slipped
@@ -218,13 +281,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
     return await app.db.transaction(async (tx: Tx) => {
       await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
       await acquireConversationLock(tx, conversation_id);
-      const state = await getVoiceState(app.redis, conversation_id);
-      if (!state) {
-        return reply.send({
-          ok: false,
-          error: { code: 'no_state', message: 'call-start not received for this conversation' },
-        });
-      }
+      const state = await ensureVoiceState(tx, app.redis, conversation_id, req.log);
 
       const p = parameters as {
         pickup_lon?: number;
@@ -318,13 +375,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
     return await app.db.transaction(async (tx: Tx) => {
       await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
       await acquireConversationLock(tx, conversation_id);
-      const state = await getVoiceState(app.redis, conversation_id);
-      if (!state?.lead_id) {
-        return reply.send({
-          ok: false,
-          error: { code: 'no_lead', message: 'voice state has no lead_id; call-start missing' },
-        });
-      }
+      const state = await ensureVoiceState(tx, app.redis, conversation_id, req.log);
 
       const p = parameters as {
         route_km?: number;
@@ -435,15 +486,8 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
     const gate = await app.db.transaction(async (tx: Tx) => {
       await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
       await acquireConversationLock(tx, conversation_id);
-      const state = await getVoiceState(app.redis, conversation_id);
-      return state;
+      return await ensureVoiceState(tx, app.redis, conversation_id, req.log);
     });
-    if (!gate?.lead_id) {
-      return reply.send({
-        ok: false,
-        error: { code: 'no_lead', message: 'voice state has no lead_id; call-start missing' },
-      });
-    }
 
     // Build a minimal Phase 2 ToolContext. Voice handlers don't have an
     // LlmProvider (Agent IS the LLM); cast `llm` as `undefined as never` so the
@@ -516,14 +560,8 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
     const gate = await app.db.transaction(async (tx: Tx) => {
       await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
       await acquireConversationLock(tx, conversation_id);
-      return await getVoiceState(app.redis, conversation_id);
+      return await ensureVoiceState(tx, app.redis, conversation_id, req.log);
     });
-    if (!gate?.lead_id) {
-      return reply.send({
-        ok: false,
-        error: { code: 'no_lead', message: 'voice state has no lead_id; call-start missing' },
-      });
-    }
 
     const p = parameters as {
       amount_kopecks?: number | string;
