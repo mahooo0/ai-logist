@@ -116,6 +116,12 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
           from_number: fromNumber,
           to_number: toNumber,
           direction: 'inbound',
+          // Optional: surface the caller's number to the agent as a dynamic var
+          // so the prompt can reference it. Matches the official ElevenLabs
+          // sample shape; the agent ignores keys it doesn't use.
+          conversation_initiation_client_data: {
+            dynamic_variables: { caller_number: fromNumber },
+          },
         }),
       });
       if (!resp.ok) {
@@ -125,7 +131,7 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
           'voice.twilio.twiml.register_call_failed'
         );
         return reply
-          .type('text/xml')
+          .type('application/xml')
           .send(sayHangup('Sorry, we cannot connect you right now.'));
       }
       const twiml = await resp.text();
@@ -133,11 +139,11 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
         { fromNumber, toNumber, twimlLen: twiml.length },
         'voice.twilio.twiml.register_call_ok'
       );
-      return reply.type('text/xml').send(twiml);
+      return reply.type('application/xml').send(twiml);
     } catch (err) {
       req.log.error({ err: String(err) }, 'voice.twilio.twiml.fetch_error');
       return reply
-        .type('text/xml')
+        .type('application/xml')
         .send(sayHangup('Sorry, we cannot connect you right now.'));
     }
   });
