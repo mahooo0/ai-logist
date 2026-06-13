@@ -30,6 +30,7 @@ import { DiscountInputSchema, discountHandler } from '../../pipeline/llm-tools/d
 import { ExtractRequestSchema } from '../../pipeline/llm-tools/extract-request.js';
 import { nearestTruck } from '../../pipeline/llm-tools/nearest-truck.js';
 import { resolveCity } from '../../pipeline/intake.js';
+import { routeKm } from '../../lib/routing.js';
 import { elevenlabsSignaturePreHandler } from './signature.js';
 import { getVoiceState, mergeVoiceState } from './state.js';
 
@@ -319,16 +320,57 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
       }
 
       const p = parameters as {
-        route_km: number;
+        route_km?: number;
         tons: number;
         body_type: 'tent' | 'ref' | 'iso' | 'container';
         direction?: 'default' | 'back_haul';
       };
 
+      // Same pattern as nearest-truck: the agent has no way to know route_km,
+      // so when it's missing or zero, derive from voice state's from_city/to_city.
+      let routeKmNum = Number(p.route_km);
+      if (!Number.isFinite(routeKmNum) || routeKmNum <= 0) {
+        const fromCity = state.extracted_fields?.from_city ?? null;
+        const toCity = state.extracted_fields?.to_city ?? null;
+        if (!fromCity || !toCity) {
+          req.log.warn(
+            { conversation_id, fromCity, toCity },
+            'voice.tool.calc-price.no_cities'
+          );
+          return reply.send({
+            ok: false,
+            error: {
+              code: 'no_cities',
+              message: 'call extract-request first to capture from_city and to_city',
+            },
+          });
+        }
+        const [fromGeo, toGeo] = await Promise.all([
+          resolveCity(tx, fromCity, req.log),
+          resolveCity(tx, toCity, req.log),
+        ]);
+        if (!fromGeo || !toGeo) {
+          req.log.warn(
+            { conversation_id, fromCity, toCity, fromGeo: !!fromGeo, toGeo: !!toGeo },
+            'voice.tool.calc-price.geocode_failed'
+          );
+          return reply.send({
+            ok: false,
+            error: { code: 'geocode_failed', message: 'could not resolve one of the cities' },
+          });
+        }
+        const r = await routeKm(
+          { lon: fromGeo.lon, lat: fromGeo.lat },
+          { lon: toGeo.lon, lat: toGeo.lat },
+          req.log
+        );
+        routeKmNum = r.route_km;
+      }
+
       const cfg = await readPricingConfig(tx);
       const corridor = calcPrice(
         {
-          route_km: p.route_km,
+          route_km: routeKmNum,
           tons: p.tons,
           bodyType: p.body_type,
           date: new Date(),
