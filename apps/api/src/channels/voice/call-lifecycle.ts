@@ -56,7 +56,7 @@ const callLifecyclePlugin: FastifyPluginAsync = async (app) => {
   // INSERTs a calls row (upsert on elevenlabs_conversation_id), looks up or
   // creates a client by caller_phone (E.164), creates a lead skeleton so
   // subsequent tool handlers have a lead_id, and seeds Redis voice state.
-  app.post('/webhook/voice/call-start', async (req, reply) => {
+  app.post('/voice/call-start', async (req, reply) => {
     const body = CallStartSchema.parse(req.body);
     const { conversation_id, twilio_call_sid, caller_phone, language_hint } = body;
 
@@ -147,7 +147,7 @@ const callLifecyclePlugin: FastifyPluginAsync = async (app) => {
   // timeout. COALESCE preserves existing non-null values; jsonb transcript is
   // overwritten with the canonical version on every call (latest wins).
   // CONTEXT D-15.
-  app.post('/webhook/voice/call-end', async (req, reply) => {
+  app.post('/voice/call-end', async (req, reply) => {
     const body = CallEndSchema.parse(req.body);
     const { conversation_id, audio_url, transcript, outcome, duration_s, lang, linked_lead_id } =
       body;
@@ -175,7 +175,7 @@ const callLifecyclePlugin: FastifyPluginAsync = async (app) => {
   // call for this client already recorded a lang — the first lang-detected
   // event for a client persists; subsequent ones are no-ops at the client
   // level. Defends against Surzhyk-induced flipping mid-relationship.
-  app.post('/webhook/voice/lang-detected', async (req, reply) => {
+  app.post('/voice/lang-detected', async (req, reply) => {
     const body = LangDetectedSchema.parse(req.body);
     const { conversation_id, lang } = body;
 

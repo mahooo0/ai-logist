@@ -129,7 +129,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
   // ElevenLabs Agent already returned structured fields in `parameters`.
   // We validate against ExtractRequestSchema.strict() and persist via Redis
   // state (Phase 2 anti-injection: re-validation at boundary).
-  app.post('/webhook/voice/tool/extract-request', async (req, reply) => {
+  app.post('/voice/tool/extract-request', async (req, reply) => {
     const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
     const { conversation_id, sequence, parameters } = body;
 
@@ -202,7 +202,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
   });
 
   // ─── 2. nearest-truck ────────────────────────────────────────────────
-  app.post('/webhook/voice/tool/nearest-truck', async (req, reply) => {
+  app.post('/voice/tool/nearest-truck', async (req, reply) => {
     const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
     const { conversation_id, sequence, parameters } = body;
 
@@ -266,7 +266,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
   });
 
   // ─── 3. calc-price (PRICE-LOCK: write to DB BEFORE return — CONTEXT D-22) ──
-  app.post('/webhook/voice/tool/calc-price', async (req, reply) => {
+  app.post('/voice/tool/calc-price', async (req, reply) => {
     const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
     const { conversation_id, sequence, parameters } = body;
 
@@ -341,7 +341,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
   // create-order callbacks from BOTH passing the idempotency gate; the inner
   // tx's row-level FOR UPDATE then prevents two concurrent create-orders on
   // the same lead.
-  app.post('/webhook/voice/tool/create-order', async (req, reply) => {
+  app.post('/voice/tool/create-order', async (req, reply) => {
     const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
     const { conversation_id, sequence } = body;
 
@@ -423,7 +423,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
   //
   // Same nested-tx caveat as create-order: outer tx holds the advisory lock +
   // idempotency, inner Phase 2 tx does the FOR UPDATE + price_overrides append.
-  app.post('/webhook/voice/tool/discount', async (req, reply) => {
+  app.post('/voice/tool/discount', async (req, reply) => {
     const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
     const { conversation_id, sequence, parameters } = body;
 

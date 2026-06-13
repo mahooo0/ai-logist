@@ -70,7 +70,7 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
 
   // POST /webhook/voice/twilio/twiml — caller dialed Twilio number; we return
   // TwiML connecting their media stream to the ElevenLabs agent.
-  app.post('/webhook/voice/twilio/twiml', async (req, reply) => {
+  app.post('/voice/twilio/twiml', async (req, reply) => {
     if (config.TWILIO_WEBHOOK_SIGNATURE_SECRET && !validateTwilioRequest(req)) {
       req.log.warn(
         { url: req.url, hasSig: !!req.headers['x-twilio-signature'] },
@@ -136,7 +136,7 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
   // in-progress, completed, …). We just log + 200 — call-end gets persisted
   // by ElevenLabs through /webhook/voice/call-end which has the conversation_id
   // we actually key off of.
-  app.post('/webhook/voice/twilio/status', async (req, reply) => {
+  app.post('/voice/twilio/status', async (req, reply) => {
     if (config.TWILIO_WEBHOOK_SIGNATURE_SECRET && !validateTwilioRequest(req)) {
       req.log.warn(
         { url: req.url, hasSig: !!req.headers['x-twilio-signature'] },
