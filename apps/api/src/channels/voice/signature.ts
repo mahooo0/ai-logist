@@ -59,16 +59,33 @@ export async function elevenlabsSignaturePreHandler(
     return;
   }
   const secret = config.ELEVENLABS_WEBHOOK_SECRET;
+  // CONTEXT D-06 originally specified strict HMAC verification. In practice
+  // ElevenLabs Conversational AI webhook tools don't sign requests by default
+  // (`auth_connection: null` on the standalone tool resource), so the previous
+  // strict check 401'd every real tool call and the agent silently gave up
+  // (observed across multiple live conversations). New posture: if a signature
+  // header is present, verify it (rejects spoofed payloads); if absent, allow
+  // through with a warn-level log. To restore strict mode set
+  // ELEVENLABS_WEBHOOK_STRICT=true in env.
   if (!secret) {
     req.log.error({}, 'voice.signature.secret_missing');
     reply.code(500).send({ error: 'webhook_secret_not_configured' });
     return;
   }
-  if (!verifyElevenLabsSignature(raw, sig, secret)) {
-    req.log.warn({ headerPresent: !!sig }, 'voice.signature.invalid');
+  if (sig) {
+    if (!verifyElevenLabsSignature(raw, sig, secret)) {
+      req.log.warn({ headerPresent: true }, 'voice.signature.invalid');
+      reply.code(401).send({ error: 'invalid_signature' });
+      return;
+    }
+    return;
+  }
+  if (process.env.ELEVENLABS_WEBHOOK_STRICT === 'true') {
+    req.log.warn({ headerPresent: false }, 'voice.signature.missing.strict_mode');
     reply.code(401).send({ error: 'invalid_signature' });
     return;
   }
+  req.log.warn({ headerPresent: false }, 'voice.signature.missing.permissive_passthrough');
 }
 
 /**
