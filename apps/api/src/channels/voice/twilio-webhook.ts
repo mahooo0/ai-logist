@@ -16,9 +16,11 @@
 // when TWILIO_WEBHOOK_SIGNATURE_SECRET is unset (boundary log + warn so a misset
 // env doesn't silently 401 the only inbound path).
 
+import { sql } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { config } from '../../config.js';
 import { validateTwilioRequest } from './signature.js';
+import { setVoiceState } from './state.js';
 
 function parseFormBody(raw: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -139,6 +141,97 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
         { fromNumber, toNumber, twimlLen: twiml.length },
         'voice.twilio.twiml.register_call_ok'
       );
+
+      // Inline call-start: register-call architecture bypasses the
+      // /webhook/voice/call-start route, so we seed calls + client + lead +
+      // Redis voice state here. Without this, every tool handler reads a
+      // null state and returns {ok:false, code:'no_state'} — observed making
+      // the agent stall at "секундочку, ищу машину" forever.
+      const convoIdMatch = /name="conversation_id"\s+value="(conv_[a-zA-Z0-9_-]+)"/.exec(twiml);
+      const conversationId = convoIdMatch?.[1];
+      const callSid = body.CallSid ?? null;
+      if (conversationId) {
+        try {
+          // 1. Upsert calls row.
+          const insert = await req.server.db.execute(sql`
+            INSERT INTO calls (
+              elevenlabs_conversation_id, twilio_call_sid, direction, created_at
+            ) VALUES (
+              ${conversationId}, ${callSid}, 'inbound', NOW()
+            )
+            ON CONFLICT (elevenlabs_conversation_id)
+              DO UPDATE SET
+                twilio_call_sid = COALESCE(calls.twilio_call_sid, EXCLUDED.twilio_call_sid)
+            RETURNING id::text AS id
+          `);
+          const callId = (insert.rows[0] as { id: string } | undefined)?.id;
+
+          // 2. Find or create client by E.164 phone (the Twilio From header).
+          let clientId: string;
+          let stickyLang: 'ru' | 'ua' = 'ru';
+          const found = await req.server.db.execute(sql`
+            SELECT id::text AS id, lang FROM clients WHERE phone = ${fromNumber} LIMIT 1
+          `);
+          if (found.rows.length > 0) {
+            const row = found.rows[0] as { id: string; lang: 'ru' | 'ua' };
+            clientId = row.id;
+            stickyLang = row.lang;
+          } else {
+            const created = await req.server.db.execute(sql`
+              INSERT INTO clients (name, phone, lang)
+              VALUES (${`voice:${conversationId}`}, ${fromNumber}, 'ru'::client_lang)
+              ON CONFLICT (phone) DO UPDATE SET phone = EXCLUDED.phone
+              RETURNING id::text AS id, lang
+            `);
+            const row = created.rows[0] as { id: string; lang: 'ru' | 'ua' };
+            clientId = row.id;
+            stickyLang = row.lang;
+          }
+
+          // 3. Create lead skeleton (channel='voice').
+          const leadIns = await req.server.db.execute(sql`
+            INSERT INTO leads (client_id, channel, stage, version)
+            VALUES (${clientId}::uuid, 'voice', 'NEW', 0)
+            RETURNING id::text AS id
+          `);
+          const leadId = (leadIns.rows[0] as { id: string }).id;
+
+          // 4. Link calls → lead.
+          if (callId) {
+            await req.server.db.execute(sql`
+              UPDATE calls SET lead_id = ${leadId}::uuid WHERE id = ${callId}::uuid
+            `);
+          }
+
+          // 5. Seed Redis voice state so tool handlers can read it.
+          await setVoiceState(req.server.redis, {
+            conversation_id: conversationId,
+            client_id: clientId,
+            lead_id: leadId,
+            lang: stickyLang,
+            twilio_call_sid: callSid,
+            created_at: new Date().toISOString(),
+          });
+          req.log.info(
+            { conversationId, clientId, leadId, lang: stickyLang },
+            'voice.twilio.twiml.state_seeded'
+          );
+        } catch (err) {
+          // State seeding failure shouldn't block the call — the caller still
+          // hears Alisa. Tool handlers will return {ok:false, no_state} which
+          // surfaces as an agent stall, but at least the audio bridge works.
+          req.log.error(
+            { err: String(err), conversationId },
+            'voice.twilio.twiml.state_seed_failed'
+          );
+        }
+      } else {
+        req.log.warn(
+          { twimlPreview: twiml.slice(0, 200) },
+          'voice.twilio.twiml.no_conversation_id_in_twiml'
+        );
+      }
+
       return reply.type('application/xml').send(twiml);
     } catch (err) {
       req.log.error({ err: String(err) }, 'voice.twilio.twiml.fetch_error');
