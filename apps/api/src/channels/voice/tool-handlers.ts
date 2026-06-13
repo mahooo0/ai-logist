@@ -74,12 +74,19 @@ type Tx = any;
  *
  * Pattern matches Phase 3 Telegram webhook idempotency on `webhook_updates`
  * (source='telegram', external_id=update_id) — voice reuses the same table with
- * source='elevenlabs', external_id=`<conversation_id>:<sequence>`.
+ * source='voice', external_id=`<conversation_id>:<sequence>`.
+ *
+ * NOTE: source MUST be one of the values in the `webhook_source` pg_enum
+ * (`['telegram','voice','gps','stripe']`). Earlier commits cast to
+ * 'elevenlabs'::webhook_source which is NOT in the enum — every tool call hit
+ * `Failed query` / 500, the agent saw a tool error, and stalled at "секундочку,
+ * ищу машину". Cast to 'voice' instead — it's already the channel name the
+ * leads table uses for this flow (channel='voice').
  */
 async function recordIdempotency(tx: Tx, externalId: string, payload: unknown): Promise<boolean> {
   const res = await tx.execute(sql`
     INSERT INTO webhook_updates (source, external_id, payload, received_at)
-    VALUES ('elevenlabs'::webhook_source, ${externalId}, ${JSON.stringify(payload)}::jsonb, NOW())
+    VALUES ('voice'::webhook_source, ${externalId}, ${JSON.stringify(payload)}::jsonb, NOW())
     ON CONFLICT (source, external_id) DO NOTHING
     RETURNING external_id
   `);
