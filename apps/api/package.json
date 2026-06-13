@@ -21,7 +21,8 @@
     "db:migrate:check": "drizzle-kit check",
     "seed": "tsx --env-file=../../.env.local src/seed/run.ts",
     "telegram:setup": "tsx --env-file=../../.env.local scripts/telegram-setup.ts",
-    "voice:setup": "tsx --env-file=../../.env.local scripts/voice-setup.ts"
+    "voice:setup": "tsx --env-file=../../.env.local scripts/voice-setup.ts",
+    "voice:setup-confirm": "tsx --env-file=../../.env.local scripts/voice-setup-confirm.ts"
   },
   "dependencies": {
     "@ai-logist/shared-types": "workspace:*",
