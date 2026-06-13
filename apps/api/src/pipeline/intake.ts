@@ -757,7 +757,7 @@ function pickClarifyingQuestion(extracted: ExtractRequestOutput | null, lang: La
  *
  * Returns null when both stages miss — caller asks a clarification.
  */
-async function resolveCity(
+export async function resolveCity(
   db: Db,
   name: string,
   log: FastifyBaseLogger | undefined

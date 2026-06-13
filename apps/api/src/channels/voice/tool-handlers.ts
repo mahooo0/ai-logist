@@ -29,6 +29,7 @@ import { createOrderHandler } from '../../pipeline/llm-tools/create-order.js';
 import { DiscountInputSchema, discountHandler } from '../../pipeline/llm-tools/discount.js';
 import { ExtractRequestSchema } from '../../pipeline/llm-tools/extract-request.js';
 import { nearestTruck } from '../../pipeline/llm-tools/nearest-truck.js';
+import { resolveCity } from '../../pipeline/intake.js';
 import { elevenlabsSignaturePreHandler } from './signature.js';
 import { getVoiceState, mergeVoiceState } from './state.js';
 
@@ -218,17 +219,53 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
       }
 
       const p = parameters as {
-        pickup_lon: number;
-        pickup_lat: number;
+        pickup_lon?: number;
+        pickup_lat?: number;
         tons: number;
         body_type: 'tent' | 'ref' | 'iso' | 'container' | null;
       };
 
+      // The agent cannot geocode. extract-request stored from_city as a string
+      // in voice state; resolve it here (local cities table → Nominatim fallback,
+      // same flow Phase 2 text intake uses). The agent's pickup_lon/pickup_lat
+      // are still honored when they look usable, so that integration tests
+      // built against the old contract keep passing.
+      let pickupLon = Number(p.pickup_lon);
+      let pickupLat = Number(p.pickup_lat);
+      const agentCoordsLook = Number.isFinite(pickupLon) && Number.isFinite(pickupLat)
+        && (pickupLon !== 0 || pickupLat !== 0);
+      if (!agentCoordsLook) {
+        const fromCity = state.extracted_fields?.from_city ?? null;
+        if (!fromCity) {
+          req.log.warn(
+            { conversation_id, leadId: state.lead_id },
+            'voice.tool.nearest-truck.no_from_city'
+          );
+          return reply.send({
+            ok: false,
+            error: { code: 'no_from_city', message: 'call extract-request first to capture from_city' },
+          });
+        }
+        const resolved = await resolveCity(tx, fromCity, req.log);
+        if (!resolved) {
+          req.log.warn(
+            { conversation_id, fromCity },
+            'voice.tool.nearest-truck.geocode_failed'
+          );
+          return reply.send({
+            ok: true,
+            output: { trucks: [] },
+          });
+        }
+        pickupLon = resolved.lon;
+        pickupLat = resolved.lat;
+      }
+
       // Phase 2 nearestTruck: takes Db + raw params, returns rows with PostGIS
       // CTE re-rank (Pitfall #2 already handled inside Phase 2).
       const rows = await nearestTruck(tx, {
-        pickupLon: p.pickup_lon,
-        pickupLat: p.pickup_lat,
+        pickupLon,
+        pickupLat,
         tons: p.tons,
         bodyType: p.body_type ?? null,
       });
