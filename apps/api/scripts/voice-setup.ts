@@ -33,9 +33,12 @@ interface AgentToolDef {
   type: 'webhook';
   name: string;
   description: string;
-  webhook: { url: string; method: 'POST' };
-  api_schema: object;
-  response_timeout_secs: number;
+  responseTimeoutSecs: number;
+  apiSchema: {
+    url: string;
+    method: 'POST';
+    requestBodySchema: object;
+  };
 }
 
 function toolDef(
@@ -48,9 +51,12 @@ function toolDef(
     type: 'webhook',
     name,
     description,
-    webhook: { url: `${publicUrl}/webhook/voice/tool/${name}`, method: 'POST' },
-    api_schema: schema,
-    response_timeout_secs: 5,
+    responseTimeoutSecs: 5,
+    apiSchema: {
+      url: `${publicUrl}/webhook/voice/tool/${name}`,
+      method: 'POST',
+      requestBodySchema: schema,
+    },
   };
 }
 
@@ -88,24 +94,30 @@ async function main(): Promise<void> {
   const baseSchema = {
     type: 'object',
     properties: {
-      conversation_id: { type: 'string' },
-      sequence: { type: 'number' },
-      parameters: { type: 'object' },
+      conversation_id: { type: 'string', description: 'ElevenLabs conversation identifier' },
+      sequence: { type: 'number', description: 'Per-call tool invocation sequence number' },
+      parameters: {
+        type: 'object',
+        description: 'Tool-specific arguments collected by the agent',
+      },
     },
     required: ['conversation_id', 'sequence'],
   };
 
   const agentBody = {
     name: 'ai-logist-demo-v1',
-    conversation_config: {
+    conversationConfig: {
       agent: {
-        first_message: '', // dynamic per-language via Agent dashboard variables
-        language: 'multilingual',
+        firstMessage: '', // dynamic per-language via Agent dashboard variables
+        // 'multilingual' is no longer accepted (API allows ISO codes only —
+        // en/ru/uk/...). Default to 'ru' for the AI-Logist Russian-first demo;
+        // additional UA support is configured per Agent dashboard variables.
+        language: 'ru',
         prompt: {
           prompt: systemPrompt,
           llm: 'gpt-4o-mini',
           temperature: 0.3,
-          max_tokens: 400,
+          maxTokens: 400,
           tools: [
             toolDef(
               'extract-request',
@@ -143,20 +155,21 @@ async function main(): Promise<void> {
       tts: {
         // Multilingual v2 placeholder; final voice_id finalized at UAT-04 per
         // RESEARCH Pitfall #7. Override via ELEVENLABS_VOICE_ID env var.
-        voice_id: process.env.ELEVENLABS_VOICE_ID ?? 'pNInz6obpgDQGcFmaJgB',
-        model_id: 'eleven_turbo_v2_5',
+        // Use || so an empty-string env (the .env.local default) falls back too.
+        voiceId: process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB',
+        modelId: 'eleven_turbo_v2_5',
         stability: 0.55,
-        similarity_boost: 0.85,
+        similarityBoost: 0.85,
       },
       asr: {
         provider: 'elevenlabs',
         quality: 'high',
-        user_input_audio_format: 'pcm_16000',
+        userInputAudioFormat: 'pcm_16000',
       },
       conversation: {
         // Hard cost cap per CONTEXT D-32 + RESEARCH Block 17 (10 min × $0.10/min
         // = $1 max per call; demo budget ~$15 total).
-        max_duration_seconds: 600,
+        maxDurationSeconds: 600,
       },
     },
   };
@@ -170,7 +183,7 @@ async function main(): Promise<void> {
     console.log(`✓ Agent updated: ${agentId}`);
   } else {
     const created = await agentsApi.create(agentBody);
-    agentId = created.agent_id ?? created.id;
+    agentId = created.agentId ?? created.agent_id ?? created.id;
     console.log(`✓ Agent created: ${agentId}`);
     console.log(`  → ADD TO .env.local: ELEVENLABS_AGENT_ID=${agentId}`);
   }
