@@ -21,7 +21,6 @@
 /* eslint-disable no-console */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 
 function assert(name: string, value: string | undefined): asserts value is string {
   if (!value) {
@@ -31,33 +30,25 @@ function assert(name: string, value: string | undefined): asserts value is strin
   console.log(`✓ ${name}`);
 }
 
-interface AgentToolDef {
-  type: 'webhook';
-  name: string;
-  description: string;
-  responseTimeoutSecs: number;
-  apiSchema: {
-    url: string;
-    method: 'POST';
-    requestBodySchema: object;
-  };
-}
-
+// Build a snake_case tool definition for raw REST. We POST snake_case
+// directly because the SDK's camelCase→snake_case body transform strips
+// nested unknown keys like `dynamic_variable`/`constant_value` from the
+// JSON-Schema, which the ElevenLabs validator then rejects with 422.
 function toolDef(
   name: string,
   description: string,
   publicUrl: string,
   schema: object
-): AgentToolDef {
+): Record<string, unknown> {
   return {
     type: 'webhook',
     name,
     description,
-    responseTimeoutSecs: 5,
-    apiSchema: {
+    response_timeout_secs: 5,
+    api_schema: {
       url: `${publicUrl}/webhook/voice/tool/${name}`,
       method: 'POST',
-      requestBodySchema: schema,
+      request_body_schema: schema,
     },
   };
 }
@@ -82,7 +73,6 @@ async function main(): Promise<void> {
   }
 
   console.log('\n--- ElevenLabs Agent ---');
-  const el = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
 
   const promptPath = fileURLToPath(
     new URL('../src/channels/voice/confirmation-agent-config.md', import.meta.url)
@@ -140,13 +130,13 @@ async function main(): Promise<void> {
 
   const agentBody = {
     name: 'ai-logist-confirm-query-v1',
-    conversationConfig: {
+    conversation_config: {
       agent: {
         // Default first_message — used ONLY on inbound calls. Outbound calls
         // override this per-call via conversation_config_override so the agent
         // immediately greets the caller with the stage-specific opening
         // (Машина приехала, подтверждаете загрузку?).
-        firstMessage:
+        first_message:
           'Здравствуйте, это АИ-Логист. Назовите, пожалуйста, номер заказа из Telegram.',
         language: 'ru',
         prompt: {
@@ -155,7 +145,7 @@ async function main(): Promise<void> {
           // intake agent's stack. Confirmation calls are short — cost is low.
           llm: 'gpt-4o',
           temperature: 0.3,
-          maxTokens: 250,
+          max_tokens: 250,
           tools: [
             toolDef(
               'confirm-loading',
@@ -225,32 +215,53 @@ async function main(): Promise<void> {
       },
       tts: {
         // Alisa Russian voice — same as the intake agent for brand consistency.
-        voiceId: process.env.ELEVENLABS_VOICE_ID || 't6lBrEl93uCiLR1Lgm8v',
-        modelId: 'eleven_turbo_v2_5',
+        voice_id: process.env.ELEVENLABS_VOICE_ID || 't6lBrEl93uCiLR1Lgm8v',
+        model_id: 'eleven_turbo_v2_5',
         stability: 0.55,
-        similarityBoost: 0.85,
+        similarity_boost: 0.85,
       },
       asr: {
         provider: 'elevenlabs',
         quality: 'high',
-        userInputAudioFormat: 'pcm_16000',
+        user_input_audio_format: 'pcm_16000',
       },
       conversation: {
         // Confirmation calls are short — 4 min cap saves cost on stuck calls.
-        maxDurationSeconds: 240,
+        max_duration_seconds: 240,
       },
     },
   };
 
   let agentId = process.env.ELEVENLABS_AGENT_ID_CONFIRM;
-  // biome-ignore lint/suspicious/noExplicitAny: SDK 2.30.0 types lag REST API
-  const agentsApi = el.conversationalAi.agents as any;
   if (agentId) {
-    await agentsApi.update(agentId, agentBody);
+    const resp = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
+      method: 'PATCH',
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(agentBody),
+    });
+    if (!resp.ok) {
+      console.error(`✗ Update failed: ${resp.status} ${await resp.text()}`);
+      process.exit(1);
+    }
     console.log(`✓ Confirmation agent updated: ${agentId}`);
   } else {
-    const created = await agentsApi.create(agentBody);
-    agentId = created.agentId ?? created.agent_id ?? created.id;
+    const resp = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY!,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(agentBody),
+    });
+    if (!resp.ok) {
+      console.error(`✗ Create failed: ${resp.status} ${await resp.text()}`);
+      process.exit(1);
+    }
+    const created = (await resp.json()) as { agent_id?: string; agentId?: string; id?: string };
+    agentId = created.agent_id ?? created.agentId ?? created.id;
     console.log(`✓ Confirmation agent created: ${agentId}`);
     console.log(`  → ADD TO .env.local: ELEVENLABS_AGENT_ID_CONFIRM=${agentId}`);
   }

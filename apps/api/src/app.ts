@@ -63,6 +63,14 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Core plugins
   await app.register(sensible);
   await app.register(dbPlugin);
+
+  // Apply hand-rolled migrations (e.g. ALTER TYPE ADD VALUE — forbidden inside
+  // drizzle-kit's BEGIN/COMMIT wrapper). Idempotent on every boot. Runs AFTER
+  // dbPlugin so the pool is ready, BEFORE any route that may query the new
+  // columns/enums.
+  const { applyHandRolledMigrations } = await import('./lib/apply-hand-rolled-migrations.js');
+  await applyHandRolledMigrations(app.pgPool, app.log);
+
   await app.register(redisPlugin);
   // Phase 6 Pitfall 6 — admin shared-secret preHandler. Registered BEFORE
   // route plugins so the decorator is available when ordersRoutes loads.
