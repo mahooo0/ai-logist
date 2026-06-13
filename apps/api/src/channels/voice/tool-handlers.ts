@@ -31,6 +31,8 @@ import { DiscountInputSchema, discountHandler } from '../../pipeline/llm-tools/d
 import { ExtractRequestSchema } from '../../pipeline/llm-tools/extract-request.js';
 import { nearestTruck } from '../../pipeline/llm-tools/nearest-truck.js';
 import { resolveCity } from '../../pipeline/intake.js';
+import { transitionOrder } from '../../pipeline/lifecycle/order-fsm.js';
+import { IllegalTransition } from '../../pipeline/lifecycle/errors.js';
 import { routeKm } from '../../lib/routing.js';
 import { elevenlabsSignaturePreHandler } from './signature.js';
 import { getVoiceState, mergeVoiceState, setVoiceState, type VoiceState } from './state.js';
@@ -629,6 +631,449 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
       });
     }
     return reply.send({ ok: false, error: result.error });
+  });
+
+  // ─── 6. confirm-loading ──────────────────────────────────────────────
+  //
+  // Outbound confirmation flow: dialOrderConfirmation seeded Redis with
+  // {order_id, flow:'loading_confirmation'} when the call was dialed; the
+  // ElevenLabs Agent calls this tool after the caller says "yes".
+  //
+  // We trust state.order_id over parameters.order_id — the agent's
+  // dynamic_variable could be tampered with mid-call, but state was set by
+  // OUR dialer at dial time.
+  //
+  // Idempotency: FSM rejects AT_LOADING → IN_TRANSIT if the order is already
+  // IN_TRANSIT (IllegalTransition). We map that to ok:true so the agent's
+  // closing line still plays gracefully ("already confirmed, good loading").
+  app.post('/voice/tool/confirm-loading', async (req, reply) => {
+    const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
+    const { conversation_id, sequence, parameters } = body;
+
+    const gate = await app.db.transaction(async (tx: Tx) => {
+      await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
+      await acquireConversationLock(tx, conversation_id);
+      return await ensureVoiceState(tx, app.redis, conversation_id, req.log);
+    });
+
+    const orderId = (gate.order_id ?? (parameters.order_id as string | undefined) ?? '').trim();
+    if (!orderId) {
+      req.log.warn({ conversation_id }, 'voice.tool.confirm-loading.no_order_id');
+      return reply.send({
+        ok: false,
+        error: { code: 'no_order_id', message: 'missing order context for this call' },
+      });
+    }
+
+    try {
+      await transitionOrder(app.db, {
+        orderId,
+        to: 'IN_TRANSIT',
+        actor: 'system',
+        payload: { source: 'voice_tool', conversation_id, sequence },
+        onSuccess: async () => {
+          // Per-leg confirmation audit row (distinct from in_transit which
+          // STATUS_TO_EVENT inserts). Same shape as TG-callback path.
+          await app.db.execute(sql`
+            INSERT INTO order_events (order_id, type, actor, payload)
+            VALUES (${orderId}::uuid, 'loading_confirmed'::order_event_type, 'system', '{}'::jsonb)
+            ON CONFLICT (order_id, type) DO NOTHING
+          `);
+          // Defensive progress reset so leg 2 starts visually at 0% even if the
+          // ticker already advanced past the AT_LOADING transition.
+          await app.db.execute(sql`
+            UPDATE orders SET progress_percent = 0, updated_at = NOW() WHERE id = ${orderId}::uuid
+          `);
+        },
+      });
+      return reply.send({
+        ok: true,
+        output: {
+          status: 'IN_TRANSIT',
+          message_ru: 'Понял, передал водителю. Хорошей погрузки.',
+          message_ua: 'Зрозумів, передав водієві. Гарного завантаження.',
+        },
+      });
+    } catch (err) {
+      if (err instanceof IllegalTransition) {
+        req.log.info(
+          { orderId, conversation_id, err: err.message },
+          'voice.tool.confirm-loading.already_advanced'
+        );
+        return reply.send({
+          ok: true,
+          output: {
+            status: 'already_confirmed',
+            message_ru: 'Эту погрузку уже подтвердили, всё хорошо.',
+            message_ua: 'Це завантаження вже підтверджено, все гаразд.',
+          },
+        });
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      req.log.error({ err: message, orderId, conversation_id }, 'voice.tool.confirm-loading.failed');
+      return reply.send({
+        ok: false,
+        error: { code: 'transition_failed', message },
+      });
+    }
+  });
+
+  // ─── 7. confirm-delivery ─────────────────────────────────────────────
+  //
+  // Mirror of confirm-loading at the B endpoint. The actual Stripe checkout +
+  // TG payment-link send happens in ARRIVAL_HOOKS.AWAITING_PAYMENT — voice
+  // tool only triggers the FSM transition.
+  app.post('/voice/tool/confirm-delivery', async (req, reply) => {
+    const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
+    const { conversation_id, sequence, parameters } = body;
+
+    const gate = await app.db.transaction(async (tx: Tx) => {
+      await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
+      await acquireConversationLock(tx, conversation_id);
+      return await ensureVoiceState(tx, app.redis, conversation_id, req.log);
+    });
+
+    const orderId = (gate.order_id ?? (parameters.order_id as string | undefined) ?? '').trim();
+    if (!orderId) {
+      req.log.warn({ conversation_id }, 'voice.tool.confirm-delivery.no_order_id');
+      return reply.send({
+        ok: false,
+        error: { code: 'no_order_id', message: 'missing order context for this call' },
+      });
+    }
+
+    try {
+      await transitionOrder(app.db, {
+        orderId,
+        to: 'AWAITING_PAYMENT',
+        actor: 'system',
+        payload: { source: 'voice_tool', conversation_id, sequence },
+        onSuccess: async () => {
+          await app.db.execute(sql`
+            INSERT INTO order_events (order_id, type, actor, payload)
+            VALUES (${orderId}::uuid, 'delivery_confirmed'::order_event_type, 'system', '{}'::jsonb)
+            ON CONFLICT (order_id, type) DO NOTHING
+          `);
+        },
+      });
+      return reply.send({
+        ok: true,
+        output: {
+          status: 'AWAITING_PAYMENT',
+          message_ru: 'Спасибо, ссылку на оплату я отправлю в Telegram.',
+          message_ua: 'Дякую, посилання на оплату я надішлю в Telegram.',
+        },
+      });
+    } catch (err) {
+      if (err instanceof IllegalTransition) {
+        req.log.info(
+          { orderId, conversation_id, err: err.message },
+          'voice.tool.confirm-delivery.already_advanced'
+        );
+        return reply.send({
+          ok: true,
+          output: {
+            status: 'already_confirmed',
+            message_ru: 'Эту доставку уже закрыли, ссылка на оплату придёт в Telegram.',
+            message_ua: 'Цю доставку вже закрито, посилання на оплату прийде в Telegram.',
+          },
+        });
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      req.log.error({ err: message, orderId, conversation_id }, 'voice.tool.confirm-delivery.failed');
+      return reply.send({
+        ok: false,
+        error: { code: 'transition_failed', message },
+      });
+    }
+  });
+
+  // ─── 8. lookup-order ─────────────────────────────────────────────────
+  //
+  // Inbound status query: caller dialed our Twilio number and asks "what's
+  // with my order". Agent extracts the number ("один", "#KU-4471", "ka-u
+  // four four seven one") and calls this tool. We normalize to digits OR
+  // the prefixed shape and SELECT by orders.number.
+  //
+  // Demo concession: no caller-phone ownership check — any caller can query
+  // any order number. Tighten with `WHERE c.phone = caller_phone` for prod.
+  app.post('/voice/tool/lookup-order', async (req, reply) => {
+    const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
+    const { conversation_id, sequence, parameters } = body;
+
+    await app.db.transaction(async (tx: Tx) => {
+      await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
+      await acquireConversationLock(tx, conversation_id);
+      await ensureVoiceState(tx, app.redis, conversation_id, req.log);
+    });
+
+    const rawInput = String(parameters.order_number ?? parameters.number ?? '').trim();
+    if (!rawInput) {
+      return reply.send({
+        ok: false,
+        error: { code: 'invalid_args', message: 'order_number required' },
+      });
+    }
+
+    // Russian / Ukrainian word → digit so "номер один" / "перший" resolve to
+    // "1". Demo concession — we don't try to compose multi-digit words like
+    // "сорок четыре" — but the agent is instructed to extract digits itself,
+    // so this is just a safety net for the trivial cases.
+    const WORD_DIGITS: Record<string, string> = {
+      ноль: '0', нуль: '0', один: '1', одна: '1', первый: '1', перший: '1', первая: '1',
+      два: '2', две: '2', второй: '2', другий: '2',
+      три: '3', третий: '3', третій: '3',
+      четыре: '4', четвертый: '4', чотири: '4',
+      пять: '5', пятый: '5', п_ять: '5',
+      шесть: '6', шестой: '6', шість: '6',
+      семь: '7', седьмой: '7', сім: '7',
+      восемь: '8', восьмой: '8', вісім: '8',
+      девять: '9', девятый: '9', дев_ять: '9',
+    };
+    const lowered = rawInput.toLowerCase().replace(/[ʼ'ʼ`]/g, '_');
+    const words = lowered.split(/[^а-яёіїєґa-z0-9]+/u).filter(Boolean);
+    const wordDigit = words.map((w) => WORD_DIGITS[w] ?? '').join('');
+    const directDigits = rawInput.replace(/\D/g, '');
+    const digits = directDigits || wordDigit;
+
+    // Normalize. Accept any of:
+    //   "#KU-4471", "KU-4471", "ku 4471", "4471", "1" (raw digits), "номер один".
+    // Strategy: try EXACT match on orders.number first, then `#KU-<digits>`
+    // pattern derived from digit-only input, then ILIKE %<digits>% as last
+    // resort so the agent's speech-to-text glitches don't dead-end.
+    const candidates = [rawInput];
+    if (rawInput.startsWith('#')) candidates.push(rawInput.slice(1));
+    if (digits) {
+      candidates.push(`#KU-${digits}`, `KU-${digits}`, digits);
+    }
+
+    let row:
+      | {
+          order_id: string;
+          number: string;
+          status: string;
+          progress_percent: number;
+          plate: string;
+          driver_name: string;
+          pickup: string;
+          delivery: string;
+        }
+      | undefined;
+
+    for (const cand of candidates) {
+      const res = await app.db.execute(sql`
+        SELECT
+          o.id::text                       AS order_id,
+          o.number                         AS number,
+          o.status::text                   AS status,
+          o.progress_percent               AS progress_percent,
+          COALESCE(t.plate_number, '—')    AS plate,
+          COALESCE(t.driver_name, '—')     AS driver_name,
+          COALESCE(fc.name_ru, fc.name_ua, '—') AS pickup,
+          COALESCE(tc.name_ru, tc.name_ua, '—') AS delivery
+        FROM orders o
+        LEFT JOIN trucks t ON t.id = o.truck_id
+        LEFT JOIN cities fc ON fc.id = o.from_city_id
+        LEFT JOIN cities tc ON tc.id = o.to_city_id
+        WHERE o.number = ${cand}
+        LIMIT 1
+      `);
+      if (res.rows.length > 0) {
+        row = res.rows[0] as typeof row;
+        break;
+      }
+    }
+
+    if (!row && digits.length >= 1) {
+      const res = await app.db.execute(sql`
+        SELECT
+          o.id::text                       AS order_id,
+          o.number                         AS number,
+          o.status::text                   AS status,
+          o.progress_percent               AS progress_percent,
+          COALESCE(t.plate_number, '—')    AS plate,
+          COALESCE(t.driver_name, '—')     AS driver_name,
+          COALESCE(fc.name_ru, fc.name_ua, '—') AS pickup,
+          COALESCE(tc.name_ru, tc.name_ua, '—') AS delivery
+        FROM orders o
+        LEFT JOIN trucks t ON t.id = o.truck_id
+        LEFT JOIN cities fc ON fc.id = o.from_city_id
+        LEFT JOIN cities tc ON tc.id = o.to_city_id
+        WHERE o.number ILIKE ${'%' + digits + '%'}
+        ORDER BY o.created_at DESC
+        LIMIT 1
+      `);
+      if (res.rows.length > 0) row = res.rows[0] as typeof row;
+    }
+
+    // Last-resort demo fallback: caller said "first one" / "новый" / pure
+    // garbage. Return the most recent non-terminal order. Disabled in prod by
+    // requiring a strict env opt-in, but for the demo this saves the flow.
+    if (!row && process.env.DEMO_CLIENT_PHONE) {
+      const res = await app.db.execute(sql`
+        SELECT
+          o.id::text                       AS order_id,
+          o.number                         AS number,
+          o.status::text                   AS status,
+          o.progress_percent               AS progress_percent,
+          COALESCE(t.plate_number, '—')    AS plate,
+          COALESCE(t.driver_name, '—')     AS driver_name,
+          COALESCE(fc.name_ru, fc.name_ua, '—') AS pickup,
+          COALESCE(tc.name_ru, tc.name_ua, '—') AS delivery
+        FROM orders o
+        LEFT JOIN trucks t ON t.id = o.truck_id
+        LEFT JOIN cities fc ON fc.id = o.from_city_id
+        LEFT JOIN cities tc ON tc.id = o.to_city_id
+        WHERE o.status NOT IN ('CLOSED', 'CANCELED')
+        ORDER BY o.created_at DESC
+        LIMIT 1
+      `);
+      if (res.rows.length > 0) {
+        row = res.rows[0] as typeof row;
+        req.log.info(
+          { conversation_id, raw: rawInput, fallback: 'most_recent_open_order' },
+          'voice.tool.lookup-order.demo_fallback'
+        );
+      }
+    }
+
+    if (!row) {
+      return reply.send({
+        ok: true,
+        output: {
+          found: false,
+          message_ru: 'Не нашёл такой заказ. Уточните, пожалуйста, номер.',
+          message_ua: 'Не знайшов такого замовлення. Уточніть, будь ласка, номер.',
+        },
+      });
+    }
+
+    // Human-friendly leg / ETA per stage. We deliberately do NOT compute a
+    // precise ETA from GPS — for the demo, surface a coarse leg description
+    // and let the agent fill in a humanized estimate ("осталось ~100 км,
+    // примерно завтра").
+    const stageRu: Record<string, string> = {
+      CREATED: 'оформляется',
+      DRIVER_ASSIGNED: 'едет на загрузку',
+      AT_LOADING: 'на загрузке',
+      IN_TRANSIT: 'в пути',
+      AT_BORDER: 'на границе',
+      DELIVERED_PENDING: 'на разгрузке',
+      DELIVERED: 'выгружен',
+      AWAITING_PAYMENT: 'ожидает оплату',
+      CLOSED: 'закрыт',
+      CANCELED: 'отменён',
+    };
+    const stageUa: Record<string, string> = {
+      CREATED: 'оформлюється',
+      DRIVER_ASSIGNED: 'їде на завантаження',
+      AT_LOADING: 'на завантаженні',
+      IN_TRANSIT: 'у дорозі',
+      AT_BORDER: 'на кордоні',
+      DELIVERED_PENDING: 'на розвантаженні',
+      DELIVERED: 'розвантажено',
+      AWAITING_PAYMENT: 'очікує оплату',
+      CLOSED: 'закрито',
+      CANCELED: 'скасовано',
+    };
+
+    return reply.send({
+      ok: true,
+      output: {
+        found: true,
+        order_id: row.order_id,
+        order_number: row.number,
+        status: row.status,
+        progress_percent: row.progress_percent,
+        plate: row.plate,
+        driver_name: row.driver_name,
+        pickup: row.pickup,
+        delivery: row.delivery,
+        stage_ru: stageRu[row.status] ?? row.status,
+        stage_ua: stageUa[row.status] ?? row.status,
+      },
+    });
+  });
+
+  // ─── 9. get-order-context ────────────────────────────────────────────
+  //
+  // For the outbound confirmation flow: if the caller asks "а какая машина"
+  // before confirming, the agent can fetch the order context (plate, driver,
+  // cargo) without making the caller spell it out. Prefers Redis state's
+  // order_id (set by our dialer) — falls back to parameters.order_id.
+  app.post('/voice/tool/get-order-context', async (req, reply) => {
+    const body = CallbackBaseSchema.parse(req.body) as CallbackEnvelope;
+    const { conversation_id, sequence, parameters } = body;
+
+    const gate = await app.db.transaction(async (tx: Tx) => {
+      await recordIdempotency(tx, `${conversation_id}:${sequence}`, body);
+      await acquireConversationLock(tx, conversation_id);
+      return await ensureVoiceState(tx, app.redis, conversation_id, req.log);
+    });
+
+    const orderId = (gate.order_id ?? (parameters.order_id as string | undefined) ?? '').trim();
+    if (!orderId) {
+      return reply.send({
+        ok: false,
+        error: { code: 'no_order_id', message: 'no order context for this call' },
+      });
+    }
+
+    const res = await app.db.execute(sql`
+      SELECT
+        o.number                                AS number,
+        COALESCE(t.plate_number, '—')           AS plate,
+        COALESCE(t.driver_name, '—')            AS driver_name,
+        COALESCE(t.driver_phone, '')            AS driver_phone,
+        COALESCE(fc.name_ru, fc.name_ua, '—')   AS pickup,
+        COALESCE(tc.name_ru, tc.name_ua, '—')   AS delivery,
+        l.tons::text                            AS tons,
+        l.body_type::text                       AS body_type
+      FROM orders o
+      LEFT JOIN trucks t ON t.id = o.truck_id
+      LEFT JOIN cities fc ON fc.id = o.from_city_id
+      LEFT JOIN cities tc ON tc.id = o.to_city_id
+      LEFT JOIN leads  l ON l.id = o.lead_id
+      WHERE o.id = ${orderId}::uuid
+      LIMIT 1
+    `);
+    const row = res.rows[0] as
+      | {
+          number: string;
+          plate: string;
+          driver_name: string;
+          driver_phone: string;
+          pickup: string;
+          delivery: string;
+          tons: string | null;
+          body_type: string | null;
+        }
+      | undefined;
+
+    if (!row) {
+      return reply.send({
+        ok: false,
+        error: { code: 'order_not_found', message: 'order missing' },
+      });
+    }
+
+    const cargo = [row.tons ? `${Number(row.tons)} т` : '', row.body_type ?? '']
+      .filter(Boolean)
+      .join(', ') || 'груз';
+
+    return reply.send({
+      ok: true,
+      output: {
+        order_number: row.number,
+        plate: row.plate,
+        driver_name: row.driver_name,
+        // driver_phone deliberately omitted from output: not the agent's place
+        // to read out a private number.
+        pickup: row.pickup,
+        delivery: row.delivery,
+        cargo_summary: cargo,
+      },
+    });
   });
 };
 

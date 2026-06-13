@@ -84,7 +84,11 @@ const twilioWebhookPlugin: FastifyPluginAsync = async (app) => {
       return reply.code(401).send('invalid signature');
     }
 
-    const agentId = config.ELEVENLABS_AGENT_ID;
+    // Demo flow: inbound calls should land on the confirm-query agent (handles
+    // "what's with my order #1" via lookup-order). Falls back to the original
+    // intake agent if the confirm-query agent isn't provisioned yet — keeps
+    // legacy setups working.
+    const agentId = config.ELEVENLABS_AGENT_ID_CONFIRM ?? config.ELEVENLABS_AGENT_ID;
     const apiKey = config.ELEVENLABS_API_KEY;
     if (!agentId || !apiKey) {
       req.log.error(

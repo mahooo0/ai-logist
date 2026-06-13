@@ -16,6 +16,35 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../../db.js';
 import { IllegalTransition, VersionMismatch } from './errors.js';
 
+// ─── Per-state arrival hooks ────────────────────────────────────────────────
+// Modules outside the FSM (voice dialer, payment-link sender) register a hook
+// keyed by target OrderStatus. transitionOrder fires the registered hook AFTER
+// COMMIT and BEFORE caller-supplied onSuccess, fire-and-forget. This lets us
+// have a single source of truth for "what happens when an order enters state X"
+// regardless of who triggered the transition (ticker, manual admin slider,
+// TG callback, voice tool). Hooks must not throw — failures are logged via
+// console.error and never roll back the FSM transition (RESEARCH Pitfall #3).
+//
+// Decoupling rationale: the FSM file is shared by tests and many callers; we
+// don't want a static import of telegram/voice/stripe code here. Registration
+// happens once at app bootstrap (lifecycle/arrival-hooks.ts initOrderArrivalHooks).
+export type ArrivalHook = (orderId: string, db: Db) => Promise<void> | void;
+const arrivalHooks: Partial<Record<OrderStatus, ArrivalHook>> = {};
+
+/** Register the side-effect hook for a particular order state. Overwrites if
+ *  the slot was already registered (boot is the only caller). */
+export function registerOrderArrivalHook(status: OrderStatus, hook: ArrivalHook): void {
+  arrivalHooks[status] = hook;
+}
+
+/** Test-only: clear all registered hooks between Vitest cases so a hook
+ *  registered by one test doesn't leak into the next. */
+export function clearOrderArrivalHooks(): void {
+  for (const k of Object.keys(arrivalHooks) as OrderStatus[]) {
+    delete arrivalHooks[k];
+  }
+}
+
 export type OrderStatus =
   | 'CREATED'
   | 'DRIVER_ASSIGNED'
@@ -235,9 +264,21 @@ export async function transitionOrder(
     };
   });
 
-  // Post-commit hook (D-25). Fire-and-forget — failures MUST NOT roll back the
-  // already-committed transition. The caller is responsible for logging at
-  // call-site; we fall back to console.error if onSuccess throws synchronously.
+  // Per-state arrival hook (e.g. AT_LOADING → dial client; AWAITING_PAYMENT →
+  // sendPaymentLink). Fires for every successful transition into the target
+  // state, regardless of caller (ticker, manual admin, TG callback, voice tool).
+  // Fire-and-forget; failures never roll back the FSM.
+  const arrivalHook = arrivalHooks[args.to];
+  if (arrivalHook) {
+    Promise.resolve(arrivalHook(args.orderId, db)).catch((err) => {
+      console.error(`ARRIVAL_HOOKS[${args.to}] failed for order ${args.orderId}`, err);
+    });
+  }
+
+  // Post-commit caller-supplied hook (D-25). Fire-and-forget — failures MUST
+  // NOT roll back the already-committed transition. The caller is responsible
+  // for logging at call-site; we fall back to console.error if onSuccess
+  // throws synchronously.
   if (args.onSuccess) {
     Promise.resolve(args.onSuccess(result)).catch((err) => {
       console.error('transitionOrder.onSuccess failed', err);

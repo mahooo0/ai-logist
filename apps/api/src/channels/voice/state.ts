@@ -26,6 +26,12 @@ export interface VoiceState {
   quoted_price?: bigint | null;
   twilio_call_sid?: string | null;
   created_at: string; // ISO timestamp
+  // Outbound confirmation-flow context — set when dialOrderConfirmation
+  // pre-seeds Redis. confirmLoading/confirmDelivery tool handlers prefer
+  // this over args.order_id (so the caller's dynamic_variables can't be
+  // forged to confirm a different order than the one we dialed).
+  order_id?: string;
+  flow?: 'loading_confirmation' | 'delivery_confirmation';
 }
 
 // JSON replacer — encode bigint as { __bigint: "<decimal>" } sentinel.

@@ -49,6 +49,21 @@ const ConfigSchema = z.object({
   ELEVENLABS_WEBHOOK_SECRET: z.string().optional(),
   VOICE_PUBLIC_URL: z.string().url().optional(),
 
+  // Outbound voice confirmation flow (demo § "voice confirmations at A/B").
+  // ELEVENLABS_AGENT_ID_CONFIRM — separate agent that handles pickup/delivery
+  // confirmation calls AND inbound status queries (branches on
+  // dynamic_variables.flow). Falls back to ELEVENLABS_AGENT_ID when unset so
+  // existing setups keep working.
+  // ELEVENLABS_PHONE_NUMBER_ID — the `phone_number_id` ElevenLabs assigned to
+  // the Twilio number when we imported it. Required to dial outbound through
+  // `/v1/convai/twilio/outbound-call`.
+  // DEMO_CLIENT_PHONE — when set, dialOrderConfirmation uses this E.164 instead
+  // of the per-order clients.phone. Lets us point all demo calls at one tester
+  // phone without DB writes.
+  ELEVENLABS_AGENT_ID_CONFIRM: z.string().optional(),
+  ELEVENLABS_PHONE_NUMBER_ID: z.string().optional(),
+  DEMO_CLIENT_PHONE: z.string().optional(),
+
   // Phase 6 — Demo ticker (D-01). Both default-on with sane values; flag
   // gates registration in test/CI envs where Postgres isn't running.
   DEMO_TICKER_ENABLED: z.coerce.boolean().default(false),

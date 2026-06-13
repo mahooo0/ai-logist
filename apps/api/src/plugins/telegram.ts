@@ -33,6 +33,13 @@ export const telegramPlugin = fp(
       registerTelegramHandlers(bot, app)
     );
 
+    // Voice-confirmation demo flow — register per-state FSM arrival hooks
+    // (dial outbound on AT_LOADING / DELIVERED_PENDING; sendPaymentLink on
+    // AWAITING_PAYMENT) once the bot decorator is available.
+    await import('../pipeline/lifecycle/arrival-hooks.js').then(
+      ({ initOrderArrivalHooks }) => initOrderArrivalHooks(app, bot)
+    );
+
     app.addHook('onClose', async () => {
       await bot.stop();
     });

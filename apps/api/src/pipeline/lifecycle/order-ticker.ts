@@ -18,11 +18,7 @@ import type { Bot } from 'grammy';
 import { config as importedConfig } from '../../config.js';
 import type { Db } from '../../db.js';
 import { transitionOrder } from './order-fsm.js';
-import {
-  notifyApproach,
-  notifyLoadingPrompt,
-  notifyDeliveryPrompt,
-} from '../../channels/telegram/notifications.js';
+import { notifyApproach } from '../../channels/telegram/notifications.js';
 import { routeGeometry } from '../../lib/routing.js';
 import { interpolateAlongPolyline } from '../../lib/polyline-interpolate.js';
 
@@ -118,14 +114,13 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
           actor: 'system',
           payload: { reason: 'ticker_completed_leg' },
           onSuccess: async () => {
+            // Reset progress so the next leg starts visually at 0%.
+            // The voice/payment side-effects moved to ARRIVAL_HOOKS (FSM-level),
+            // so the same transition fires the same hook whether the source is
+            // ticker, manual admin slider, TG callback, or voice tool.
             await db.execute(sql`
               UPDATE orders SET progress_percent = 0 WHERE id = ${raw.id}::uuid
             `);
-            if (nextStatus === 'AT_LOADING') {
-              await notifyLoadingPrompt({ orderId: raw.id, db, bot: deps.bot, log });
-            } else {
-              await notifyDeliveryPrompt({ orderId: raw.id, db, bot: deps.bot, log });
-            }
           },
         });
       } catch (err) {

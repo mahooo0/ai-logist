@@ -438,9 +438,9 @@ export function registerTelegramHandlers(bot: Bot, app: FastifyInstance): void {
                 )
                 ON CONFLICT (order_id, type) DO NOTHING
               `);
-              // W7 — Wire sendPaymentLink (Plan 06-03). Creates Stripe
-              // Checkout Session + sends payment URL via Telegram.
-              await sendPaymentLink({ orderId, app, bot });
+              // sendPaymentLink moved to ARRIVAL_HOOKS.AWAITING_PAYMENT so the
+              // same flow fires when delivery is confirmed via voice tool
+              // (confirmDelivery) — no duplicate Stripe checkout/TG message.
             },
           });
         } else {
