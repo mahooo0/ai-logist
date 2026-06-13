@@ -158,10 +158,12 @@ async function main(): Promise<void> {
         },
       },
       tts: {
-        // Multilingual v2 placeholder; final voice_id finalized at UAT-04 per
-        // RESEARCH Pitfall #7. Override via ELEVENLABS_VOICE_ID env var.
-        // Use || so an empty-string env (the .env.local default) falls back too.
-        voiceId: process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB',
+        // Default voice: Alisa - Natural Russian Female (RU). The previous
+        // placeholder pNInz6obpgDQGcFmaJgB is Adam (EN), which spoke our
+        // Russian prompt with a heavy English accent — not demo-ready.
+        // Override via ELEVENLABS_VOICE_ID env var. Use || so an empty-string
+        // env (the .env.local default) still falls back to Alisa.
+        voiceId: process.env.ELEVENLABS_VOICE_ID || 't6lBrEl93uCiLR1Lgm8v',
         modelId: 'eleven_turbo_v2_5',
         stability: 0.55,
         similarityBoost: 0.85,
