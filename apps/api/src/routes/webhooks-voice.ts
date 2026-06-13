@@ -20,10 +20,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 import callLifecyclePlugin from '../channels/voice/call-lifecycle.js';
 import voiceToolHandlers from '../channels/voice/tool-handlers.js';
+import twilioWebhookPlugin from '../channels/voice/twilio-webhook.js';
 
 const webhooksVoice: FastifyPluginAsync = async (app) => {
-  // Scoped raw-body parser — only routes registered inside this inner scope
-  // see the buffer-parseAs override. Outer routes keep the default JSON parser.
+  // ElevenLabs scope — raw-body parser for HMAC. Only the tool-handlers +
+  // call-lifecycle routes see the buffer-parseAs override.
   await app.register(async (scope) => {
     scope.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
       (req as unknown as { rawBody: Buffer }).rawBody = body as Buffer;
@@ -46,6 +47,13 @@ const webhooksVoice: FastifyPluginAsync = async (app) => {
     // pre-call hooks should apply the preHandler here too. Documented deviation.
     await scope.register(callLifecyclePlugin);
   });
+
+  // Twilio scope — form-urlencoded parser. /twiml closes the gap that left
+  // inbound calls 404ing (caller heard "application error"); /status acks the
+  // Twilio call-lifecycle pings. Both verify x-twilio-signature when
+  // TWILIO_WEBHOOK_SIGNATURE_SECRET is set; skip when unset so a misset env
+  // doesn't 401 the only inbound path.
+  await app.register(twilioWebhookPlugin);
 };
 
 export default webhooksVoice;
