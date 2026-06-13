@@ -115,7 +115,12 @@ async function main(): Promise<void> {
         language: 'ru',
         prompt: {
           prompt: systemPrompt,
-          llm: 'gpt-4o-mini',
+          // gpt-4o-mini stalls on function-calling with the long Phase 3.1
+          // system prompt — observed 0 tool calls across an 18-message live
+          // conversation. gpt-4o (full) reliably calls extract-request →
+          // nearest-truck → calc-price → create-order in order. Per-call cost
+          // diff is small at demo volumes.
+          llm: 'gpt-4o',
           temperature: 0.3,
           maxTokens: 400,
           tools: [
