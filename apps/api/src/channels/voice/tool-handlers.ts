@@ -113,21 +113,22 @@ async function ensureVoiceState(
   if (existing) return existing;
 
   log?.info({ conversationId }, 'voice.state.lazy_seed.start');
-  // Partial unique idx WHERE elevenlabs_conversation_id IS NOT NULL — use
-  // DO NOTHING + SELECT fallback rather than self-update on the conflict column.
+  // Mirror call-lifecycle.ts's INSERT verbatim (proven to work). Difference vs
+  // my earlier attempts: explicit twilio_call_sid column (NULL), and the
+  // ON CONFLICT clause updates twilio_call_sid (a non-conflict column) so
+  // Postgres accepts it for the partial unique index on elevenlabs_conv_id.
   const callIns = await tx.execute(sql`
-    INSERT INTO calls (elevenlabs_conversation_id, direction, created_at)
-    VALUES (${conversationId}, 'outbound', NOW())
-    ON CONFLICT (elevenlabs_conversation_id) DO NOTHING
+    INSERT INTO calls (
+      elevenlabs_conversation_id, twilio_call_sid, direction, created_at
+    ) VALUES (
+      ${conversationId}, NULL, 'inbound', NOW()
+    )
+    ON CONFLICT (elevenlabs_conversation_id)
+      DO UPDATE SET
+        twilio_call_sid = COALESCE(calls.twilio_call_sid, EXCLUDED.twilio_call_sid)
     RETURNING id::text AS id
   `);
-  let callId: string | undefined = (callIns.rows[0] as { id: string } | undefined)?.id;
-  if (!callId) {
-    const found = await tx.execute(sql`
-      SELECT id::text AS id FROM calls WHERE elevenlabs_conversation_id = ${conversationId} LIMIT 1
-    `);
-    callId = (found.rows[0] as { id: string }).id;
-  }
+  const callId = (callIns.rows[0] as { id: string }).id;
 
   // Placeholder client — phone is voice:<conv> so the unique constraint won't
   // collide with any real E.164. Post-call audit can re-link to a real client
