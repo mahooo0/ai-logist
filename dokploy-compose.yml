@@ -37,9 +37,11 @@ services:
     restart: always
 
   ailogist-api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    # Image is built by GHA (.github/workflows/build-and-deploy.yml) and pushed
+    # to GHCR. Dokploy pulls + recreates instead of building on the VPS, which
+    # used to peg both vCPUs and stall the Dokploy panel during deploys.
+    image: ghcr.io/mahooo0/ai-logist-api:latest
+    pull_policy: always
     depends_on:
       ailogist-postgres:
         condition: service_healthy
@@ -99,9 +101,8 @@ services:
     restart: always
 
   ailogist-web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+    image: ghcr.io/mahooo0/ai-logist-web:latest
+    pull_policy: always
     depends_on:
       - ailogist-api
     environment:

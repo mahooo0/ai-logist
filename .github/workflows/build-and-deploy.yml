@@ -1,0 +1,76 @@
+name: build-and-deploy
+
+# Builds the api + web Docker images on GHA (off the VPS), pushes them to
+# GHCR, then triggers Dokploy to pull + recreate the containers. The VPS
+# no longer runs the heavy `next build` / `tsc` / `pnpm install` — it just
+# does `docker pull` + restart, which is ~30-60s vs. the old 4-5 min builds
+# that pegged the 2-vCPU Contabo at 100% and made the Dokploy panel hang.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/ai-logist
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+          - name: web
+            dockerfile: apps/web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GHA cache → next build picks up unchanged layers in seconds.
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  trigger-dokploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy redeploy
+        # Dokploy exposes a per-compose webhook that runs `docker compose pull`
+        # + recreate. The endpoint expects a GitHub-style push payload (uses
+        # `ref` to gate on branch).
+        run: |
+          curl -fsS -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"ref": "refs/heads/main"}' \
+            "https://dokploy.holy-water.app/api/deploy/compose/${{ secrets.DOKPLOY_REFRESH_TOKEN }}" \
+          | tee /dev/stderr
