@@ -179,6 +179,35 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
     phoneNumberIdSet: !!config.ELEVENLABS_PHONE_NUMBER_ID,
     stripeSet: !!config.STRIPE_SECRET_KEY,
   }));
+
+  // Diagnostic — force one tickerLoop synchronously and report success/error.
+  // Lets us prove whether the loop body crashes vs. just isn't being invoked
+  // by setInterval. SELECT echoes the candidate rows (id + status + pct) so
+  // we can verify the row our test order is in actually matches the WHERE.
+  app.post('/debug/ticker/force', async () => {
+    const out: Record<string, unknown> = {};
+    try {
+      const sel = await app.db.execute(sql`
+        SELECT id::text AS id, status, progress_percent, auto_progress_paused
+        FROM orders
+        WHERE status IN ('DRIVER_ASSIGNED', 'IN_TRANSIT')
+          AND auto_progress_paused = false
+      `);
+      out.candidates = sel.rows;
+    } catch (e) {
+      out.selectError = String(e);
+    }
+    try {
+      const { tickerLoop } = await import('../pipeline/lifecycle/order-ticker.js');
+      const appWithBot = app as FastifyInstance & { bot?: unknown };
+      // biome-ignore lint/suspicious/noExplicitAny: ad-hoc debug, types not load-bearing
+      await tickerLoop({ db: app.db, log: app.log, bot: appWithBot.bot as any });
+      out.tickResult = 'ok';
+    } catch (e) {
+      out.tickError = String(e);
+    }
+    return out;
+  });
 };
 
 export default healthRoutes;
