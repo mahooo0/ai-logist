@@ -65,12 +65,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Dokploy redeploy
-        # Dokploy exposes a per-compose webhook that runs `docker compose pull`
-        # + recreate. The endpoint expects a GitHub-style push payload (uses
-        # `ref` to gate on branch).
+        # The /api/deploy/compose/<refreshToken> webhook only works when
+        # autoDeploy is enabled — but we disable autoDeploy so git pushes
+        # don't trigger Dokploy's old in-VPS build path. Use the authenticated
+        # API endpoint instead.
         run: |
           curl -fsS -X POST \
+            -H 'x-api-key: ${{ secrets.DOKPLOY_API_KEY }}' \
             -H 'Content-Type: application/json' \
-            -d '{"ref": "refs/heads/main"}' \
-            "https://dokploy.holy-water.app/api/deploy/compose/${{ secrets.DOKPLOY_REFRESH_TOKEN }}" \
+            -d '{"composeId":"${{ secrets.DOKPLOY_COMPOSE_ID }}","title":"GHA build ${{ github.sha }}","description":"image: ${{ github.sha }}"}' \
+            "https://dokploy.holy-water.app/api/compose.deploy" \
           | tee /dev/stderr
