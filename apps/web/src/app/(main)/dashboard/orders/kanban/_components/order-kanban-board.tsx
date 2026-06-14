@@ -17,7 +17,8 @@ export type OrderKanbanColumnId =
   | 'pickup'
   | 'in-transit'
   | 'unloading-payment'
-  | 'paid';
+  | 'paid'
+  | 'cancelled';
 
 export interface OrderKanbanItem {
   id: string;
@@ -58,7 +59,7 @@ const COLUMNS: ColumnDef[] = [
   {
     id: 'pickup',
     title: 'В пути к клиенту · загрузка',
-    description: 'Водитель назначен или едет на загрузку',
+    description: 'Водитель едет на загрузку или уже загружается',
     tone: 'bg-sky-200 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
     match: (i) =>
       i.kind === 'order' && (i.sourceStatus === 'DRIVER_ASSIGNED' || i.sourceStatus === 'AT_LOADING'),
@@ -76,7 +77,12 @@ const COLUMNS: ColumnDef[] = [
     title: 'Разгрузка · ожидание оплаты',
     description: 'Груз доставлен, ждём оплату',
     tone: 'bg-violet-200 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
-    match: (i) => i.kind === 'order' && i.sourceStatus === 'DELIVERED',
+    // Phase 6: covers all post-delivery statuses up to (but excluding) paid.
+    match: (i) =>
+      i.kind === 'order' &&
+      (i.sourceStatus === 'DELIVERED' ||
+        i.sourceStatus === 'DELIVERED_PENDING' ||
+        i.sourceStatus === 'AWAITING_PAYMENT'),
   },
   {
     id: 'paid',
@@ -84,6 +90,13 @@ const COLUMNS: ColumnDef[] = [
     description: 'Заказ закрыт',
     tone: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
     match: (i) => i.kind === 'order' && i.sourceStatus === 'CLOSED',
+  },
+  {
+    id: 'cancelled',
+    title: 'Отменён',
+    description: 'Клиент отказался / отмена менеджером',
+    tone: 'bg-rose-200 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
+    match: (i) => i.kind === 'order' && i.sourceStatus === 'CANCELED',
   },
 ];
 

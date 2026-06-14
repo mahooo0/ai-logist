@@ -47,10 +47,13 @@ const STATUS_COLOR: Record<Truck['status'], string> = {
 };
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
-  DRIVER_ASSIGNED: 'Водитель назначен',
-  AT_LOADING: 'Загрузка',
+  CREATED: 'В обработке',
+  DRIVER_ASSIGNED: 'Машина едет к загрузке',
+  AT_LOADING: 'На загрузке',
   IN_TRANSIT: 'В пути',
   AT_BORDER: 'На границе',
+  DELIVERED_PENDING: 'На разгрузке',
+  AWAITING_PAYMENT: 'Ожидает оплаты',
 };
 
 function dotIcon(color: string, size = 18) {

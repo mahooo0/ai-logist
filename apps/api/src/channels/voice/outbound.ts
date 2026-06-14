@@ -248,11 +248,11 @@ export async function dialOrderConfirmation(args: {
   const firstMessage =
     stage === 'loading'
       ? ctx.clientLang === 'ua'
-        ? `Доброго дня, це Артем з АІ-Логіст. Машина ${ctx.plate}, водій ${ctx.driverName}, під'їхала на ${address}. Готові до завантаження?`
-        : `Здравствуйте, это Артём из АИ-Логист. Машина ${ctx.plate}, водитель ${ctx.driverName}, подъехала на ${address}. Готовы к погрузке?`
+        ? `Доброго дня, це Аліса з АІ-Логіст. Машина ${ctx.plate}, водій ${ctx.driverName}, під'їхала на ${address}. Готові до завантаження?`
+        : `Здравствуйте, это Алиса из АИ-Логист. Машина ${ctx.plate}, водитель ${ctx.driverName}, подъехала на ${address}. Готовы к погрузке?`
       : ctx.clientLang === 'ua'
-        ? `Доброго дня, це Артем з АІ-Логіст. Машина ${ctx.plate} з ${ctx.cargoSummary} прибула на розвантаження за ${address}. Приймаєте?`
-        : `Здравствуйте, это Артём из АИ-Логист. Машина ${ctx.plate} с ${ctx.cargoSummary} прибыла на разгрузку по ${address}. Принимаете?`;
+        ? `Доброго дня, це Аліса з АІ-Логіст. Машина ${ctx.plate} з ${ctx.cargoSummary} прибула на розвантаження за ${address}. Приймаєте?`
+        : `Здравствуйте, это Алиса из АИ-Логист. Машина ${ctx.plate} с ${ctx.cargoSummary} прибыла на разгрузку по ${address}. Принимаете?`;
 
   let conversationId: string | null = null;
   try {

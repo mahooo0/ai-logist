@@ -870,6 +870,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
           progress_percent: number;
           plate: string;
           driver_name: string;
+          driver_phone: string;
           pickup: string;
           delivery: string;
         }
@@ -884,6 +885,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
           o.progress_percent               AS progress_percent,
           COALESCE(t.plate_number, '—')    AS plate,
           COALESCE(t.driver_name, '—')     AS driver_name,
+          COALESCE(t.driver_phone, '')     AS driver_phone,
           COALESCE(fc.name_ru, fc.name_ua, '—') AS pickup,
           COALESCE(tc.name_ru, tc.name_ua, '—') AS delivery
         FROM orders o
@@ -908,6 +910,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
           o.progress_percent               AS progress_percent,
           COALESCE(t.plate_number, '—')    AS plate,
           COALESCE(t.driver_name, '—')     AS driver_name,
+          COALESCE(t.driver_phone, '')     AS driver_phone,
           COALESCE(fc.name_ru, fc.name_ua, '—') AS pickup,
           COALESCE(tc.name_ru, tc.name_ua, '—') AS delivery
         FROM orders o
@@ -933,6 +936,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
           o.progress_percent               AS progress_percent,
           COALESCE(t.plate_number, '—')    AS plate,
           COALESCE(t.driver_name, '—')     AS driver_name,
+          COALESCE(t.driver_phone, '')     AS driver_phone,
           COALESCE(fc.name_ru, fc.name_ua, '—') AS pickup,
           COALESCE(tc.name_ru, tc.name_ua, '—') AS delivery
         FROM orders o
@@ -1002,6 +1006,7 @@ const voiceToolHandlers: FastifyPluginAsync = async (app) => {
         progress_percent: row.progress_percent,
         plate: row.plate,
         driver_name: row.driver_name,
+        driver_phone: row.driver_phone || null,
         pickup: row.pickup,
         delivery: row.delivery,
         stage_ru: stageRu[row.status] ?? row.status,
