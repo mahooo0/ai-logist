@@ -313,13 +313,20 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       const { id } = req.params;
+      // Pull leg-1 endpoints (pickup → delivery cities) PLUS the leg-0 origin
+      // snapshot (orders.pickup_origin_geom — written at DRIVER_ASSIGNED).
+      // When the snapshot is present we also compute the leg-0 polyline
+      // (truck-origin → pickup) so the frontend can render two segments.
       const rows = await app.db.execute(sql`
         SELECT o.id,
+               o.status,
                o.progress_percent AS "progressPercent",
                ST_X(fc.geom::geometry) AS "fromLon",
                ST_Y(fc.geom::geometry) AS "fromLat",
                ST_X(tc.geom::geometry) AS "toLon",
-               ST_Y(tc.geom::geometry) AS "toLat"
+               ST_Y(tc.geom::geometry) AS "toLat",
+               ST_X(o.pickup_origin_geom::geometry) AS "originLon",
+               ST_Y(o.pickup_origin_geom::geometry) AS "originLat"
         FROM orders o
         LEFT JOIN cities fc ON fc.id = o.from_city_id
         LEFT JOIN cities tc ON tc.id = o.to_city_id
@@ -340,12 +347,38 @@ const ordersRoutes: FastifyPluginAsyncZod = async (app) => {
         { lon: Number(r.toLon), lat: Number(r.toLat) },
         app.log
       );
+
+      // Leg-0 (truck origin → pickup) — only computed when the snapshot is
+      // present. routeGeometry failure is non-fatal: drop leg0 fields, frontend
+      // hides the dashed segment.
+      let leg0Geometry: Array<[number, number]> | undefined;
+      let leg0DistanceKm: number | undefined;
+      let leg0EtaSec: number | undefined;
+      if (r.originLon != null && r.originLat != null) {
+        try {
+          const g0 = await routeGeometry(
+            { lon: Number(r.originLon), lat: Number(r.originLat) },
+            { lon: Number(r.fromLon), lat: Number(r.fromLat) },
+            app.log
+          );
+          leg0Geometry = g0.geometry as Array<[number, number]>;
+          leg0DistanceKm = g0.route_km;
+          leg0EtaSec = g0.eta_sec;
+        } catch (err) {
+          app.log.warn({ err, orderId: id }, '/orders/:id/route leg-0 routeGeometry failed');
+        }
+      }
+
       return {
         geometry: result.geometry,
         distanceKm: result.route_km,
         etaSec: result.eta_sec,
         progressPercent: Number(r.progressPercent ?? 0),
         source: result.source,
+        status: r.status as string,
+        leg0Geometry,
+        leg0DistanceKm,
+        leg0EtaSec,
       };
     }
   );

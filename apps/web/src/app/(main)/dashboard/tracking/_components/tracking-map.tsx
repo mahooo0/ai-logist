@@ -36,9 +36,25 @@ export interface RouteData {
   distanceKm: number;
   etaSec: number;
   source: 'osrm' | 'haversine_fallback';
+  // Leg-0: truck origin → pickup. Present when orders.pickup_origin_geom was
+  // snapshot'd at DRIVER_ASSIGNED (migration 0007). Drives the dashed grey
+  // polyline + truck animation during the truck-approaching-pickup phase.
+  status?: string;
+  leg0Geometry?: LngLat[];
+  leg0DistanceKm?: number;
+  leg0EtaSec?: number;
 }
 
-const ACTIVE_STATUSES = ['DRIVER_ASSIGNED', 'AT_LOADING', 'IN_TRANSIT', 'AT_BORDER'];
+// AWAITING_PAYMENT included so payment-pending orders stay visible on the map
+// until the manager confirms the order is paid (closes to CLOSED).
+const ACTIVE_STATUSES = [
+  'DRIVER_ASSIGNED',
+  'AT_LOADING',
+  'IN_TRANSIT',
+  'AT_BORDER',
+  'DELIVERED_PENDING',
+  'AWAITING_PAYMENT',
+];
 
 const MapInner = dynamic(() => import('./tracking-map-inner').then((m) => m.MapInner), {
   ssr: false,
@@ -123,6 +139,10 @@ export function TrackingMap({
             distanceKm: data.distanceKm,
             etaSec: data.etaSec,
             source: data.source,
+            status: data.status,
+            leg0Geometry: data.leg0Geometry,
+            leg0DistanceKm: data.leg0DistanceKm,
+            leg0EtaSec: data.leg0EtaSec,
           });
           return next;
         });

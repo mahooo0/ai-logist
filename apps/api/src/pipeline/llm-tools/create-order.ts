@@ -20,7 +20,7 @@
 
 import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { sql } from 'drizzle-orm';
-import { customAlphabet, nanoid } from 'nanoid';
+import { nanoid } from 'nanoid';
 import { z } from 'zod/v4';
 import type { ToolContext } from './index.js';
 
@@ -33,8 +33,6 @@ export const CreateOrderInputSchema = z
     confirmed: z.literal(true),
   })
   .strict();
-
-const orderNumberGen = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 8);
 
 export interface CreateOrderResult {
   order_id: string;
@@ -78,7 +76,13 @@ export async function createOrderHandler(
     }
 
     // 2. Generate identifiers.
-    const orderNumber = `#KU-${orderNumberGen()}`;
+    //    order_number: Postgres SEQUENCE (migration 0007) — `#1000`, `#1001`, ...
+    //    Sequential so the voice inbound `lookup-order` flow can match a caller
+    //    who says "номер тысяча". `nextval` is atomic + transaction-safe.
+    //    public_token: nanoid(12) unchanged (used for /track/[token] URLs).
+    const seq = await tx.execute(sql`SELECT nextval('order_number_seq') AS n`);
+    const seqN = (seq.rows[0] as { n: string }).n;
+    const orderNumber = `#${seqN}`;
     const publicToken = nanoid(12);
 
     // 3. INSERT order. price is sourced from the locked lead row, NEVER from input.

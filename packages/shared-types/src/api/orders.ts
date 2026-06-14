@@ -117,12 +117,21 @@ export const OrderDetailExtendedSchema = z.object({
 export type OrderDetailExtended = z.infer<typeof OrderDetailExtendedSchema>;
 
 // /api/orders/:id/route — polyline + progress for the tracking page.
+// `geometry` is the LEG-1 route (pickup → delivery) — the long-haul segment.
+// `leg0Geometry` is the LEG-0 route (truck_origin → pickup) — the approach
+// segment, only present when orders.pickup_origin_geom was snapshot'd at
+// DRIVER_ASSIGNED. Frontend renders both polylines and chooses which one to
+// animate the truck along based on `status`.
 export const OrderRouteResponseSchema = z.object({
   geometry: z.array(z.tuple([z.number(), z.number()])), // [[lng, lat], ...]
   distanceKm: z.number(),
   etaSec: z.number(),
   progressPercent: z.number().int().min(0).max(100),
   source: z.enum(['osrm', 'haversine_fallback']),
+  status: z.string().optional(),
+  leg0Geometry: z.array(z.tuple([z.number(), z.number()])).optional(),
+  leg0DistanceKm: z.number().optional(),
+  leg0EtaSec: z.number().optional(),
 });
 export type OrderRouteResponse = z.infer<typeof OrderRouteResponseSchema>;
 

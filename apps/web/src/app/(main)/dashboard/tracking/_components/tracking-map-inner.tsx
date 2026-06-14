@@ -132,10 +132,36 @@ export function MapInner({
   const selectedRoute = selectedOrderId ? routeCache.get(selectedOrderId) ?? null : null;
   const selectedProgress =
     selectedOrderId !== null ? progressMap.get(selectedOrderId) ?? 0 : 0;
+
+  // Pick the geometry the truck is currently animating along:
+  //   - DRIVER_ASSIGNED with leg-0 snapshot present → animate truck-origin → pickup
+  //   - everything else (IN_TRANSIT, AT_LOADING, ...) → animate pickup → delivery
+  // Falls back to leg-1 if leg-0 is missing so we never lose the marker.
+  const activeLegGeometry: LngLat[] | null = useMemo(() => {
+    if (!selectedRoute) return null;
+    const status = selectedOrder?.status;
+    if (
+      status === 'DRIVER_ASSIGNED' &&
+      selectedRoute.leg0Geometry &&
+      selectedRoute.leg0Geometry.length >= 2
+    ) {
+      return selectedRoute.leg0Geometry;
+    }
+    return selectedRoute.geometry.length >= 2 ? selectedRoute.geometry : null;
+  }, [selectedRoute, selectedOrder]);
+
   const truckPosition: LngLat | null = useMemo(() => {
-    if (!selectedRoute || selectedRoute.geometry.length < 2) return null;
-    return interpolateAlongPolyline(selectedRoute.geometry, selectedProgress / 100);
-  }, [selectedRoute, selectedProgress]);
+    if (!activeLegGeometry) return null;
+    return interpolateAlongPolyline(activeLegGeometry, selectedProgress / 100);
+  }, [activeLegGeometry, selectedProgress]);
+
+  // Combined bounds: include leg-0 if present so the map fits both segments.
+  const fitGeometry: LngLat[] = useMemo(() => {
+    if (!selectedRoute) return [];
+    return selectedRoute.leg0Geometry && selectedRoute.leg0Geometry.length >= 2
+      ? [...selectedRoute.leg0Geometry, ...selectedRoute.geometry]
+      : selectedRoute.geometry;
+  }, [selectedRoute]);
 
   return (
     <div className="flex h-full">
@@ -269,10 +295,38 @@ export function MapInner({
             </Marker>
           ))}
 
-          {/* Selected order: polyline + endpoint markers + draggable truck. */}
+          {/* Selected order: leg-0 (dashed grey — truck→pickup) + leg-1 (solid
+              blue — pickup→delivery) + endpoint markers + draggable truck on
+              whichever leg is currently active. */}
           {selectedRoute && selectedRoute.geometry.length >= 2 && selectedOrder ? (
             <>
-              <FitBounds geometry={selectedRoute.geometry} />
+              <FitBounds geometry={fitGeometry} />
+              {/* Leg-0: truck origin → pickup, dashed grey. Only when present. */}
+              {selectedRoute.leg0Geometry && selectedRoute.leg0Geometry.length >= 2 ? (
+                <>
+                  <Polyline
+                    positions={selectedRoute.leg0Geometry.map(
+                      ([lng, lat]) => [lat, lng] as [number, number]
+                    )}
+                    pathOptions={{
+                      color: '#64748b',
+                      weight: 3,
+                      opacity: 0.7,
+                      dashArray: '8 8',
+                    }}
+                  />
+                  <Marker
+                    position={[
+                      selectedRoute.leg0Geometry[0][1],
+                      selectedRoute.leg0Geometry[0][0],
+                    ]}
+                    icon={endpointIcon('S', '#475569')}
+                  >
+                    <Popup>Стартовая позиция машины</Popup>
+                  </Marker>
+                </>
+              ) : null}
+              {/* Leg-1: pickup → delivery, solid blue. Always present. */}
               <Polyline
                 positions={selectedRoute.geometry.map(
                   ([lng, lat]) => [lat, lng] as [number, number]
@@ -297,7 +351,7 @@ export function MapInner({
               >
                 <Popup>{selectedOrder.toCityName ?? 'Точка разгрузки'}</Popup>
               </Marker>
-              {truckPosition ? (
+              {truckPosition && activeLegGeometry ? (
                 <Marker
                   position={[truckPosition[1], truckPosition[0]]}
                   icon={truckRouteIcon()}
@@ -306,8 +360,10 @@ export function MapInner({
                     dragend: (e) => {
                       const target = e.target as L.Marker;
                       const ll = target.getLatLng();
+                      // Snap to the leg the truck is currently animating along —
+                      // leg-0 if status DRIVER_ASSIGNED with snapshot, else leg-1.
                       const snap = closestPointOnPolyline(
-                        selectedRoute.geometry,
+                        activeLegGeometry,
                         [ll.lng, ll.lat]
                       );
                       target.setLatLng([snap.point[1], snap.point[0]]);

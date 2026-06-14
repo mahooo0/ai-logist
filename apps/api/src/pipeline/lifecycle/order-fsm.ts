@@ -230,6 +230,23 @@ export async function transitionOrder(
     }
     const newVersion = typeof newVersionRaw === 'string' ? Number(newVersionRaw) : newVersionRaw;
 
+    // 3b. Leg-0 snapshot (migration 0007). When the order enters
+    //     DRIVER_ASSIGNED for the first time, freeze the truck's current GPS
+    //     position into orders.pickup_origin_geom — that's the start point
+    //     for the truck→pickup animation on /dashboard/tracking. The
+    //     `pickup_origin_geom IS NULL` guard makes this idempotent so a
+    //     manual admin reset back to DRIVER_ASSIGNED won't re-snapshot
+    //     (the original origin survives the round-trip).
+    if (args.to === 'DRIVER_ASSIGNED') {
+      await tx.execute(sql`
+        UPDATE orders
+        SET pickup_origin_geom = (SELECT geom FROM trucks WHERE id = orders.truck_id)
+        WHERE id = ${args.orderId}
+          AND pickup_origin_geom IS NULL
+          AND truck_id IS NOT NULL
+      `);
+    }
+
     // 4. Audit log into order_events. Skip when status has no event type (CLOSED).
     //    UNIQUE(order_id, type) makes geofence re-fires idempotent (Phase 5).
     const eventType = STATUS_TO_EVENT[args.to];

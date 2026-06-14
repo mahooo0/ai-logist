@@ -20,6 +20,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { geographyPoint } from './_columns.js';
 import { orderStatusEnum } from './_enums.js';
 import { cities } from './cities.js';
 import { clients } from './clients.js';
@@ -59,6 +60,12 @@ export const orders = pgTable(
     // Phase 6 D-21 — pause/resume auto-progress ticker per order.
     // Added via migration 0006_order_lifecycle.sql (manual apply required).
     autoProgressPaused: boolean('auto_progress_paused').notNull().default(false),
+
+    // Leg-0 snapshot (migration 0007). The truck's GPS position at the moment
+    // of DRIVER_ASSIGNED — fixed source point for the truck→pickup animation.
+    // Nullable because existing rows pre-0007 won't have it; the frontend
+    // simply hides the leg-0 polyline when null.
+    pickupOriginGeom: geographyPoint('pickup_origin_geom'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

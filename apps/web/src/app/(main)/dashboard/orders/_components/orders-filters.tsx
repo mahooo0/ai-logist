@@ -18,6 +18,11 @@ const STATUS_OPTIONS = [
   { value: 'IN_TRANSIT', label: 'В пути' },
   { value: 'AT_BORDER', label: 'На границе' },
   { value: 'DELIVERED', label: 'Доставлен' },
+  // Phase 6 statuses — were missing from the dropdown so orders that reached
+  // payment looked "lost".
+  { value: 'DELIVERED_PENDING', label: 'Ожидает подтверждения' },
+  { value: 'AWAITING_PAYMENT', label: 'Ожидает оплаты' },
+  { value: 'CANCELED', label: 'Отменён' },
   { value: 'CLOSED', label: 'Закрыт' },
 ];
 

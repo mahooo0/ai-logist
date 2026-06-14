@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import type { FastifyBaseLogger } from 'fastify';
 import type pg from 'pg';
 
-const FILES = ['0006_order_lifecycle.sql'];
+const FILES = ['0006_order_lifecycle.sql', '0007_pickup_origin_and_seq.sql'];
 
 /**
  * Resolve the drizzle directory robustly across `tsx` (source) and `node dist`

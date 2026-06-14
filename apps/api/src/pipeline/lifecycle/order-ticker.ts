@@ -37,6 +37,8 @@ interface TickRow {
   to_lon: number | null;
   to_lat: number | null;
   truck_id: string | null;
+  origin_lon: number | null;
+  origin_lat: number | null;
 }
 
 export async function tickerLoop(deps: TickerDeps): Promise<void> {
@@ -57,7 +59,9 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
            ST_X(fc.geom::geometry) AS from_lon,
            ST_Y(fc.geom::geometry) AS from_lat,
            ST_X(tc.geom::geometry) AS to_lon,
-           ST_Y(tc.geom::geometry) AS to_lat
+           ST_Y(tc.geom::geometry) AS to_lat,
+           ST_X(o.pickup_origin_geom::geometry) AS origin_lon,
+           ST_Y(o.pickup_origin_geom::geometry) AS origin_lat
     FROM orders o
     LEFT JOIN cities fc ON fc.id = o.from_city_id
     LEFT JOIN cities tc ON tc.id = o.to_city_id
@@ -78,30 +82,54 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
         AND status IN ('DRIVER_ASSIGNED', 'IN_TRANSIT')
     `);
 
-    // 2. Leg-2 truck position interpolation (Pitfall 3 — skip leg 1).
-    if (
-      raw.status === 'IN_TRANSIT' &&
-      raw.truck_id &&
-      raw.from_lon != null &&
-      raw.to_lon != null
-    ) {
-      try {
-        const geo = await routeGeometry(
-          { lon: raw.from_lon, lat: raw.from_lat as number },
-          { lon: raw.to_lon, lat: raw.to_lat as number },
-          log
-        );
-        const pos = interpolateAlongPolyline(
-          geo.geometry as Array<[number, number]>,
-          newPct / 100
-        );
-        await db.execute(sql`
-          UPDATE trucks
-          SET geom = ST_GeogFromText('SRID=4326;POINT(' || ${pos[0]} || ' ' || ${pos[1]} || ')')
-          WHERE id = ${raw.truck_id}::uuid
-        `);
-      } catch (err) {
-        log.warn({ err, orderId: raw.id }, 'order-ticker: truck position update failed');
+    // 2. Truck position interpolation. Leg 0 (DRIVER_ASSIGNED) animates the
+    //    truck from its snapshot origin → pickup city; Leg 2 (IN_TRANSIT)
+    //    animates pickup → delivery (existing behaviour). Both branches share
+    //    the routeGeometry → interpolateAlongPolyline → UPDATE trucks.geom path
+    //    and only differ in the source/target points.
+    if (raw.truck_id) {
+      const leg = (() => {
+        if (
+          raw.status === 'DRIVER_ASSIGNED' &&
+          raw.origin_lon != null &&
+          raw.origin_lat != null &&
+          raw.from_lon != null &&
+          raw.from_lat != null
+        ) {
+          return {
+            from: { lon: raw.origin_lon, lat: raw.origin_lat },
+            to: { lon: raw.from_lon, lat: raw.from_lat },
+          };
+        }
+        if (
+          raw.status === 'IN_TRANSIT' &&
+          raw.from_lon != null &&
+          raw.from_lat != null &&
+          raw.to_lon != null &&
+          raw.to_lat != null
+        ) {
+          return {
+            from: { lon: raw.from_lon, lat: raw.from_lat },
+            to: { lon: raw.to_lon, lat: raw.to_lat },
+          };
+        }
+        return null;
+      })();
+      if (leg) {
+        try {
+          const geo = await routeGeometry(leg.from, leg.to, log);
+          const pos = interpolateAlongPolyline(
+            geo.geometry as Array<[number, number]>,
+            newPct / 100
+          );
+          await db.execute(sql`
+            UPDATE trucks
+            SET geom = ST_GeogFromText('SRID=4326;POINT(' || ${pos[0]} || ' ' || ${pos[1]} || ')')
+            WHERE id = ${raw.truck_id}::uuid
+          `);
+        } catch (err) {
+          log.warn({ err, orderId: raw.id }, 'order-ticker: truck position update failed');
+        }
       }
     }
 
