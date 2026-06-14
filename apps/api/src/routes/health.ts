@@ -164,6 +164,21 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
       return reply.status(allOk ? 200 : 503).send(body);
     }
   );
+
+  // Debug endpoint — surfaces a few config flags that gate runtime behavior
+  // (ticker, voice outbound, demo phone redirect) so we can verify env
+  // propagation from Dokploy compose without container shell access. Boolean
+  // ONLY — no secrets, no values.
+  app.get('/debug/config', async () => ({
+    nodeEnv: config.NODE_ENV,
+    tickerEnabled: config.DEMO_TICKER_ENABLED,
+    tickerIntervalSec: config.DEMO_TICKER_INTERVAL_SEC,
+    tickerDeltaPct: config.DEMO_TICKER_DELTA_PCT,
+    demoClientPhoneSet: !!config.DEMO_CLIENT_PHONE,
+    confirmAgentSet: !!config.ELEVENLABS_AGENT_ID_CONFIRM,
+    phoneNumberIdSet: !!config.ELEVENLABS_PHONE_NUMBER_ID,
+    stripeSet: !!config.STRIPE_SECRET_KEY,
+  }));
 };
 
 export default healthRoutes;
