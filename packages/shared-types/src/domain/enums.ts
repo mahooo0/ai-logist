@@ -28,6 +28,11 @@ export const OrderStatus = z.enum([
   'AT_BORDER',
   'DELIVERED',
   'CLOSED',
+  // Phase 6 additions — were missing from the shared schema, so /api/orders
+  // GET ?status= and the OrderSchema serializer both 400/500'd on them.
+  'DELIVERED_PENDING',
+  'AWAITING_PAYMENT',
+  'CANCELED',
 ]);
 export type OrderStatus = z.infer<typeof OrderStatus>;
 
@@ -38,6 +43,21 @@ export const OrderEventType = z.enum([
   'in_transit',
   'at_border',
   'delivered',
+  // Phase 6 + voice-confirm additions used in audit log inserts.
+  'approach_notified',
+  'loading_prompted',
+  'loading_confirmed',
+  'loading_declined',
+  'delivery_approach_notified',
+  'delivery_prompted',
+  'delivery_confirmed',
+  'delivery_declined',
+  'payment_link_sent',
+  'payment_received',
+  'reminder_sent',
+  'operator_escalated',
+  'admin_override',
+  'closed',
 ]);
 export type OrderEventType = z.infer<typeof OrderEventType>;
 
@@ -50,5 +70,5 @@ export type TruckStatus = z.infer<typeof TruckStatus>;
 export const ClientLang = z.enum(['ru', 'ua']);
 export type ClientLang = z.infer<typeof ClientLang>;
 
-export const WebhookSource = z.enum(['telegram', 'voice', 'gps']);
+export const WebhookSource = z.enum(['telegram', 'voice', 'gps', 'stripe']);
 export type WebhookSource = z.infer<typeof WebhookSource>;
