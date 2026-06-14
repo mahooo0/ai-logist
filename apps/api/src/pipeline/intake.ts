@@ -566,7 +566,7 @@ export async function handleInboundMessage(
         tons: extracted.tons,
         bodyType: extracted.body_type ?? 'тент',
         price: priceStr,
-        currency: '₽',
+        currency: '₴',
       },
       lang
     );

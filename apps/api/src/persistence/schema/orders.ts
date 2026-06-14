@@ -41,7 +41,7 @@ export const orders = pgTable(
 
     distanceKm: numeric('distance_km', { precision: 10, scale: 2 }), // road km
     price: bigint('price', { mode: 'bigint' }).notNull(), // kopecks per D-05
-    currency: text('currency').notNull().default('RUB'), // 'RUB' | 'UAH'
+    currency: text('currency').notNull().default('UAH'), // 'UAH' | 'RUB'
 
     status: orderStatusEnum('status').notNull().default('CREATED'),
 

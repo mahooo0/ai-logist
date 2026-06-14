@@ -13,17 +13,19 @@ import parsePhoneNumberFromString from 'libphonenumber-js';
 
 type Lang = 'ru' | 'ua';
 
-// formatMoney — kopecks (bigint) → ruble integer display per RESEARCH §Anti-Patterns note.
-// Phase 4 shows whole rubles (no kopecks decimals) — matches demo display style.
+// formatMoney — kopecks (bigint) → hryvnia integer display.
+// The kopeck unit in DB is currency-agnostic (price stored as bigint cents);
+// we render it as ₴ for the UAH demo. Switch the `currency:` field below if
+// the demo currency changes again.
 export function formatMoney(kopecksLike: string | number | bigint, lang: Lang = 'ru'): string {
   const kopecks = typeof kopecksLike === 'string' ? BigInt(kopecksLike) : BigInt(kopecksLike);
-  const rubles = Number(kopecks / BigInt(100)); // integer rubles, safe for demo-scale values
+  const hryvnia = Number(kopecks / BigInt(100));
   const locale = lang === 'ua' ? 'uk-UA' : 'ru-RU';
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'RUB',
+    currency: 'UAH',
     maximumFractionDigits: 0,
-  }).format(rubles);
+  }).format(hryvnia);
 }
 
 // formatPhone — libphonenumber-js with optional last-4-masking for /calls + /chat thread list (D-28).

@@ -66,7 +66,7 @@ export const CreateOrderBodySchema = z.object({
   fromCityId: z.string().uuid(),
   toCityId: z.string().uuid(),
   price: z.string(), // kopecks
-  currency: z.string().default('RUB'),
+  currency: z.string().default('UAH'),
 });
 export type CreateOrderBody = z.infer<typeof CreateOrderBodySchema>;
 

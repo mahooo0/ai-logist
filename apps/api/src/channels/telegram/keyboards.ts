@@ -73,7 +73,7 @@ export function formatQuoteMessage(args: {
       `<b>Пропозиція рейсу</b>`,
       `Маршрут: ${args.fromCityName ?? '—'} → ${args.toCityName ?? '—'}`,
       `Вантаж: ${args.lead.tons ?? '—'} т`,
-      `Ціна: <b>${price} ₽</b>`,
+      `Ціна: <b>${price} ₴</b>`,
       ``,
       `Підтвердіть або змініть умови нижче ⬇️`,
     ].join('\n');
@@ -82,7 +82,7 @@ export function formatQuoteMessage(args: {
     `<b>Предложение рейса</b>`,
     `Маршрут: ${args.fromCityName ?? '—'} → ${args.toCityName ?? '—'}`,
     `Груз: ${args.lead.tons ?? '—'} т`,
-    `Цена: <b>${price} ₽</b>`,
+    `Цена: <b>${price} ₴</b>`,
     ``,
     `Подтвердите или измените условия ниже ⬇️`,
   ].join('\n');

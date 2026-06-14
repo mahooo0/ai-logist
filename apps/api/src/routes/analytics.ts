@@ -90,7 +90,7 @@ const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
           ) AS orders,
           jsonb_build_object(
             'amount',   COALESCE((SELECT revenue_kopecks FROM order_stats), '0'),
-            'currency', 'RUB'
+            'currency', 'UAH'
           ) AS revenue,
           (SELECT avg_duration_s FROM call_stats) AS "avgCallDurationS",
           jsonb_build_object(
@@ -109,7 +109,7 @@ const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
       const callsJ = (row.calls ?? {}) as Record<string, unknown>;
       const leadsJ = (row.leads ?? {}) as Record<string, unknown>;
       const ordersJ = (row.orders ?? {}) as Record<string, unknown>;
-      const revenueJ = (row.revenue ?? { amount: '0', currency: 'RUB' }) as Record<string, unknown>;
+      const revenueJ = (row.revenue ?? { amount: '0', currency: 'UAH' }) as Record<string, unknown>;
       const byChannelJ = (row.byChannel ?? {}) as Record<string, unknown>;
       const funnelJ = (row.conversionFunnel ?? {}) as Record<string, unknown>;
       const byStageRaw = (leadsJ.byStage ?? {}) as Record<string, unknown>;
@@ -131,7 +131,7 @@ const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
         },
         revenue: {
           amount: String(revenueJ.amount ?? '0'),
-          currency: String(revenueJ.currency ?? 'RUB'),
+          currency: String(revenueJ.currency ?? 'UAH'),
         },
         avgCallDurationS: row.avgCallDurationS != null ? Number(row.avgCallDurationS) : null,
         byChannel: {

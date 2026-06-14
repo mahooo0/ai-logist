@@ -94,7 +94,7 @@ export async function createOrderHandler(
       )
       VALUES (
         ${orderNumber}, ${lead.id}, ${lead.client_id}, ${lead.matched_truck_id},
-        ${lead.from_city_id}, ${lead.to_city_id}, ${lead.quoted_price}::bigint, 'RUB',
+        ${lead.from_city_id}, ${lead.to_city_id}, ${lead.quoted_price}::bigint, 'UAH',
         'CREATED', ${publicToken}, 0
       )
       RETURNING id, price
