@@ -119,18 +119,33 @@ async function ensureVoiceState(
   // my earlier attempts: explicit twilio_call_sid column (NULL), and the
   // ON CONFLICT clause updates twilio_call_sid (a non-conflict column) so
   // Postgres accepts it for the partial unique index on elevenlabs_conv_id.
+  // The unique index on elevenlabs_conversation_id is PARTIAL
+  // (WHERE elevenlabs_conversation_id IS NOT NULL, per migration 0004).
+  // Postgres ON CONFLICT inference requires the WHERE predicate to be repeated
+  // verbatim — without it, PG can't match the partial index and rejects the
+  // query. INSERT first with DO NOTHING to handle the conflict cheaply, then
+  // SELECT the existing row id when the insert returned nothing. Same final
+  // result, no partial-index gymnastics.
   const callIns = await tx.execute(sql`
     INSERT INTO calls (
       elevenlabs_conversation_id, twilio_call_sid, direction, created_at
     ) VALUES (
       ${conversationId}, NULL, 'inbound', NOW()
     )
-    ON CONFLICT (elevenlabs_conversation_id)
-      DO UPDATE SET
-        twilio_call_sid = COALESCE(calls.twilio_call_sid, EXCLUDED.twilio_call_sid)
+    ON CONFLICT DO NOTHING
     RETURNING id::text AS id
   `);
-  const callId = (callIns.rows[0] as { id: string }).id;
+  let callId: string;
+  if (callIns.rows.length > 0) {
+    callId = (callIns.rows[0] as { id: string }).id;
+  } else {
+    const existingRow = await tx.execute(sql`
+      SELECT id::text AS id FROM calls
+      WHERE elevenlabs_conversation_id = ${conversationId}
+      LIMIT 1
+    `);
+    callId = (existingRow.rows[0] as { id: string }).id;
+  }
 
   // Placeholder client — phone is voice:<conv> so the unique constraint won't
   // collide with any real E.164. Post-call audit can re-link to a real client

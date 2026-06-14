@@ -60,19 +60,38 @@ const callLifecyclePlugin: FastifyPluginAsync = async (app) => {
     const body = CallStartSchema.parse(req.body);
     const { conversation_id, twilio_call_sid, caller_phone, language_hint } = body;
 
-    // 1. Upsert calls row keyed on elevenlabs_conversation_id (UNIQUE partial idx).
+    // 1. Upsert calls row keyed on elevenlabs_conversation_id (PARTIAL unique
+    //    index per migration 0004). Postgres ON CONFLICT inference rejects
+    //    partial indexes unless the WHERE predicate is repeated — use
+    //    DO NOTHING + SELECT fallback for cross-PG-version safety.
     const insert = await app.db.execute(sql`
       INSERT INTO calls (
         elevenlabs_conversation_id, twilio_call_sid, direction, created_at
       ) VALUES (
         ${conversation_id}, ${twilio_call_sid ?? null}, 'inbound', NOW()
       )
-      ON CONFLICT (elevenlabs_conversation_id)
-        DO UPDATE SET
-          twilio_call_sid = COALESCE(calls.twilio_call_sid, EXCLUDED.twilio_call_sid)
+      ON CONFLICT DO NOTHING
       RETURNING id::text AS id, lead_id::text AS lead_id
     `);
-    const call = insert.rows[0] as { id: string; lead_id: string | null };
+    let call: { id: string; lead_id: string | null };
+    if (insert.rows.length > 0) {
+      call = insert.rows[0] as { id: string; lead_id: string | null };
+    } else {
+      const existing = await app.db.execute(sql`
+        SELECT id::text AS id, lead_id::text AS lead_id
+        FROM calls
+        WHERE elevenlabs_conversation_id = ${conversation_id}
+        LIMIT 1
+      `);
+      call = existing.rows[0] as { id: string; lead_id: string | null };
+      // Back-fill twilio_call_sid if we now have one and the existing row didn't.
+      if (twilio_call_sid) {
+        await app.db.execute(sql`
+          UPDATE calls SET twilio_call_sid = ${twilio_call_sid}
+          WHERE id = ${call.id}::uuid AND twilio_call_sid IS NULL
+        `);
+      }
+    }
 
     // 2. Find or create client by phone. Phone is E.164; if absent, synthesize
     //    a per-conversation placeholder (voice:<conv>) so the FK constraints hold.
