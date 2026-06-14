@@ -227,20 +227,27 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
     }
     const counts: Record<string, number> = {};
     await app.db.transaction(async (tx) => {
-      // Order matters: child rows first to satisfy FK constraints.
+      // leads.order_id ↔ orders.id is a circular FK pair (orders has no FK on
+      // lead_id; leads has FK on order_id with NO ACTION). NULL out leads.order_id
+      // first so the orders delete succeeds without a CASCADE.
+      await tx.execute(sql`UPDATE leads SET order_id = NULL WHERE order_id IS NOT NULL`);
+
+      // Now delete in child→parent order. Some tables have no FK refs to others
+      // here (webhook_updates, bourse_cache, truck_positions); order is only
+      // critical for the orders/leads/clients/messages cluster.
       for (const t of [
-        'order_events',
-        'pod_artifacts',
-        'orders',
-        'messages',
-        'calls',
-        'webhook_updates',
-        'leads',
-        'clients',
-        'truck_positions',
-        'bourse_cache',
+        'order_events',     // → orders
+        'pod_artifacts',    // → orders
+        'messages',         // → leads, → clients
+        'calls',            // → leads
+        'webhook_updates',  // standalone
+        'truck_positions',  // → trucks (keep trucks themselves)
+        'bourse_cache',     // standalone
+        'orders',           // → clients
+        'leads',            // → clients
+        'clients',          // root
       ]) {
-        const r = await tx.execute(sql.raw(`DELETE FROM ${t} RETURNING id`));
+        const r = await tx.execute(sql.raw(`DELETE FROM ${t} RETURNING 1 AS x`));
         counts[t] = r.rows.length;
       }
       // Reset all trucks to available; clear driver-tg-id is NOT cleared (seed).
