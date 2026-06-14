@@ -208,6 +208,58 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
     }
     return out;
   });
+
+  // Demo-data wipe — clears all conversation/order state so we can start the
+  // demo from a blank slate. Keeps the fleet/cities/pricing config intact so
+  // the AI can still match trucks and quote prices.
+  //
+  // Also resets:
+  //   - trucks.status back to 'available' (busy trucks would refuse new leads)
+  //   - trucks.geom to the seeded depot positions (preserves the map look)
+  //   - order_number_seq back to 1000 so the next order is #1000 again
+  //
+  // Returns row counts deleted per table. Guarded by ?confirm=yes — call with
+  // ?confirm=yes to actually run.
+  app.post('/debug/reset-demo', async (req) => {
+    const q = req.query as Record<string, string | undefined>;
+    if (q.confirm !== 'yes') {
+      return { ok: false, message: 'append ?confirm=yes to confirm — this will wipe orders/leads/calls/clients' };
+    }
+    const counts: Record<string, number> = {};
+    await app.db.transaction(async (tx) => {
+      // Order matters: child rows first to satisfy FK constraints.
+      for (const t of [
+        'order_events',
+        'pod_artifacts',
+        'orders',
+        'messages',
+        'calls',
+        'webhook_updates',
+        'leads',
+        'clients',
+        'truck_positions',
+        'bourse_cache',
+      ]) {
+        const r = await tx.execute(sql.raw(`DELETE FROM ${t} RETURNING id`));
+        counts[t] = r.rows.length;
+      }
+      // Reset all trucks to available; clear driver-tg-id is NOT cleared (seed).
+      await tx.execute(sql`UPDATE trucks SET status = 'available', updated_at = NOW()`);
+      // Restart the sequence so the next order is #1000 again. Idempotent.
+      await tx.execute(sql`ALTER SEQUENCE order_number_seq RESTART WITH 1000`);
+    });
+    // Wipe Redis (FSM state, voice state, dialog locks) — best-effort.
+    try {
+      const redis = (app as FastifyInstance & { redis?: { flushdb: () => Promise<unknown> } })
+        .redis;
+      if (redis) await redis.flushdb();
+      counts.redis = 1;
+    } catch (e) {
+      counts.redisError = -1;
+      app.log.warn({ err: String(e) }, 'reset-demo: redis flushdb failed');
+    }
+    return { ok: true, counts };
+  });
 };
 
 export default healthRoutes;
