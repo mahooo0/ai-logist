@@ -43,6 +43,12 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
   const { db, log } = deps;
   const delta = importedConfig.DEMO_TICKER_DELTA_PCT;
 
+  // Postgres rejects `FOR UPDATE SKIP LOCKED` on a query whose FROM list
+  // includes outer-joined relations (cities here) — you must scope the lock to
+  // the inner relation explicitly: `FOR UPDATE OF o SKIP LOCKED`. Without OF,
+  // PG tries to lock the LEFT-JOINed city rows and errors out, killing every
+  // tick. Symptom: tickerLoop threw on the first SELECT so no order ever
+  // transitioned even when DEMO_TICKER_ENABLED=true.
   const rows = await db.execute(sql`
     SELECT o.id::text AS id,
            o.status,
@@ -57,7 +63,7 @@ export async function tickerLoop(deps: TickerDeps): Promise<void> {
     LEFT JOIN cities tc ON tc.id = o.to_city_id
     WHERE o.status IN ('DRIVER_ASSIGNED', 'IN_TRANSIT')
       AND o.auto_progress_paused = false
-    FOR UPDATE SKIP LOCKED
+    FOR UPDATE OF o SKIP LOCKED
   `);
 
   for (const raw of rows.rows as unknown as TickRow[]) {
