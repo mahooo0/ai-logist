@@ -267,6 +267,48 @@ const healthRoutes: FastifyPluginAsyncZod = async (app) => {
     }
     return { ok: true, counts };
   });
+
+  // Demo helper — when the matcher picked a truck that sat ON the pickup city
+  // (leg-0 distKm = 0, no visible approach animation), call this to shove
+  // both the truck's geom AND the snapshot column ~400 km east of pickup so
+  // leg-0 has real distance and the slider drag plays a visible animation.
+  // Pass ?orderId=<uuid>. Default direction is east; ?dx,dy lon/lat deltas
+  // override if you want a specific spot.
+  app.post('/debug/displace-truck', async (req) => {
+    const q = req.query as Record<string, string | undefined>;
+    if (!q.orderId) return { ok: false, message: '?orderId=<uuid> required' };
+    const dx = q.dx ? Number(q.dx) : -5; // ~5° west — ≈ 350 km at this lat
+    const dy = q.dy ? Number(q.dy) : 1;  // ~1° north — ≈ 110 km
+    const r = await app.db.execute(sql`
+      WITH pickup AS (
+        SELECT ST_X(fc.geom::geometry) AS lon, ST_Y(fc.geom::geometry) AS lat
+        FROM orders o
+        LEFT JOIN cities fc ON fc.id = o.from_city_id
+        WHERE o.id = ${q.orderId}::uuid
+      ),
+      target AS (
+        SELECT (lon + ${dx}) AS lon, (lat + ${dy}) AS lat FROM pickup
+      ),
+      upd_truck AS (
+        UPDATE trucks
+        SET geom = ST_GeogFromText('SRID=4326;POINT(' || (SELECT lon FROM target) || ' ' || (SELECT lat FROM target) || ')')
+        WHERE id = (SELECT truck_id FROM orders WHERE id = ${q.orderId}::uuid)
+        RETURNING ST_X(geom::geometry) AS lon, ST_Y(geom::geometry) AS lat
+      ),
+      upd_order AS (
+        UPDATE orders
+        SET pickup_origin_geom = ST_GeogFromText('SRID=4326;POINT(' || (SELECT lon FROM target) || ' ' || (SELECT lat FROM target) || ')')
+        WHERE id = ${q.orderId}::uuid
+        RETURNING ST_X(pickup_origin_geom::geometry) AS lon, ST_Y(pickup_origin_geom::geometry) AS lat
+      )
+      SELECT
+        (SELECT lon FROM pickup) AS pickup_lon,
+        (SELECT lat FROM pickup) AS pickup_lat,
+        (SELECT lon FROM upd_truck) AS new_truck_lon,
+        (SELECT lat FROM upd_truck) AS new_truck_lat
+    `);
+    return { ok: true, result: r.rows[0] };
+  });
 };
 
 export default healthRoutes;
