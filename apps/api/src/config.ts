@@ -89,7 +89,14 @@ const ConfigSchema = z.object({
 
 export type AppConfig = z.infer<typeof ConfigSchema>;
 
-const parsed = ConfigSchema.safeParse(process.env);
+// docker-compose substitutes unset ${VAR} as empty string "". For optional URL
+// fields (z.string().url().optional()) an empty string FAILS — `.optional()`
+// only short-circuits undefined, not empty. Normalize "" → undefined before
+// parsing so any optional field stays absent when the env var is unset.
+const normalizedEnv = Object.fromEntries(
+  Object.entries(process.env).map(([k, v]) => [k, v === '' ? undefined : v])
+);
+const parsed = ConfigSchema.safeParse(normalizedEnv);
 
 if (!parsed.success) {
   console.error('Invalid environment configuration:');
